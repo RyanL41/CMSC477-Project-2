@@ -1,0 +1,5 @@
+path: ./ # After first run, YOLO expects all datasets to be in path+"/datsets"
+train: Train
+val: Validation
+nc: 4  # Number of classes (1 for only "object")
+names: ["Block 1","Block 2","Target 1","Target 2"]
