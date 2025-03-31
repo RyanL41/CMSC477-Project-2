@@ -255,7 +255,8 @@ class Project2StateMachine:
         error_x = FRAME_CENTER_X - box_center_x
         # Scale turning speed based on error. Adjust the 0.1 factor to tune sensitivity.
         # Clamp speed to max approach turning speed.
-        z_vel = np.clip(error_x * 0.1, -APPROACH_SPEED_Z, APPROACH_SPEED_Z)
+        z_vel = 0
+        #z_vel = np.clip(error_x * 0.1, -APPROACH_SPEED_Z, APPROACH_SPEED_Z)
 
         # --- Constant Forward Speed ---
         x_vel = APPROACH_SPEED_X
