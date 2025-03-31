@@ -3,7 +3,7 @@ import time
 import cv2
 import numpy as np
 from ultralytics import YOLO
-from robomaster import robot, camera, chassis, arm, gripper # Explicit imports
+from robomaster import robot, camera, chassis # Explicit imports
 from enum import Enum
 import math
 import traceback # For detailed error reporting
@@ -74,8 +74,8 @@ class Project2StateMachine:
         self.ep_robot: robot.Robot = None
         self.ep_camera: camera.Camera = None
         self.ep_chassis: chassis.Chassis = None
-        self.ep_arm: arm.RoboticArm = None
-        self.ep_gripper: gripper.Gripper = None
+        self.ep_arm =  None
+        self.ep_gripper = None
         self.yolo_model: YOLO = None
 
         self.current_state = Project2States.INITIALIZING
