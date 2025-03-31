@@ -33,8 +33,8 @@ while True:
        for box in boxes:
            xyxy = box.xyxy.cpu().numpy().flatten()  # Bounding box coordinates
            class_id = int(box.cls.cpu().numpy())  # Class ID of the detection
-           label = class_names[class_id]  # Class name for the given class ID
-           confidence = box.conf.cpu().numpy()  # Confidence score of the detection
+        #    label = class_names[class_id]  # Class name for the given class ID
+        #    confidence = box.conf.cpu().numpy()  # Confidence score of the detection
 
 
            # Draw bounding box
@@ -45,7 +45,8 @@ while True:
 
 
            # Add label and confidence score
-           label_text = f"{label} ({confidence:.2f})"
+        #    label_text = f"{label} ({confidence:.2f})"
+           label_text = str(class_id)
            cv2.putText(frame, label_text, (int(xyxy[0]), int(xyxy[1]) - 10),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
