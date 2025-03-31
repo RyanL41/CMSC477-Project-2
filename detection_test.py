@@ -32,6 +32,8 @@ while True:
         # DIY visualization is much faster than show=True for some reason
         boxes = result.boxes
         for box in boxes:
+            classid = int(box.cls.cpu().numpy())
+            print("Classid:",classid)
             xyxy = box.xyxy.cpu().numpy().flatten()
             cv2.rectangle(frame,
                           (int(xyxy[0]), int(xyxy[1])), 
@@ -44,7 +46,7 @@ while True:
             break
 
 
-        print(result)
+        #print(result)
 
 
         end = time.time()
