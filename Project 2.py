@@ -66,6 +66,8 @@ class Project2States(Enum):
     COMPLETED = "completed"
     ERROR = "error"
 
+hi = 1
+
 class Project2StateMachine:
     def __init__(self, robot_sn):
         self.robot_sn = robot_sn
