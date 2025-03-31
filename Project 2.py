@@ -33,9 +33,9 @@ FRAME_CENTER_X = FRAME_WIDTH / 2
 TARGET_BBOX_WIDTH_APPROACH = 150
 
 # --- Optional Distance Calculation Parameters (Requires Tuning/Calibration) ---
-# OBJECT_REAL_HEIGHT_M = 0.05 # ASSUMPTION: Real height of blocks/targets in meters
-# CAMERA_FOCAL_LENGTH_PIXELS = 314 # From camera intrinsics (fx, fy avg) - VERIFY THIS
-# TARGET_APPROACH_DISTANCE_M = 0.2 # Target distance to stop approach (meters)
+OBJECT_REAL_HEIGHT_M = 0.05 # ASSUMPTION: Real height of blocks/targets in meters
+CAMERA_FOCAL_LENGTH_PIXELS = 314 # From camera intrinsics (fx, fy avg) - VERIFY THIS
+TARGET_APPROACH_DISTANCE_M = 0.2 # Target distance to stop approach (meters)
 
 # --- State Definitions ---
 class Project2States(Enum):
