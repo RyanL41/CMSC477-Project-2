@@ -135,21 +135,15 @@ class Project2StateMachine:
         if self.show_video:
             cv2.destroyAllWindows()
         if self.ep_camera:
-            try:
-                self.ep_camera.stop_video_stream()
-            except Exception as e:
-                print(f"Minor error stopping video stream: {e}")
-        if self.ep_robot and self.ep_robot.is_connected:
-            try:
-                 # Ensure robot stops moving
-                if self.ep_chassis:
-                    self.ep_chassis.drive_speed(x=0, y=0, z=0, timeout=1)
-                # Ensure gripper is paused
-                if self.ep_gripper:
-                    self.ep_gripper.pause()
-                self.ep_robot.close()
-            except Exception as e:
-                print(f"Minor error during robot cleanup: {e}")
+            self.ep_camera.stop_video_stream()
+        if self.ep_robot:
+             # Ensure robot stops moving
+            if self.ep_chassis:
+                self.ep_chassis.drive_speed(x=0, y=0, z=0)
+            # Ensure gripper is paused
+            if self.ep_gripper:
+                self.ep_gripper.pause()
+            self.ep_robot.close()
         print("Cleanup complete.")
 
     def get_frame(self):
@@ -244,6 +238,7 @@ class Project2StateMachine:
             return x_vel, y_vel, z_vel # No movement if no detection
 
         x1, y1, x2, y2 = detection['box']
+        print("X1:",x1,"X2:",x2)
         box_center_x = (x1 + x2) / 2
         box_width = x2 - x1
         # box_height = y2 - y1 # Could be used for distance estimation
