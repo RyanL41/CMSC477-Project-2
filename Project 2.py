@@ -3,7 +3,7 @@ import time
 import cv2
 import numpy as np
 from ultralytics import YOLO
-from robomaster import robot, camera, chassis, arm, gripper # Added arm, gripper
+from robomaster import robot, camera, chassis
 from enum import Enum
 import math # For calculations if needed
 
