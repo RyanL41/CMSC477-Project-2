@@ -287,7 +287,7 @@ class Project2StateMachine:
                  self.current_state = Project2States.ERROR
                  return
 
-            time.sleep(0.05) # Small delay
+            #time.sleep(0.05) # Small delay
 
         # Timeout occurred
         print(f"Timeout: Could not find {self.target_label} within {SEARCH_TIMEOUT}s.")
@@ -337,7 +337,7 @@ class Project2StateMachine:
              self.ep_chassis.drive_speed(x=x_vel, y=y_vel, z=z_vel)
 
          # Add a small delay or check frequency control
-         time.sleep(0.1)
+         #time.sleep(0.1)
 
 
     def handle_grab(self, next_state):
@@ -485,9 +485,32 @@ class Project2StateMachine:
                     self.current_state = Project2States.ERROR
 
                 # Small delay to prevent high CPU usage and allow hardware commands
-                time.sleep(0.01)
+                #time.sleep(0.01)
 
                 # Allow quitting by pressing 'q' in the OpenCV window if shown
+                frame = self.get_frame()
+                if frame is not None:
+                    start = time.time()
+                    if self.yolo_model.predictor:
+                        self.yolo_model.predictor.args.verbose = False
+                    result = self.yolo_model.predict(source=frame, show=False)[0]
+
+
+                    # DIY visualization is much faster than show=True for some reason
+                    boxes = result.boxes
+                    for box in boxes:
+                        classid = int(box.cls.cpu().numpy())
+                        print("Classid:",classid)
+                        xyxy = box.xyxy.cpu().numpy().flatten()
+                        cv2.rectangle(frame,
+                                    (int(xyxy[0]), int(xyxy[1])), 
+                                    (int(xyxy[2]), int(xyxy[3])),
+                                    color=(0, 0, 255), thickness=2)
+
+                cv2.imshow('frame', frame)
+                key = cv2.waitKey(1)
+                if key == ord('q'):
+                    break
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                      print("Manual quit requested.")
                      self.current_state = Project2States.ERROR
@@ -503,7 +526,7 @@ class Project2StateMachine:
                 traceback.print_exc()
                 self.current_state = Project2States.ERROR
                 break
-
+            
         # End of loop
         if self.current_state == Project2States.COMPLETED:
             print("--- Project 2 Sequence Completed Successfully! ---")
