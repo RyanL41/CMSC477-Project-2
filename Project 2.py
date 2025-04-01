@@ -21,7 +21,7 @@ SEARCH_TIMEOUT = 30         # Max seconds to rotate while searching
 ARM_LIFT_Y = 20             # Vertical distance to lift arm (mm)
 ARM_LOWER_Y = -20           # Vertical distance to lower arm (mm)
 ARM_MOVE_SPEED = 30         # Speed for arm movement (mm/s)
-GRIPPER_POWER = 50          # Power for gripper operation
+GRIPPER_POWER = 70          # Power for gripper operation
 
 # YOLO & Camera
 YOLO_MODEL_PATH = "best.pt" # Path to your trained YOLO model
@@ -30,10 +30,10 @@ FRAME_WIDTH = 640           # Camera stream width
 FRAME_HEIGHT = 360          # Camera stream height
 FRAME_CENTER_X = FRAME_WIDTH / 2
 # Target bbox width in pixels to determine closeness during approach - TUNE THIS!
-TARGET_BBOX_WIDTH_APPROACH = 87
-TARGET_BBOX_WIDTH_APPROACH_2 = 80
-TARGET_BBOX_WIDTH_APPROACH_3 = 100
-
+TARGET_BBOX_WIDTH_APPROACH = 77
+TARGET_BBOX_WIDTH_APPROACH_2 = 78
+TARGET_BBOX_WIDTH_APPROACH_3 = 255
+TARGET_BBOX_WIDTH_APPROACH_4 = 82
 # --- Optional Distance Calculation Parameters (Requires Tuning/Calibration) ---
 OBJECT_REAL_HEIGHT_M = 0.05 # ASSUMPTION: Real height of blocks/targets in meters
 CAMERA_FOCAL_LENGTH_PIXELS = 314 # From camera intrinsics (fx, fy avg) - VERIFY THIS
@@ -120,6 +120,7 @@ class Project2StateMachine:
             # Set initial arm/gripper state
             print("Setting initial gripper/arm state...")
             # self.ep_arm.moveto(x=180, y=0).wait_for_completed() # Example: Move arm to a known neutral start pos
+            self.ep_arm.move(x=0, y=-100).wait_for_completed()
             self.ep_gripper.open(power=GRIPPER_POWER)
             time.sleep(1) # Allow time for opening
             self.ep_gripper.pause() # Conserve power
@@ -246,7 +247,7 @@ class Project2StateMachine:
         # box_height = y2 - y1 # Could be used for distance estimation
 
         # --- Using bbox width as a proxy for closeness ---
-        is_close_enough = box_width > TARGET_BBOX_WIDTH_APPROACH if target_label == "Block 1" else  box_width > TARGET_BBOX_WIDTH_APPROACH_2 if target_label == "Block 2" else box_width > TARGET_BBOX_WIDTH_APPROACH_3
+        is_close_enough = box_width > TARGET_BBOX_WIDTH_APPROACH if target_label == "Block 1" else  box_width > TARGET_BBOX_WIDTH_APPROACH_2 if target_label == "Block 2" else box_width > TARGET_BBOX_WIDTH_APPROACH_4 if self.current_state == Project2States.GRAB_BLOCK1_AGAIN else box_width > TARGET_BBOX_WIDTH_APPROACH_3 
         if target_label == "Block 1":
             print(f"  [Approach] Box Center X: {box_center_x:.1f}, Width: {box_width:.1f} (Target > {TARGET_BBOX_WIDTH_APPROACH})")
         else:
