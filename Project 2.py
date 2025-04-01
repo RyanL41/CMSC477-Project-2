@@ -268,7 +268,7 @@ class Project2StateMachine:
             if box_width > (TARGET_BBOX_WIDTH_APPROACH_2 - thresh):
                 TARGET_BBOX_WIDTH_APPROACH_2 -= 0.1
 
-        elif self.current_state == Project2States.GRAB_BLOCK1_AGAIN:
+        elif self.current_state == Project2States.GRAB_BLOCK1_AGAIN or self.current_state == Project2States.APPROACH_TARGET2:
             if box_width > (TARGET_BBOX_WIDTH_APPROACH_3 - thresh):
                 TARGET_BBOX_WIDTH_APPROACH_3 -= 0.1
         else:
