@@ -230,7 +230,7 @@ class Project2StateMachine:
         distance = (OBJECT_REAL_HEIGHT_M * CAMERA_FOCAL_LENGTH_PIXELS) / bbox_height_pixels
         return distance
 
-    def approach_object_simple(self, detection):
+    def approach_object_simple(self, detection, target_label):
         """Calculates chassis velocity (x, y, z) to approach the detected object based on bbox."""
         x_vel, y_vel, z_vel = 0.0, 0.0, 0.0 # Default to stop
 
@@ -245,8 +245,11 @@ class Project2StateMachine:
         # box_height = y2 - y1 # Could be used for distance estimation
 
         # --- Using bbox width as a proxy for closeness ---
-        is_close_enough = box_width > TARGET_BBOX_WIDTH_APPROACH
-        print(f"  [Approach] Box Center X: {box_center_x:.1f}, Width: {box_width:.1f} (Target > {TARGET_BBOX_WIDTH_APPROACH})")
+        is_close_enough = box_width > TARGET_BBOX_WIDTH_APPROACH if target_label == "Block 1" else  box_width > TARGET_BBOX_WIDTH_APPROACH_2
+        if target_label == "Block 1":
+            print(f"  [Approach] Box Center X: {box_center_x:.1f}, Width: {box_width:.1f} (Target > {TARGET_BBOX_WIDTH_APPROACH})")
+        else:
+            print(f"  [Approach] Box Center X: {box_center_x:.1f}, Width: {box_width:.1f} (Target > {TARGET_BBOX_WIDTH_APPROACH_2})")
 
         if is_close_enough:
             print("  [Approach] Close enough to object based on width. Setting velocities to 0.")
@@ -338,7 +341,7 @@ class Project2StateMachine:
              return
 
          # Calculate movement based on the selected detection
-         x_vel, y_vel, z_vel = self.approach_object_simple(approach_detection)
+         x_vel, y_vel, z_vel = self.approach_object_simple(approach_detection, target_label)
 
          # Check if the approach calculation determined we are close enough (returned 0s)
          if x_vel == 0 and y_vel == 0 and z_vel == 0:
