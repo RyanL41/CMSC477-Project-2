@@ -11,7 +11,7 @@ import traceback # For detailed error reporting
 # --- Constants ---
 # Movement & Timing
 ROTATION_SPEED = 20         # degrees per second for searching
-APPROACH_SPEED_X = 0.15     # m/s forward speed during approach
+APPROACH_SPEED_X = 0.1     # m/s forward speed during approach
 APPROACH_SPEED_Z = 25       # degrees/s turning speed during approach
 BACKUP_DIST_LONG = 1    # meters (approx 10 ft)
 BACKUP_DIST_SHORT = .5   # meters (approx 5 ft)
@@ -25,13 +25,13 @@ GRIPPER_POWER = 70          # Power for gripper operation
 
 # YOLO & Camera
 YOLO_MODEL_PATH = "best.pt" # Path to your trained YOLO model
-CONFIDENCE_THRESHOLD = 0.60 # Minimum confidence for YOLO detection
+CONFIDENCE_THRESHOLD = 0.80 # Minimum confidence for YOLO detection
 FRAME_WIDTH = 640           # Camera stream width
 FRAME_HEIGHT = 360          # Camera stream height
 FRAME_CENTER_X = FRAME_WIDTH / 2
 # Target bbox width in pixels to determine closeness during approach - TUNE THIS!
 TARGET_BBOX_WIDTH_APPROACH = 77 + 5
-TARGET_BBOX_WIDTH_APPROACH_2 = 78 + 5
+TARGET_BBOX_WIDTH_APPROACH_2 = 78 + 2
 TARGET_BBOX_WIDTH_APPROACH_3 = 255 + 5
 TARGET_BBOX_WIDTH_APPROACH_4 = 82 + 5
 # --- Optional Distance Calculation Parameters (Requires Tuning/Calibration) ---
@@ -266,7 +266,7 @@ class Project2StateMachine:
 
         elif target_label == "Block 2":
             if box_width > (TARGET_BBOX_WIDTH_APPROACH_2 - thresh):
-                TARGET_BBOX_WIDTH_APPROACH_2 -= 0.1
+                TARGET_BBOX_WIDTH_APPROACH_2 -= 0.2
 
         elif self.current_state == Project2States.GRAB_BLOCK1_AGAIN or self.current_state == Project2States.APPROACH_TARGET2:
             if box_width > (TARGET_BBOX_WIDTH_APPROACH_3 - thresh):
