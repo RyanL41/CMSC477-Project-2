@@ -233,6 +233,7 @@ class Project2StateMachine:
         return distance
 
     def approach_object_simple(self, detection, target_label):
+        global TARGET_BBOX_WIDTH_APPROACH, TARGET_BBOX_WIDTH_APPROACH_2, TARGET_BBOX_WIDTH_APPROACH_3, TARGET_BBOX_WIDTH_APPROACH_4
         """Calculates chassis velocity (x, y, z) to approach the detected object based on bbox."""
         x_vel, y_vel, z_vel = 0.0, 0.0, 0.0 # Default to stop
 
