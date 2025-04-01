@@ -262,18 +262,18 @@ class Project2StateMachine:
 
         if target_label == "Block 1":
             if box_width > (TARGET_BBOX_WIDTH_APPROACH - thresh):
-                TARGET_BBOX_WIDTH_APPROACH -= 0.1
+                TARGET_BBOX_WIDTH_APPROACH -= 0.05
 
         elif target_label == "Block 2":
             if box_width > (TARGET_BBOX_WIDTH_APPROACH_2 - thresh):
-                TARGET_BBOX_WIDTH_APPROACH_2 -= 0.2
+                TARGET_BBOX_WIDTH_APPROACH_2 -= 0.1
 
         elif self.current_state == Project2States.GRAB_BLOCK1_AGAIN or self.current_state == Project2States.APPROACH_TARGET2:
             if box_width > (TARGET_BBOX_WIDTH_APPROACH_3 - thresh):
-                TARGET_BBOX_WIDTH_APPROACH_3 -= 0.1
+                TARGET_BBOX_WIDTH_APPROACH_3 -= 0.05
         else:
             if box_width > (TARGET_BBOX_WIDTH_APPROACH_4 - thresh):
-                TARGET_BBOX_WIDTH_APPROACH_4 -= 0.1
+                TARGET_BBOX_WIDTH_APPROACH_4 -= 0.05
 
         # --- Proportional Control for Alignment ---
         error_x = FRAME_CENTER_X - box_center_x
