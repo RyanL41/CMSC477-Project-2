@@ -30,10 +30,10 @@ FRAME_WIDTH = 640           # Camera stream width
 FRAME_HEIGHT = 360          # Camera stream height
 FRAME_CENTER_X = FRAME_WIDTH / 2
 # Target bbox width in pixels to determine closeness during approach - TUNE THIS!
-TARGET_BBOX_WIDTH_APPROACH = 77
-TARGET_BBOX_WIDTH_APPROACH_2 = 78
-TARGET_BBOX_WIDTH_APPROACH_3 = 255
-TARGET_BBOX_WIDTH_APPROACH_4 = 82
+TARGET_BBOX_WIDTH_APPROACH = 77 + 5
+TARGET_BBOX_WIDTH_APPROACH_2 = 78 + 5
+TARGET_BBOX_WIDTH_APPROACH_3 = 255 + 5
+TARGET_BBOX_WIDTH_APPROACH_4 = 82 + 5
 # --- Optional Distance Calculation Parameters (Requires Tuning/Calibration) ---
 OBJECT_REAL_HEIGHT_M = 0.05 # ASSUMPTION: Real height of blocks/targets in meters
 CAMERA_FOCAL_LENGTH_PIXELS = 314 # From camera intrinsics (fx, fy avg) - VERIFY THIS
@@ -256,6 +256,23 @@ class Project2StateMachine:
         if is_close_enough:
             print("  [Approach] Close enough to object based on width. Setting velocities to 0.")
             return x_vel, y_vel, z_vel # Stop moving
+        
+        thresh = 5
+
+        if target_label == "Block 1":
+            if box_width > (TARGET_BBOX_WIDTH_APPROACH - thresh):
+                TARGET_BBOX_WIDTH_APPROACH -= 0.1
+
+        elif target_label == "Block 2":
+            if box_width > (TARGET_BBOX_WIDTH_APPROACH_2 - thresh):
+                TARGET_BBOX_WIDTH_APPROACH_2 -= 0.1
+
+        elif self.current_state == Project2States.GRAB_BLOCK1_AGAIN:
+            if box_width > (TARGET_BBOX_WIDTH_APPROACH_3 - thresh):
+                TARGET_BBOX_WIDTH_APPROACH_3 -= 0.1
+        else:
+            if box_width > (TARGET_BBOX_WIDTH_APPROACH_4 - thresh):
+                TARGET_BBOX_WIDTH_APPROACH_4 -= 0.1
 
         # --- Proportional Control for Alignment ---
         error_x = FRAME_CENTER_X - box_center_x
