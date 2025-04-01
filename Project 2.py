@@ -31,7 +31,8 @@ FRAME_HEIGHT = 360          # Camera stream height
 FRAME_CENTER_X = FRAME_WIDTH / 2
 # Target bbox width in pixels to determine closeness during approach - TUNE THIS!
 TARGET_BBOX_WIDTH_APPROACH = 87
-TARGET_BBOX_WIDTH_APPROACH_2 = 84
+TARGET_BBOX_WIDTH_APPROACH_2 = 80
+TARGET_BBOX_WIDTH_APPROACH_3 = 100
 
 # --- Optional Distance Calculation Parameters (Requires Tuning/Calibration) ---
 OBJECT_REAL_HEIGHT_M = 0.05 # ASSUMPTION: Real height of blocks/targets in meters
@@ -245,7 +246,7 @@ class Project2StateMachine:
         # box_height = y2 - y1 # Could be used for distance estimation
 
         # --- Using bbox width as a proxy for closeness ---
-        is_close_enough = box_width > TARGET_BBOX_WIDTH_APPROACH if target_label == "Block 1" else  box_width > TARGET_BBOX_WIDTH_APPROACH_2
+        is_close_enough = box_width > TARGET_BBOX_WIDTH_APPROACH if target_label == "Block 1" else  box_width > TARGET_BBOX_WIDTH_APPROACH_2 if target_label == "Block 2" else box_width > TARGET_BBOX_WIDTH_APPROACH_3
         if target_label == "Block 1":
             print(f"  [Approach] Box Center X: {box_center_x:.1f}, Width: {box_width:.1f} (Target > {TARGET_BBOX_WIDTH_APPROACH})")
         else:
