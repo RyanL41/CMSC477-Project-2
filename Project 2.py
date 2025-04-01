@@ -13,13 +13,13 @@ import traceback # For detailed error reporting
 ROTATION_SPEED = 20         # degrees per second for searching
 APPROACH_SPEED_X = 0.15     # m/s forward speed during approach
 APPROACH_SPEED_Z = 25       # degrees/s turning speed during approach
-BACKUP_DIST_LONG = 3.048    # meters (approx 10 ft)
-BACKUP_DIST_SHORT = 1.524   # meters (approx 5 ft)
-BACKUP_DIST_VERY_SHORT = 0.5 # meters
+BACKUP_DIST_LONG = 1    # meters (approx 10 ft)
+BACKUP_DIST_SHORT = .5   # meters (approx 5 ft)
+BACKUP_DIST_VERY_SHORT = 0.25 # meters
 MOVE_TIMEOUT = 15           # Max seconds for a chassis move action
 SEARCH_TIMEOUT = 30         # Max seconds to rotate while searching
-ARM_LIFT_Y = 80             # Vertical distance to lift arm (mm)
-ARM_LOWER_Y = -80           # Vertical distance to lower arm (mm)
+ARM_LIFT_Y = 20             # Vertical distance to lift arm (mm)
+ARM_LOWER_Y = -20           # Vertical distance to lower arm (mm)
 ARM_MOVE_SPEED = 30         # Speed for arm movement (mm/s)
 GRIPPER_POWER = 50          # Power for gripper operation
 
@@ -30,7 +30,8 @@ FRAME_WIDTH = 640           # Camera stream width
 FRAME_HEIGHT = 360          # Camera stream height
 FRAME_CENTER_X = FRAME_WIDTH / 2
 # Target bbox width in pixels to determine closeness during approach - TUNE THIS!
-TARGET_BBOX_WIDTH_APPROACH = 150
+TARGET_BBOX_WIDTH_APPROACH = 87
+TARGET_BBOX_WIDTH_APPROACH_2 = 84
 
 # --- Optional Distance Calculation Parameters (Requires Tuning/Calibration) ---
 OBJECT_REAL_HEIGHT_M = 0.05 # ASSUMPTION: Real height of blocks/targets in meters
@@ -255,8 +256,8 @@ class Project2StateMachine:
         error_x = FRAME_CENTER_X - box_center_x
         # Scale turning speed based on error. Adjust the 0.1 factor to tune sensitivity.
         # Clamp speed to max approach turning speed.
-        z_vel = 0
-        #z_vel = np.clip(error_x * 0.1, -APPROACH_SPEED_Z, APPROACH_SPEED_Z)
+        #z_vel = 0
+        z_vel = np.clip(-error_x * 0.1, -APPROACH_SPEED_Z, APPROACH_SPEED_Z)
 
         # --- Constant Forward Speed ---
         x_vel = APPROACH_SPEED_X
@@ -392,7 +393,7 @@ class Project2StateMachine:
         try:
             # Use relative move `arm.move()`
             # wait_for_completed makes it blocking until the move finishes
-            self.ep_arm.move(y=y_distance, y_speed=ARM_MOVE_SPEED).wait_for_completed(timeout=10)
+            self.ep_arm.move(y=y_distance).wait_for_completed(timeout=10)
             print(f"  [Arm] Arm {action.lower()} complete.")
             self.current_state = next_state
         except Exception as e:
