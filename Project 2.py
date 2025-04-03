@@ -89,6 +89,8 @@ class Project2StateMachine:
         time.sleep(1)
         self.ep_robot.gripper.pause()
 
+        self.current_state = Project2States.FIND_FIRST_BLOCK
+
     def cleanup(self):
         cv2.destroyAllWindows()
         if self.ep_robot.camera:
