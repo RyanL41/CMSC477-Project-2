@@ -19,6 +19,7 @@ TARGET_BBOX_WIDTH_APPROACH = 77 + 5
 TARGET_BBOX_WIDTH_APPROACH_2 = 78 + 2
 TARGET_BBOX_WIDTH_APPROACH_3 = 255 + 5
 TARGET_BBOX_WIDTH_APPROACH_4 = 82 + 5
+TARGET_BBOX_HEIGHT_APPROACH = 100
 
 
 class Project2States(Enum):
@@ -179,7 +180,8 @@ class Project2StateMachine:
             return 0, 0, 0
 
         x1, y1, x2, y2 = detection["box"]
-        print("X1:", x1, "X2:", x2)
+        #print("X1:", x1, "X2:", x2)
+        print("y1:",y1,"y2:",y2)
         box_center_x = (x1 + x2) / 2
         box_width = x2 - x1
 
