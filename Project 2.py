@@ -229,9 +229,13 @@ class Project2StateMachine:
         self.ep_robot.chassis.drive_speed(x=0, y=0, z=20)
 
         while True:
+
+            
             frame = self.get_frame()
             detections, _ = self.run_yolo_detection(frame)
             found_object = self.find_object_with_yolo(self.target_label, detections)
+
+            print("found object:", found_object)
 
             if found_object:
                 self.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
