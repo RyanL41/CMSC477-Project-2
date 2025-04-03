@@ -66,14 +66,26 @@ class Project2StateMachine:
     def initialize_robot(self):
         print("Initializing Robot...")
 
+        print(self.robot_sn)
+
         self.ep_robot.initialize(conn_type="sta", sn=self.robot_sn)
+
+        print("inited")
+
         self.ep_robot.camera.start_video_stream(
             display=False, resolution=camera.STREAM_360P
         )
-        self.yolo_model.predictor.args.verbose = False
 
+        print("started")
+        
         self.ep_robot.robotic_arm.move(x=0, y=-100).wait_for_completed()
+
+        print("moved")
+
         self.ep_robot.gripper.open(power=70)
+
+        print('opened')
+
         time.sleep(1)
         self.ep_robot.gripper.pause()
 
