@@ -2,13 +2,13 @@ import time
 import cv2
 import numpy as np
 from ultralytics import YOLO
-from robomaster import robot, camera 
+from robomaster import robot, camera
 from enum import Enum
 import traceback
 
 
 # YOLO & Camera
-YOLO_MODEL_PATH = "best.pt" 
+YOLO_MODEL_PATH = "best.pt"
 CONFIDENCE_THRESHOLD = 0.80
 FRAME_WIDTH = 640
 FRAME_HEIGHT = 360
@@ -30,11 +30,11 @@ class Project2States(Enum):
     BACKUP_AFTER_GRAB1 = "backup_after_grab1"
     RELEASE_FIRST_BLOCK_TEMP = "release_first_block_temp"
     LOWER_ARM_AFTER_RELEASE1 = "lower_arm_after_release1"
-    BACKUP_AND_RESET_ARM = "backup_and_reset_arm" 
+    BACKUP_AND_RESET_ARM = "backup_and_reset_arm"
     SURVEY_FOR_BLOCK2 = "survey_for_block2"
     APPROACH_BLOCK2 = "approach_block2"
     GRAB_BLOCK2 = "grab_block2"
-    LIFT_ARM_AFTER_GRAB2 = "lift_arm_after_grab2" 
+    LIFT_ARM_AFTER_GRAB2 = "lift_arm_after_grab2"
     SURVEY_FOR_TARGET1 = "survey_for_target1"
     APPROACH_TARGET1 = "approach_target1"
     RELEASE_BLOCK2_AT_TARGET1 = "release_block2_at_target1"
@@ -51,6 +51,7 @@ class Project2States(Enum):
     COMPLETED = "completed"
     ERROR = "error"
 
+
 class Project2StateMachine:
     def __init__(self, robot_sn):
         self.robot_sn = robot_sn
@@ -59,16 +60,18 @@ class Project2StateMachine:
 
         self.current_state = Project2States.INITIALIZING
         self.target_label = None
-        self.last_detection = None 
+        self.last_detection = None
         self.last_vis_frame = None
 
     def initialize_robot(self):
         print("Initializing Robot...")
 
         self.ep_robot.initialize(conn_type="sta", sn=self.robot_sn)
-        self.ep_robot.camera.start_video_stream(display=False, resolution=camera.STREAM_360P)
+        self.ep_robot.camera.start_video_stream(
+            display=False, resolution=camera.STREAM_360P
+        )
         self.yolo_model.predictor.args.verbose = False
-        
+
         self.ep_robot.robotic_arm.move(x=0, y=-100).wait_for_completed()
         self.ep_robot.gripper.open(power=70)
         time.sleep(1)
@@ -98,9 +101,11 @@ class Project2StateMachine:
 
     def run_yolo_detection(self, frame):
         if frame is None or self.yolo_model is None:
-            return [], None 
-        
-        results = self.yolo_model.predict(source=frame, show=False, verbose=False, conf=CONFIDENCE_THRESHOLD)[0]
+            return [], None
+
+        results = self.yolo_model.predict(
+            source=frame, show=False, verbose=False, conf=CONFIDENCE_THRESHOLD
+        )[0]
 
         boxes = results.boxes
         class_names = self.yolo_model.names
@@ -108,21 +113,32 @@ class Project2StateMachine:
         detections_list = []
 
         for box in boxes:
-            xyxy = box.xyxy.cpu().numpy().flatten().astype(int) 
+            xyxy = box.xyxy.cpu().numpy().flatten().astype(int)
             class_id = int(box.cls.cpu().numpy())
             label = class_names.get(class_id, f"Unknown({class_id})")
             confidence = float(box.conf.cpu().numpy())
 
-            detections_list.append({
-                'label': label,
-                'confidence': confidence,
-                'box': xyxy
-            })
+            detections_list.append(
+                {"label": label, "confidence": confidence, "box": xyxy}
+            )
 
-            cv2.rectangle(vis_frame, (xyxy[0], xyxy[1]), (xyxy[2], xyxy[3]), color=(0, 255, 0), thickness=2)
+            cv2.rectangle(
+                vis_frame,
+                (xyxy[0], xyxy[1]),
+                (xyxy[2], xyxy[3]),
+                color=(0, 255, 0),
+                thickness=2,
+            )
             label_text = f"{label} ({confidence:.2f})"
-            cv2.putText(vis_frame, label_text, (xyxy[0], xyxy[1] - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            cv2.putText(
+                vis_frame,
+                label_text,
+                (xyxy[0], xyxy[1] - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 255, 0),
+                2,
+            )
 
         self.last_vis_frame = vis_frame
         return detections_list, vis_frame
@@ -136,9 +152,9 @@ class Project2StateMachine:
         max_confidence = 0.0
 
         for det in detections:
-            if det['label'] == target_label and det['confidence'] > max_confidence:
-                 max_confidence = det['confidence']
-                 best_detection = det
+            if det["label"] == target_label and det["confidence"] > max_confidence:
+                max_confidence = det["confidence"]
+                best_detection = det
 
         return best_detection
 
@@ -148,16 +164,28 @@ class Project2StateMachine:
         if not detection:
             return 0, 0, 0
 
-        x1, y1, x2, y2 = detection['box']
-        print("X1:",x1,"X2:",x2)
+        x1, y1, x2, y2 = detection["box"]
+        print("X1:", x1, "X2:", x2)
         box_center_x = (x1 + x2) / 2
         box_width = x2 - x1
 
-        is_close_enough = box_width > TARGET_BBOX_WIDTH_APPROACH if target_label == "Block 1" else  box_width > TARGET_BBOX_WIDTH_APPROACH_2 if target_label == "Block 2" else box_width > TARGET_BBOX_WIDTH_APPROACH_4 if self.current_state == Project2States.GRAB_BLOCK1_AGAIN else box_width > TARGET_BBOX_WIDTH_APPROACH_3 
-        
+        is_close_enough = (
+            box_width > TARGET_BBOX_WIDTH_APPROACH
+            if target_label == "Block 1"
+            else (
+                box_width > TARGET_BBOX_WIDTH_APPROACH_2
+                if target_label == "Block 2"
+                else (
+                    box_width > TARGET_BBOX_WIDTH_APPROACH_4
+                    if self.current_state == Project2States.GRAB_BLOCK1_AGAIN
+                    else box_width > TARGET_BBOX_WIDTH_APPROACH_3
+                )
+            )
+        )
+
         if is_close_enough:
             return 0, 0, 0
-        
+
         thresh = 5
 
         if target_label == "Block 1":
@@ -168,7 +196,10 @@ class Project2StateMachine:
             if box_width > (TARGET_BBOX_WIDTH_APPROACH_2 - thresh):
                 TARGET_BBOX_WIDTH_APPROACH_2 -= 0.1
 
-        elif self.current_state == Project2States.GRAB_BLOCK1_AGAIN or self.current_state == Project2States.APPROACH_TARGET2:
+        elif (
+            self.current_state == Project2States.GRAB_BLOCK1_AGAIN
+            or self.current_state == Project2States.APPROACH_TARGET2
+        ):
             if box_width > (TARGET_BBOX_WIDTH_APPROACH_3 - thresh):
                 TARGET_BBOX_WIDTH_APPROACH_3 -= 0.05
         else:
@@ -181,7 +212,7 @@ class Project2StateMachine:
         return 0.1, 0, z_vel
 
     def handle_find_object(self, next_state_on_find, search_label):
-        
+
         self.target_label = search_label
         self.ep_robot.chassis.drive_speed(x=0, y=0, z=20)
 
@@ -194,17 +225,17 @@ class Project2StateMachine:
                 self.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
                 self.last_detection = found_object
                 self.current_state = next_state_on_find
-                return 
+                return
 
             if self.last_vis_frame is not None:
-                cv2.imshow('Robot View', self.last_vis_frame)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
+                cv2.imshow("Robot View", self.last_vis_frame)
+                if cv2.waitKey(1) & 0xFF == ord("q"):
                     self.current_state = Project2States.ERROR
                     return
 
     def handle_approach_object(self, next_state_on_approach, target_label):
-         
-        self.target_label = target_label 
+
+        self.target_label = target_label
 
         frame = self.get_frame()
         detections, _ = self.run_yolo_detection(frame)
@@ -214,16 +245,22 @@ class Project2StateMachine:
         if current_detection:
             approach_detection = current_detection
             self.last_detection = current_detection
-        elif self.last_detection and self.last_detection['label'] == self.target_label:
-            print(f"Lost sight of '{self.target_label}', using last known detection info.")
+        elif self.last_detection and self.last_detection["label"] == self.target_label:
+            print(
+                f"Lost sight of '{self.target_label}', using last known detection info."
+            )
             approach_detection = self.last_detection
         else:
-            print(f"ERROR: Lost sight of '{self.target_label}' and no valid last detection. Cannot approach.")
+            print(
+                f"ERROR: Lost sight of '{self.target_label}' and no valid last detection. Cannot approach."
+            )
             self.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
-            self.current_state = Project2States.ERROR # Transition back to search?
+            self.current_state = Project2States.ERROR  # Transition back to search?
             return
 
-        x_vel, y_vel, z_vel = self.approach_object_simple(approach_detection, target_label)
+        x_vel, y_vel, z_vel = self.approach_object_simple(
+            approach_detection, target_label
+        )
 
         if x_vel == 0 and y_vel == 0 and z_vel == 0:
             self.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
@@ -232,10 +269,9 @@ class Project2StateMachine:
             self.ep_robot.chassis.drive_speed(x=x_vel, y=y_vel, z=z_vel)
 
         if self.last_vis_frame is not None:
-            cv2.imshow('Robot View', self.last_vis_frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            cv2.imshow("Robot View", self.last_vis_frame)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
                 self.current_state = Project2States.ERROR
-
 
     def handle_grab(self, next_state):
         self.ep_robot.gripper.close(power=70)
@@ -254,24 +290,33 @@ class Project2StateMachine:
         self.current_state = next_state
 
     def handle_backup(self, distance_m, next_state):
-        self.ep_robot.chassis.move(x=-distance_m, y=0, z=0, xy_speed=0.1).wait_for_completed(timeout=15)
+        self.ep_robot.chassis.move(
+            x=-distance_m, y=0, z=0, xy_speed=0.1
+        ).wait_for_completed(timeout=15)
         self.current_state = next_state
 
     def run(self):
-        
+
         self.initialize_robot()
 
-        while self.current_state not in [Project2States.COMPLETED, Project2States.ERROR]:
+        while self.current_state not in [
+            Project2States.COMPLETED,
+            Project2States.ERROR,
+        ]:
 
             current_time_str = time.strftime("%Y-%m-%d %H:%M:%S")
             print(f"\n--- {current_time_str} | State: {self.current_state.value} ---")
 
             try:
                 if self.current_state == Project2States.FIND_FIRST_BLOCK:
-                    self.handle_find_object(Project2States.APPROACH_FIRST_BLOCK, "Block 1")
+                    self.handle_find_object(
+                        Project2States.APPROACH_FIRST_BLOCK, "Block 1"
+                    )
 
                 elif self.current_state == Project2States.APPROACH_FIRST_BLOCK:
-                    self.handle_approach_object(Project2States.GRAB_FIRST_BLOCK, "Block 1")
+                    self.handle_approach_object(
+                        Project2States.GRAB_FIRST_BLOCK, "Block 1"
+                    )
 
                 elif self.current_state == Project2States.GRAB_FIRST_BLOCK:
                     self.handle_grab(Project2States.LIFT_ARM_AFTER_GRAB1)
@@ -286,31 +331,33 @@ class Project2StateMachine:
                     self.handle_release(Project2States.LOWER_ARM_AFTER_RELEASE1)
 
                 elif self.current_state == Project2States.LOWER_ARM_AFTER_RELEASE1:
-                     self.handle_move_arm(-20, Project2States.BACKUP_AND_RESET_ARM)
+                    self.handle_move_arm(-20, Project2States.BACKUP_AND_RESET_ARM)
 
                 elif self.current_state == Project2States.BACKUP_AND_RESET_ARM:
-                     self.handle_backup(0.5, Project2States.SURVEY_FOR_BLOCK2)
+                    self.handle_backup(0.5, Project2States.SURVEY_FOR_BLOCK2)
 
                 elif self.current_state == Project2States.SURVEY_FOR_BLOCK2:
-                     self.handle_find_object(Project2States.APPROACH_BLOCK2, "Block 2")
+                    self.handle_find_object(Project2States.APPROACH_BLOCK2, "Block 2")
 
                 elif self.current_state == Project2States.APPROACH_BLOCK2:
-                     self.handle_approach_object(Project2States.GRAB_BLOCK2, "Block 2")
+                    self.handle_approach_object(Project2States.GRAB_BLOCK2, "Block 2")
 
                 elif self.current_state == Project2States.GRAB_BLOCK2:
-                     self.handle_grab(Project2States.LIFT_ARM_AFTER_GRAB2)
+                    self.handle_grab(Project2States.LIFT_ARM_AFTER_GRAB2)
 
                 elif self.current_state == Project2States.LIFT_ARM_AFTER_GRAB2:
                     self.handle_move_arm(20, Project2States.SURVEY_FOR_TARGET1)
 
                 elif self.current_state == Project2States.SURVEY_FOR_TARGET1:
-                     self.handle_find_object(Project2States.APPROACH_TARGET1, "Target 1")
+                    self.handle_find_object(Project2States.APPROACH_TARGET1, "Target 1")
 
                 elif self.current_state == Project2States.APPROACH_TARGET1:
-                     self.handle_approach_object(Project2States.RELEASE_BLOCK2_AT_TARGET1, "Target 1")
+                    self.handle_approach_object(
+                        Project2States.RELEASE_BLOCK2_AT_TARGET1, "Target 1"
+                    )
 
                 elif self.current_state == Project2States.RELEASE_BLOCK2_AT_TARGET1:
-                     self.handle_release(Project2States.LOWER_ARM_AFTER_RELEASE2)
+                    self.handle_release(Project2States.LOWER_ARM_AFTER_RELEASE2)
 
                 elif self.current_state == Project2States.LOWER_ARM_AFTER_RELEASE2:
                     self.handle_move_arm(-20, Project2States.BACKUP_AFTER_TARGET1)
@@ -319,43 +366,55 @@ class Project2StateMachine:
                     self.handle_backup(0.25, Project2States.SURVEY_FOR_BLOCK1_AGAIN)
 
                 elif self.current_state == Project2States.SURVEY_FOR_BLOCK1_AGAIN:
-                     self.handle_find_object(Project2States.APPROACH_BLOCK1_AGAIN, "Block 1")
+                    self.handle_find_object(
+                        Project2States.APPROACH_BLOCK1_AGAIN, "Block 1"
+                    )
 
                 elif self.current_state == Project2States.APPROACH_BLOCK1_AGAIN:
-                     self.handle_approach_object(Project2States.GRAB_BLOCK1_AGAIN, "Block 1")
+                    self.handle_approach_object(
+                        Project2States.GRAB_BLOCK1_AGAIN, "Block 1"
+                    )
 
                 elif self.current_state == Project2States.GRAB_BLOCK1_AGAIN:
-                     self.handle_grab(Project2States.LIFT_ARM_AFTER_GRAB3)
+                    self.handle_grab(Project2States.LIFT_ARM_AFTER_GRAB3)
 
                 elif self.current_state == Project2States.LIFT_ARM_AFTER_GRAB3:
                     self.handle_move_arm(20, Project2States.SURVEY_FOR_TARGET2)
 
                 elif self.current_state == Project2States.SURVEY_FOR_TARGET2:
-                     self.handle_find_object(Project2States.APPROACH_TARGET2, "Target 2")
+                    self.handle_find_object(Project2States.APPROACH_TARGET2, "Target 2")
 
                 elif self.current_state == Project2States.APPROACH_TARGET2:
-                     self.handle_approach_object(Project2States.RELEASE_BLOCK1_AT_TARGET2, "Target 2")
+                    self.handle_approach_object(
+                        Project2States.RELEASE_BLOCK1_AT_TARGET2, "Target 2"
+                    )
 
                 elif self.current_state == Project2States.RELEASE_BLOCK1_AT_TARGET2:
-                     self.handle_release(Project2States.LOWER_ARM_AFTER_RELEASE3)
+                    self.handle_release(Project2States.LOWER_ARM_AFTER_RELEASE3)
 
                 elif self.current_state == Project2States.LOWER_ARM_AFTER_RELEASE3:
-                     self.handle_move_arm(-20, Project2States.COMPLETED)
+                    self.handle_move_arm(-20, Project2States.COMPLETED)
 
                 else:
                     print(self.current_state)
                     self.current_state = Project2States.ERROR
 
-                if self.last_vis_frame is not None and \
-                   self.current_state not in [Project2States.FIND_FIRST_BLOCK, Project2States.APPROACH_FIRST_BLOCK,
-                                             Project2States.SURVEY_FOR_BLOCK2, Project2States.APPROACH_BLOCK2,
-                                             Project2States.SURVEY_FOR_TARGET1, Project2States.APPROACH_TARGET1,
-                                             Project2States.SURVEY_FOR_BLOCK1_AGAIN, Project2States.APPROACH_BLOCK1_AGAIN,
-                                             Project2States.SURVEY_FOR_TARGET2, Project2States.APPROACH_TARGET2]:
-                     cv2.imshow('Robot View', self.last_vis_frame)
-                     if cv2.waitKey(1) & 0xFF == ord('q'):
-                          self.current_state = Project2States.ERROR
-                          break
+                if self.last_vis_frame is not None and self.current_state not in [
+                    Project2States.FIND_FIRST_BLOCK,
+                    Project2States.APPROACH_FIRST_BLOCK,
+                    Project2States.SURVEY_FOR_BLOCK2,
+                    Project2States.APPROACH_BLOCK2,
+                    Project2States.SURVEY_FOR_TARGET1,
+                    Project2States.APPROACH_TARGET1,
+                    Project2States.SURVEY_FOR_BLOCK1_AGAIN,
+                    Project2States.APPROACH_BLOCK1_AGAIN,
+                    Project2States.SURVEY_FOR_TARGET2,
+                    Project2States.APPROACH_TARGET2,
+                ]:
+                    cv2.imshow("Robot View", self.last_vis_frame)
+                    if cv2.waitKey(1) & 0xFF == ord("q"):
+                        self.current_state = Project2States.ERROR
+                        break
 
             except Exception as e:
                 traceback.print_exc()
@@ -365,6 +424,6 @@ class Project2StateMachine:
         self.cleanup()
 
 
-if __name__ == '__main__':
-    
+if __name__ == "__main__":
+
     Project2StateMachine(robot_sn="3JKCH8800100YN").run()

@@ -50,8 +50,8 @@ def test_to_python():
     mat[3, 2] = 7.0
     assert mat[2, 3] == 4
     assert mat[3, 2] == 7
-    assert struct.unpack_from('f', mat, (3 * 4 + 2) * 4) == (7, )
-    assert struct.unpack_from('f', mat, (2 * 4 + 3) * 4) == (4, )
+    assert struct.unpack_from("f", mat, (3 * 4 + 2) * 4) == (7,)
+    assert struct.unpack_from("f", mat, (2 * 4 + 3) * 4) == (4,)
 
     mat2 = np.array(mat, copy=False)
     assert mat2.shape == (5, 4)
@@ -89,7 +89,7 @@ def test_pointer_to_member_fn():
     for cls in [m.Buffer, m.ConstBuffer, m.DerivedBuffer]:
         buf = cls()
         buf.value = 0x12345678
-        value = struct.unpack('i', bytearray(buf))[0]
+        value = struct.unpack("i", bytearray(buf))[0]
         assert value == 0x12345678
 
 
@@ -97,7 +97,7 @@ def test_pointer_to_member_fn():
 def test_readonly_buffer():
     buf = m.BufferReadOnly(0x64)
     view = memoryview(buf)
-    assert view[0] == 0x64 if PY3 else b'd'
+    assert view[0] == 0x64 if PY3 else b"d"
     assert view.readonly
 
 
@@ -105,14 +105,14 @@ def test_readonly_buffer():
 def test_selective_readonly_buffer():
     buf = m.BufferReadOnlySelect()
 
-    memoryview(buf)[0] = 0x64 if PY3 else b'd'
+    memoryview(buf)[0] = 0x64 if PY3 else b"d"
     assert buf.value == 0x64
 
-    io.BytesIO(b'A').readinto(buf)
-    assert buf.value == ord(b'A')
+    io.BytesIO(b"A").readinto(buf)
+    assert buf.value == ord(b"A")
 
     buf.readonly = True
     with pytest.raises(TypeError):
-        memoryview(buf)[0] = 0 if PY3 else b'\0'
+        memoryview(buf)[0] = 0 if PY3 else b"\0"
     with pytest.raises(TypeError):
-        io.BytesIO(b'1').readinto(buf)
+        io.BytesIO(b"1").readinto(buf)

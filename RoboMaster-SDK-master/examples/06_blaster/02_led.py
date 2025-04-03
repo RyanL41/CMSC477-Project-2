@@ -20,7 +20,7 @@ from robomaster import robot
 from robomaster import blaster
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="sta")
 
@@ -48,6 +48,3 @@ if __name__ == '__main__':
     ep_blaster.set_led(brightness=0, effect=blaster.LED_OFF)
 
     ep_robot.close()
-
-
-

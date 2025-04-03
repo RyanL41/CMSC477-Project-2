@@ -15,8 +15,9 @@
 
 
 import sys
+
 if sys.version_info < (3, 6, 5):
-    sys.exit('RoboMaster Sdk requires Python 3.6.5 or later')
+    sys.exit("RoboMaster Sdk requires Python 3.6.5 or later")
 
 import logging
 import time
@@ -34,12 +35,34 @@ logger.addHandler(sh)
 
 def enable_logging_to_file():
     logger.setLevel(logging.INFO)
-    filename = "RoboMasterSDK_{0}_log.txt".format(time.strftime("%Y%m%d%H%M%S", time.localtime()))
+    filename = "RoboMasterSDK_{0}_log.txt".format(
+        time.strftime("%Y%m%d%H%M%S", time.localtime())
+    )
     fh = logging.FileHandler(filename)
     fh.setFormatter(formatter)
     logger.addHandler(fh)
 
 
-__all__ = ['logger', 'protocol', 'config', 'version', 'action', 'conn', 'client', 'module',
-           'robot', 'gimbal', 'chassis', 'gripper', 'blaster', 'camera', 'media', 'flight',
-           'led', 'robotic_arm', 'vision', 'sensor', 'ai_module']
+__all__ = [
+    "logger",
+    "protocol",
+    "config",
+    "version",
+    "action",
+    "conn",
+    "client",
+    "module",
+    "robot",
+    "gimbal",
+    "chassis",
+    "gripper",
+    "blaster",
+    "camera",
+    "media",
+    "flight",
+    "led",
+    "robotic_arm",
+    "vision",
+    "sensor",
+    "ai_module",
+]

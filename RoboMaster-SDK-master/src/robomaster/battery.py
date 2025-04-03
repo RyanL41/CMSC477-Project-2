@@ -19,7 +19,7 @@ from . import logger
 from . import dds
 import struct
 
-__all__ = ['Battery', 'TelloBattery']
+__all__ = ["Battery", "TelloBattery"]
 
 
 class TelloBatInfoSubject(dds.Subject):
@@ -38,17 +38,20 @@ class TelloBatInfoSubject(dds.Subject):
         return self._bat
 
     def decode(self, buf):
-        push_info = buf.split(';')
+        push_info = buf.split(";")
         found_info_num = 0
         for info in push_info:
             if protocol.TelloDdsProto.DDS_BATTERY_FLAG in info:
-                self._bat = int(info.split(':')[1])
+                self._bat = int(info.split(":")[1])
                 found_info_num += 1
         if found_info_num == self._info_num:
             return True
         else:
-            logger.debug("TelloBatInfoSubject: decode, found_info_num {0} is not match self._info_num {1}".format(
-                found_info_num, self._info_num))
+            logger.debug(
+                "TelloBatInfoSubject: decode, found_info_num {0} is not match self._info_num {1}".format(
+                    found_info_num, self._info_num
+                )
+            )
             return False
 
     @property
@@ -79,19 +82,21 @@ class BatterySubject(dds.Subject):
         return self._percent
 
     def decode(self, buf):
-        self._adc_value, self._temperature, self._current, self._percent, recv = struct.unpack('<HhiBB', buf)
+        self._adc_value, self._temperature, self._current, self._percent, recv = (
+            struct.unpack("<HhiBB", buf)
+        )
         return self._percent
 
 
 class TelloBattery(object):
-    """ 教育无人机 电池模块"""
+    """教育无人机 电池模块"""
 
     def __init__(self, robot):
         self._client = robot.client
         self._robot = robot
 
     def get_battery(self):
-        """ 获取电池电量信息
+        """获取电池电量信息
 
         :return: int: 电池的剩余电量百分比
         """
@@ -110,11 +115,13 @@ class TelloBattery(object):
             else:
                 logger.warning("Drone: get_battery failed.")
         except Exception as e:
-            logger.warning("Drone: get_battery, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: get_battery, send_sync_msg exception {0}".format(str(e))
+            )
             return None
 
     def sub_battery_info(self, freq=5, callback=None, *args, **kw):
-        """ 订阅电池信息
+        """订阅电池信息
 
         :param freq: enum:(1,5,10) 设置数据订阅数据的推送频率，单位 Hz
         :param callback: 回调函数，返回数据 percent:
@@ -131,7 +138,7 @@ class TelloBattery(object):
         return sub.add_subject_info(subject, callback, args, kw)
 
     def unsub_battery_info(self):
-        """ 取消订阅飞机电池信息
+        """取消订阅飞机电池信息
 
         :return: 返回取消订阅结果
         """
@@ -140,7 +147,7 @@ class TelloBattery(object):
 
 
 class Battery(module.Module):
-    """ EP 电池模块"""
+    """EP 电池模块"""
 
     _host = protocol.host2byte(11, 0)
 
@@ -148,7 +155,7 @@ class Battery(module.Module):
         super().__init__(robot)
 
     def sub_battery_info(self, freq=5, callback=None, *args, **kw):
-        """ 订阅电池信息
+        """订阅电池信息
 
         :param freq: enum:(1,5,10,20,50) 设置数据订阅数据的推送频率，单位 Hz
         :param callback: 回调函数，返回数据 percent:
@@ -165,7 +172,7 @@ class Battery(module.Module):
         return sub.add_subject_info(subject, callback, args, kw)
 
     def unsub_battery_info(self):
-        """ 取消电池订阅
+        """取消电池订阅
 
         :return: bool: 取消订阅结果
         """

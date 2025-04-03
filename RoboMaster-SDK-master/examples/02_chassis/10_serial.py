@@ -20,35 +20,43 @@ import robomaster
 from robomaster import robot
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="sta")
 
     uart = ep_robot.uart
 
-    uart.serial_param_set(baud_rate=0, data_bit=1, odd_even=0, \
-                             stop_bit=0, rx_en=1, tx_en=1, rx_size=50, tx_size=50)
+    uart.serial_param_set(
+        baud_rate=0,
+        data_bit=1,
+        odd_even=0,
+        stop_bit=0,
+        rx_en=1,
+        tx_en=1,
+        rx_size=50,
+        tx_size=50,
+    )
 
-    send_dict = {'dict':'hello world','number':10 ,'symbol':'\n'}
+    send_dict = {"dict": "hello world", "number": 10, "symbol": "\n"}
 
     for i in range(1, 10):
         uart.serial_send_msg(send_dict)
 
-    send_tuple = ('tuple', 'string', '123', 45, 'hello','\n')
+    send_tuple = ("tuple", "string", "123", 45, "hello", "\n")
 
-    for i in range(1,10):
+    for i in range(1, 10):
         uart.serial_send_msg(send_tuple)
 
-    send_str = 'test for serial send'
+    send_str = "test for serial send"
 
-    for i in range(1,10):
+    for i in range(1, 10):
         uart.serial_send_msg(send_str)
 
     send_byte = bytearray(20)
     for i in range(1, 20):
         send_byte[i] = i
 
-    for i in range(1,10):
+    for i in range(1, 10):
         uart.serial_send_msg(send_byte)
 
     time.sleep(3)

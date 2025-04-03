@@ -27,7 +27,7 @@ def sub_info_handler(batter_info, ep_robot):
     ep_led.set_led(comp="all", r=brightness, g=brightness, b=brightness)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="sta")
 

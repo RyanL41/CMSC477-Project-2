@@ -77,7 +77,9 @@ def test_custom(msg):
     # Can we fall-through to the default handler?
     with pytest.raises(RuntimeError) as excinfo:
         m.throws_logic_error()
-    assert msg(excinfo.value) == "this error should fall through to the standard handler"
+    assert (
+        msg(excinfo.value) == "this error should fall through to the standard handler"
+    )
 
     # OverFlow error translation.
     with pytest.raises(OverflowError) as excinfo:
@@ -136,7 +138,13 @@ def test_nested_throws(capture):
     # C++ -> Python -> C++ -> Python
     with capture:
         m.try_catch(
-            m.MyException5, pycatch, m.MyException, m.try_catch, m.MyException, throw_myex5)
+            m.MyException5,
+            pycatch,
+            m.MyException,
+            m.try_catch,
+            m.MyException,
+            throw_myex5,
+        )
     assert str(capture).startswith("MyException5: nested error 5")
 
     # C++ -> Python -> C++

@@ -18,7 +18,7 @@ import robomaster
 from robomaster import robot
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="sta")
 
@@ -35,6 +35,5 @@ if __name__ == '__main__':
     ep_robot.play_sound(robot.SOUND_ID_1D).wait_for_completed()
     ep_robot.play_sound(robot.SOUND_ID_1E).wait_for_completed()
     ep_robot.play_sound(robot.SOUND_ID_1F).wait_for_completed()
-
 
     ep_robot.close()

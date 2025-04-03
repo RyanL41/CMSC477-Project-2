@@ -51,18 +51,16 @@ def base_action_2(robot_group):
     robot_group.land().wait_for_completed()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # get drone sn by run the expamles of /15_multi_robot/multi_drone/01_scan_ip.py
 
-    robot_sn_list = ['0TQZH79ED00H50', '0TQZH79ED00H6T']
+    robot_sn_list = ["0TQZH79ED00H50", "0TQZH79ED00H6T"]
     multi_drone = multi_robot.MultiDrone()
     multi_drone.initialize(robot_num=2)
     multi_drone.number_id_by_sn([0, robot_sn_list[0]], [1, robot_sn_list[1]])
     multi_drone_group1 = multi_drone.build_group([0])
     multi_drone_group2 = multi_drone.build_group([1])
-    multi_drone.run([multi_drone_group1, base_action_1],
-                    [multi_drone_group2, base_action_2])
+    multi_drone.run(
+        [multi_drone_group1, base_action_1], [multi_drone_group2, base_action_2]
+    )
     multi_drone.close()
-
-
-

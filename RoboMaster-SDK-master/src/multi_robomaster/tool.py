@@ -101,22 +101,22 @@ def get_subnets():
             continue
         # Get ipv4 stuff
         ipinfo = addrs[socket.AF_INET][0]
-        address = ipinfo['addr']
-        netmask = ipinfo['netmask']
-        broadcast = ipinfo['broadcast']
+        address = ipinfo["addr"]
+        netmask = ipinfo["netmask"]
+        broadcast = ipinfo["broadcast"]
 
         # special subnet
         if config.LOCAL_IP_STR is not None:
-            target_broadcast = config.LOCAL_IP_STR.rsplit('.', 1)[0] + '.255'
+            target_broadcast = config.LOCAL_IP_STR.rsplit(".", 1)[0] + ".255"
             if target_broadcast != broadcast:
                 continue
 
         # limit range of search. This will work for router subnets
-        if netmask != '255.255.255.0':
+        if netmask != "255.255.255.0":
             continue
 
         # Create ip object and get
-        cidr = netaddr.IPNetwork('%s/%s' % (address, netmask))
+        cidr = netaddr.IPNetwork("%s/%s" % (address, netmask))
         network = cidr.network
         subnets.append((network, netmask))
         addr_list.append(address)
@@ -125,7 +125,7 @@ def get_subnets():
 
 class TelloProtocol(object):
 
-    def __init__(self, text=None, host=None, encoding='utf-8'):
+    def __init__(self, text=None, host=None, encoding="utf-8"):
         self._text = text
         self._host = host
         self.encoding = encoding
@@ -138,7 +138,9 @@ class TelloProtocol(object):
             return
         if isinstance(self._text, bytes):
             if self._text == 204 or self._text == 255:
-                logger.warning("decode_msg: recv invalid data, buff {0}".format(self._text))
+                logger.warning(
+                    "decode_msg: recv invalid data, buff {0}".format(self._text)
+                )
                 # drone has bug that reply error data 0xcc，43907 has bug that reply error data 0xff
                 self._text = None
                 return
@@ -167,7 +169,7 @@ class TelloProtocol(object):
         return self._text.encode(self.encoding)
 
     def _decode(self):
-        return self._text.decode(self.encoding, 'ignore')
+        return self._text.decode(self.encoding, "ignore")
 
 
 class TelloConnection(object):
@@ -176,16 +178,22 @@ class TelloConnection(object):
         self.local_ip = local_ip
         self.local_port = local_port
         self._sock = None
-        self.client_recieve_thread_flag = False   # for client recieve
-        self._robot_host_list = []    # for scan robot
+        self.client_recieve_thread_flag = False  # for client recieve
+        self._robot_host_list = []  # for scan robot
 
     def start(self):
         try:
             local_addr = (self.local_ip, self.local_port)
-            self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # socket for sending cmd
+            self._sock = socket.socket(
+                socket.AF_INET, socket.SOCK_DGRAM
+            )  # socket for sending cmd
             self._sock.bind(local_addr)
         except Exception as e:
-            logger.warning("udpConnection: create, host_addr:{0}, exception:{1}".format(self.local_ip, e))
+            logger.warning(
+                "udpConnection: create, host_addr:{0}, exception:{1}".format(
+                    self.local_ip, e
+                )
+            )
             raise
 
     def pre_close(self):
@@ -197,7 +205,7 @@ class TelloConnection(object):
 
     def close(self):
         if self._sock:
-            self.pre_close()    # send command to shut down recv
+            self.pre_close()  # send command to shut down recv
             time.sleep(1)
             self._sock.close()
 
@@ -227,20 +235,20 @@ class TelloConnection(object):
         :param num: Number of Tello this method is expected to find
         :return: None
         """
-        logger.info('[Start_Searching]Searching for %s available Tello...\n' % num)
+        logger.info("[Start_Searching]Searching for %s available Tello...\n" % num)
 
         subnets, address = get_subnets()
         possible_addr = []
 
         for subnet, netmask in subnets:
-            for ip in IPNetwork('%s/%s' % (subnet, netmask)):
+            for ip in IPNetwork("%s/%s" % (subnet, netmask)):
                 # skip local and broadcast
-                if str(ip).split('.')[3] == '0' or str(ip).split('.')[3] == '255':
+                if str(ip).split(".")[3] == "0" or str(ip).split(".")[3] == "255":
                     continue
                 possible_addr.append(str(ip))
 
         while len(self._robot_host_list) < num:
-            logger.info('[Still_Searching]Trying to find Tello in subnets...\n')
+            logger.info("[Still_Searching]Trying to find Tello in subnets...\n")
 
             # delete already fond Tello ip
             for tello_host in self._robot_host_list:
@@ -250,18 +258,20 @@ class TelloConnection(object):
             for ip in possible_addr:
                 if ip in address:
                     continue
-                self._sock.sendto(b'command', (ip, self.local_port))
+                self._sock.sendto(b"command", (ip, self.local_port))
             if len(self._robot_host_list) >= num:
                 break
         return self._robot_host_list
 
     def scan_multi_robot(self, num=0):
-        """ Automatic scanning of robots in the network
+        """Automatic scanning of robots in the network
 
         :param num:
         :return:
         """
-        receive_thread = threading.Thread(target=self._scan_receive_task, args=(num, ), daemon=True)
+        receive_thread = threading.Thread(
+            target=self._scan_receive_task, args=(num,), daemon=True
+        )
         receive_thread.start()
         robot_host_list = self._scan_host(num)
         receive_thread.join()
@@ -275,13 +285,19 @@ class TelloConnection(object):
         while len(self._robot_host_list) < num:
             try:
                 resp, ip = self._sock.recvfrom(1024)
-                logger.info("FoundTello: from ip {1}_receive_task, recv msg: {0}".format(resp, ip))
-                ip = ''.join(str(ip[0]))
-                if resp.upper() == b'OK' and ip not in self._robot_host_list:
-                    logger.info('FoundTello: Found Tello.The Tello ip is:%s\n' % ip)
+                logger.info(
+                    "FoundTello: from ip {1}_receive_task, recv msg: {0}".format(
+                        resp, ip
+                    )
+                )
+                ip = "".join(str(ip[0]))
+                if resp.upper() == b"OK" and ip not in self._robot_host_list:
+                    logger.info("FoundTello: Found Tello.The Tello ip is:%s\n" % ip)
                     self._robot_host_list.append((ip, self.local_port))
             except socket.error as exc:
-                logger.error("[Exception_Error]Caught exception socket.error : {0}\n".format(exc))
+                logger.error(
+                    "[Exception_Error]Caught exception socket.error : {0}\n".format(exc)
+                )
         self.client_recieve_thread_flag = True
         logger.info("FoundTello: has finished, _scan_receive_task quit!")
 
@@ -322,10 +338,25 @@ class TelloClient(object):
 
 class TelloStatus(object):
 
-    FLIGHT_ACTION_SET = {"error", "ok", 'out of range', "error No valid marker", "error Not joystick",
-                         "error Auto Land", "error No valid imu", "error, high temp", "error Motor stop"}
+    FLIGHT_ACTION_SET = {
+        "error",
+        "ok",
+        "out of range",
+        "error No valid marker",
+        "error Not joystick",
+        "error Auto Land",
+        "error No valid imu",
+        "error, high temp",
+        "error Motor stop",
+    }
 
-    EXT_ACTION_SET = {"led ok", "matrix ok", 'unknow command: led', "unknow command: mled", "command error: 254"}
+    EXT_ACTION_SET = {
+        "led ok",
+        "matrix ok",
+        "unknow command: led",
+        "unknow command: mled",
+        "command error: 254",
+    }
 
     def __init__(self, cur_action):
         self.cur_action = cur_action
@@ -342,7 +373,7 @@ class TelloStatus(object):
             if _last_two_words != "ok":
                 # judge reply contains ok or battery
                 try:
-                    float(_last_two_words)   # battery obj
+                    float(_last_two_words)  # battery obj
                 except ValueError:
                     logger.warning("reply false: {}".format(data))
             else:

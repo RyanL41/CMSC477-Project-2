@@ -22,7 +22,7 @@ def base_action_1(robot_group):
     robot_group.set_led(command_dict={1: [255, 0, 0], 2: [255, 255, 0]})
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # get drone sn by run the expamles of /15_multi_robot/multi_drone/01_scan_ip.py
 
     robot_sn_list = ["0TQZH79ED00H56", "0TQZH79ED00H89"]

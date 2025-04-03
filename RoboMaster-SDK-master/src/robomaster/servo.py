@@ -21,7 +21,7 @@ from . import dds
 from . import action
 import struct
 
-__all__ = ['Servo']
+__all__ = ["Servo"]
 
 
 class ServoSubject(dds.Subject):
@@ -45,8 +45,17 @@ class ServoSubject(dds.Subject):
         self._valid[1] = (buf[0] >> 1) & 0x01
         self._valid[2] = (buf[0] >> 2) & 0x01
         self._valid[3] = (buf[0] >> 3) & 0x01
-        [self._recv, self._speed[0], self._speed[1], self._speed[2], self._speed[3],
-         self._angle[0], self._angle[1], self._angle[2], self._angle[3]] = struct.unpack('<Bhhhhhhhh', buf)
+        [
+            self._recv,
+            self._speed[0],
+            self._speed[1],
+            self._speed[2],
+            self._speed[3],
+            self._angle[0],
+            self._angle[1],
+            self._angle[2],
+            self._angle[3],
+        ] = struct.unpack("<Bhhhhhhhh", buf)
 
 
 class ServoSetAngleAction(action.Action):
@@ -62,12 +71,13 @@ class ServoSetAngleAction(action.Action):
 
     def __repr__(self):
         return "action_id:{0}, state:{1}, percent:{2}, value:{3}".format(
-            self._action_id, self._state, self._percent, self._angle)
+            self._action_id, self._state, self._percent, self._angle
+        )
 
     def encode(self):
         proto = protocol.ProtoServoCtrlSet()
         proto._id = self._id
-        proto._value = (self._value+180)*10
+        proto._value = (self._value + 180) * 10
         return proto
 
     def update_from_push(self, proto):
@@ -82,7 +92,7 @@ class ServoSetAngleAction(action.Action):
 
 
 class Servo(module.Module):
-    """ EP 舵机模块 """
+    """EP 舵机模块"""
 
     _host = protocol.host2byte(3, 5)
 
@@ -91,7 +101,7 @@ class Servo(module.Module):
         self._action_dispatcher = robot.action_dispatcher
 
     def moveto(self, index=0, angle=0):
-        """ 舵机绝对位置移动
+        """舵机绝对位置移动
 
         :param index: int [1, 3]，舵机编号
         :param angle: int: [-180, 180]，舵机旋转角度，单位（°）
@@ -138,7 +148,7 @@ class Servo(module.Module):
             return False
 
     def pause(self, index=0):
-        """ 停止
+        """停止
 
         :param index: int: [1, 3]，舵机编号
         :return bool: 调用结果
@@ -163,7 +173,7 @@ class Servo(module.Module):
             return False
 
     def get_angle(self, index=1):
-        """ 获取舵机角度值
+        """获取舵机角度值
 
         :param index: int: [1，3]，舵机编号
         :return: int 舵机角度
@@ -185,7 +195,7 @@ class Servo(module.Module):
             return False
 
     def sub_servo_info(self, freq=5, callback=None, *args, **kw):
-        """  订阅舵机角度信息
+        """订阅舵机角度信息
 
         :param freq: enum: (1, 5, 10, 20, 50) 设置数据订阅数据的推送频率，单位 Hz
         :param callback: 回调函数，返回数据 (valid[4], speed[4], angle[4]):
@@ -204,7 +214,7 @@ class Servo(module.Module):
         return sub.add_subject_info(subject, callback, args, kw)
 
     def unsub_servo_info(self):
-        """ 取消订阅舵机的角度信息
+        """取消订阅舵机的角度信息
         :return: bool: 调用结果
         """
         sub_dds = self._robot.dds

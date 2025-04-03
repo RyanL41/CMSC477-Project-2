@@ -27,10 +27,15 @@ def hit_callback(sub_info, ep_robot):
     print("hit event: hit_comp:{0}, hit_type:{1}".format(armor_id, hit_type))
     # 被击打后变换所有装甲的颜色
     ep_led = ep_robot.led
-    ep_led.set_led(comp="all", r=random.randint(0, 255), g=random.randint(0, 255), b=random.randint(0, 255))
+    ep_led.set_led(
+        comp="all",
+        r=random.randint(0, 255),
+        g=random.randint(0, 255),
+        b=random.randint(0, 255),
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="sta")
 

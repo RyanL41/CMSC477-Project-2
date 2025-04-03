@@ -1,8 +1,9 @@
 #!python3
 
 import sys
-sys.path.append('../decoder/ubuntu/output/')
-sys.path.append('../../connection/network/')
+
+sys.path.append("../decoder/ubuntu/output/")
+sys.path.append("../../connection/network/")
 
 import threading
 import time
@@ -25,10 +26,10 @@ class ConnectionType(enum.Enum):
 
 
 class RobotLiveview(object):
-    WIFI_DIRECT_IP = '192.168.2.1'
-    WIFI_NETWORKING_IP = ''
-    USB_DIRECT_IP = '192.168.42.2'
-        
+    WIFI_DIRECT_IP = "192.168.2.1"
+    WIFI_NETWORKING_IP = ""
+    USB_DIRECT_IP = "192.168.42.2"
+
     def __init__(self, connection_type):
         self.connection = robot_connection.RobotConnection()
         self.connection_type = connection_type
@@ -36,7 +37,7 @@ class RobotLiveview(object):
         self.video_decoder = libh264decoder.H264Decoder()
         libh264decoder.disable_logging()
 
-        self.audio_decoder = opus_decoder.opus_decoder() 
+        self.audio_decoder = opus_decoder.opus_decoder()
 
         self.video_decoder_thread = threading.Thread(target=self._video_decoder_task)
         self.video_decoder_msg_queue = queue.Queue(64)
@@ -56,14 +57,14 @@ class RobotLiveview(object):
         elif self.connection_type is ConnectionType.USB_DIRECT:
             self.connection.update_robot_ip(RobotLiveview.USB_DIRECT_IP)
         elif self.connection_type is ConnectionType.WIFI_NETWORKING:
-            robot_ip = self.connection.get_robot_ip(timeout=10)  
+            robot_ip = self.connection.get_robot_ip(timeout=10)
             if robot_ip:
                 self.connection.update_robot_ip(robot_ip)
             else:
-                print('Get robot failed')
+                print("Get robot failed")
                 return False
         self.is_shutdown = not self.connection.open()
-        
+
     def close(self):
         self.is_shutdown = True
         self.video_decoder_thread.join()
@@ -73,13 +74,13 @@ class RobotLiveview(object):
         self.connection.close()
 
     def display(self):
-        self.command('command')
+        self.command("command")
         time.sleep(1)
-        self.command('audio on')
+        self.command("audio on")
         time.sleep(1)
-        self.command('stream on')
+        self.command("stream on")
         time.sleep(1)
-        self.command('stream on')
+        self.command("stream on")
 
         self.video_decoder_thread.start()
         self.video_display_thread.start()
@@ -87,7 +88,7 @@ class RobotLiveview(object):
         self.audio_decoder_thread.start()
         self.audio_display_thread.start()
 
-        print('display!')
+        print("display!")
 
     def command(self, msg):
         # TODO: TO MAKE SendSync()
@@ -100,19 +101,19 @@ class RobotLiveview(object):
         for framedata in frames:
             (frame, w, h, ls) = framedata
             if frame is not None:
-                frame = np.fromstring(frame, dtype=np.ubyte, count=len(frame), sep='')
-                frame = (frame.reshape((h, int(ls / 3), 3)))
+                frame = np.fromstring(frame, dtype=np.ubyte, count=len(frame), sep="")
+                frame = frame.reshape((h, int(ls / 3), 3))
                 frame = frame[:, :w, :]
                 res_frame_list.append(frame)
 
         return res_frame_list
 
     def _video_decoder_task(self):
-        package_data = b''
+        package_data = b""
 
         self.connection.start_video_recv()
 
-        while not self.is_shutdown: 
+        while not self.is_shutdown:
             buff = self.connection.recv_video_data()
             if buff:
                 package_data += buff
@@ -123,20 +124,20 @@ class RobotLiveview(object):
                         except Exception as e:
                             if self.is_shutdown:
                                 break
-                            print('video decoder queue full')
+                            print("video decoder queue full")
                             continue
-                    package_data=b''
+                    package_data = b""
 
         self.connection.stop_video_recv()
 
     def _video_display_task(self):
-        while not self.is_shutdown: 
+        while not self.is_shutdown:
             try:
                 frame = self.video_decoder_msg_queue.get(timeout=2)
             except Exception as e:
                 if self.is_shutdown:
                     break
-                print('video decoder queue empty')
+                print("video decoder queue empty")
                 continue
             image = PImage.fromarray(frame)
             img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
@@ -144,11 +145,11 @@ class RobotLiveview(object):
             cv2.waitKey(1)
 
     def _audio_decoder_task(self):
-        package_data = b''
+        package_data = b""
 
         self.connection.start_audio_recv()
 
-        while not self.is_shutdown: 
+        while not self.is_shutdown:
             buff = self.connection.recv_audio_data()
             if buff:
                 package_data += buff
@@ -160,9 +161,9 @@ class RobotLiveview(object):
                         except Exception as e:
                             if self.is_shutdown:
                                 break
-                            print('audio decoder queue full')
+                            print("audio decoder queue full")
                             continue
-                    package_data=b''
+                    package_data = b""
 
         self.connection.stop_audio_recv()
 
@@ -170,18 +171,15 @@ class RobotLiveview(object):
 
         p = pyaudio.PyAudio()
 
-        stream = p.open(format=pyaudio.paInt16,
-                        channels=1,
-                        rate=48000,
-                        output=True)
+        stream = p.open(format=pyaudio.paInt16, channels=1, rate=48000, output=True)
 
-        while not self.is_shutdown: 
+        while not self.is_shutdown:
             try:
                 output = self.audio_decoder_msg_queue.get(timeout=2)
             except Exception as e:
                 if self.is_shutdown:
                     break
-                print('audio decoder queue empty')
+                print("audio decoder queue empty")
                 continue
             stream.write(output)
 
@@ -203,5 +201,5 @@ def test():
     robot.display()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test()

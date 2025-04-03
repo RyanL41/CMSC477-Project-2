@@ -18,11 +18,11 @@ import robomaster
 from robomaster import robot
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
 
     # 指定连接方式为USB RNDIS模式
-    ep_robot.initialize(conn_type='rndis')
+    ep_robot.initialize(conn_type="rndis")
 
     version = ep_robot.get_version()
     print("Robot version: {0}".format(version))

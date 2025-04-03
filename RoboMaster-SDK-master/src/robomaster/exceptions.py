@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-__all__ = ['TimeOutError']
+__all__ = ["TimeOutError"]
 
 
 class SDKException(Exception):

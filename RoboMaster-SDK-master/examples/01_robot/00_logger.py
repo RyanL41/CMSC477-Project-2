@@ -18,7 +18,7 @@ import robomaster
 from robomaster import robot
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     robomaster.enable_logging_to_file()
 
     # 如果本地IP 自动获取不正确，手动指定本地IP地址
@@ -27,9 +27,8 @@ if __name__ == '__main__':
     ep_robot = robot.Robot()
 
     # 指定连接方式为AP 直连模式
-    ep_robot.initialize(conn_type='rndis')
+    ep_robot.initialize(conn_type="rndis")
 
     version = ep_robot.get_version()
     print("Robot version: {0}".format(version))
     ep_robot.close()
-

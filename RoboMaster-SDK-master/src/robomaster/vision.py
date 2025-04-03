@@ -20,7 +20,7 @@ from . import logger
 from . import dds
 
 
-__all__ = ['Vision', 'PERSON', 'GESTURE', 'LINE', 'MARKER', 'ROBOT']
+__all__ = ["Vision", "PERSON", "GESTURE", "LINE", "MARKER", "ROBOT"]
 
 
 PERSON = "person"
@@ -32,8 +32,8 @@ ROBOT = "robot"
 
 class VisionPushEvent(dds.Subject):
     name = "vision_push"
-    cmdset = 0x0a
-    cmdid = 0xa4
+    cmdset = 0x0A
+    cmdid = 0xA4
     type = dds.DDS_SUB_TYPE_EVENT
 
     def __init__(self):
@@ -63,7 +63,7 @@ class VisionPushEvent(dds.Subject):
 
 
 class Vision(module.Module):
-    """ EP 视觉识别模块 """
+    """EP 视觉识别模块"""
 
     _host = protocol.host2byte(17, 7)
 
@@ -77,7 +77,7 @@ class Vision(module.Module):
 
     @staticmethod
     def _id2marker(marker_id):
-        """ ID转换为Marker字符 """
+        """ID转换为Marker字符"""
         if marker_id == 1:
             return "red"
         elif marker_id == 2:
@@ -195,11 +195,13 @@ class Vision(module.Module):
                 self._set_color(name, color)
             return True
         else:
-            logger.warning("Vision: sub_detect_info, add sub event error, name:{0}".format(name))
+            logger.warning(
+                "Vision: sub_detect_info, add sub event error, name:{0}".format(name)
+            )
             return False
 
     def unsub_detect_info(self, name):
-        """ 取消智能订阅消息
+        """取消智能订阅消息
 
         :param name: enum: ("person", "gesture", "line", "marker", "robot")，取消的智能识别功能
         :return: bool: 调用结果
@@ -217,7 +219,9 @@ class Vision(module.Module):
         elif name == ROBOT:
             self._func_mask = self._func_mask & ~(1 << 7)
         else:
-            logger.warning("Vision: sub_detect_info, params error, name:{0}".format(name))
+            logger.warning(
+                "Vision: sub_detect_info, params error, name:{0}".format(name)
+            )
             return False
         return self._disable_detection(self._func_mask)
 
@@ -239,12 +243,14 @@ class Vision(module.Module):
                 logger.warning("Vision: enable fail")
                 return False
         except Exception as e:
-            logger.warning("Vision: sub_detect_info, send_sync_msg, exception {0}".format(e))
+            logger.warning(
+                "Vision: sub_detect_info, send_sync_msg, exception {0}".format(e)
+            )
             return False
         return True
 
     def _disable_detection(self, func_mask):
-        """ 关闭视觉对应类型的检测功能
+        """关闭视觉对应类型的检测功能
 
         :param func_mask: 视觉检测功能类型
         :return: bool: 调用结果
@@ -260,11 +266,13 @@ class Vision(module.Module):
                 logger.warning("Robot: enable vision failed.")
                 return False
         except Exception as e:
-            logger.warning("Robot: enable vision err, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Robot: enable vision err, send_sync_msg exception {0}".format(str(e))
+            )
             return False
 
     def _get_sdk_function(self):
-        """ 获取视觉检测的功能类型
+        """获取视觉检测的功能类型
 
         :return: 当前视觉检测的功能类型
         """
@@ -282,7 +290,9 @@ class Vision(module.Module):
                 logger.warning("Robot: get vision type failed.")
                 return None
         except Exception as e:
-            logger.warning("Robot: get vision type, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Robot: get vision type, send_sync_msg exception {0}".format(str(e))
+            )
             return None
 
     def _set_color(self, name, color):

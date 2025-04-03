@@ -18,7 +18,7 @@ from robomaster import robot
 from robomaster import config
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     # 指定机器人的 SN 号
     ep_robot.initialize(conn_type="sta", sn="3JKDH2T001ULTD")

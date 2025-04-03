@@ -21,10 +21,14 @@ import time
 
 def sub_data_handler(sub_info):
     distance = sub_info
-    print("tof1:{0}  tof2:{1}  tof3:{2}  tof4:{3}".format(distance[0], distance[1], distance[2], distance[3]))
+    print(
+        "tof1:{0}  tof2:{1}  tof3:{2}  tof4:{3}".format(
+            distance[0], distance[1], distance[2], distance[3]
+        )
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="sta")
 

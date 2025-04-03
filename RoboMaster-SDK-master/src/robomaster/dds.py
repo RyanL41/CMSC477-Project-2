@@ -59,24 +59,24 @@ IS_AI_FLAG = ";degree:"
 TELLO_DDS_TIME_MAX = 666
 
 SUB_UID_MAP = {
-    DDS_BATTERY: 0x000200096862229f,
-    DDS_GIMBAL_BASE: 0x00020009f5882874,
-    DDS_VELOCITY: 0x0002000949a4009c,
-    DDS_ESC: 0x00020009c14cb7c5,
-    DDS_ATTITUDE: 0x000200096b986306,
-    DDS_IMU: 0x00020009a7985b8d,
-    DDS_POSITION: 0x00020009eeb7cece,
-    DDS_SA_STATUS: 0x000200094a2c6d55,
-    DDS_CHASSIS_MODE: 0x000200094fcb1146,
+    DDS_BATTERY: 0x000200096862229F,
+    DDS_GIMBAL_BASE: 0x00020009F5882874,
+    DDS_VELOCITY: 0x0002000949A4009C,
+    DDS_ESC: 0x00020009C14CB7C5,
+    DDS_ATTITUDE: 0x000200096B986306,
+    DDS_IMU: 0x00020009A7985B8D,
+    DDS_POSITION: 0x00020009EEB7CECE,
+    DDS_SA_STATUS: 0x000200094A2C6D55,
+    DDS_CHASSIS_MODE: 0x000200094FCB1146,
     DDS_SBUS: 0x0002000988223568,
-    DDS_SERVO: 0x000200095f0059e7,
-    DDS_ARM: 0x0002000926abd64d,
-    DDS_GRIPPER: 0x00020009124d156a,
-    DDS_GIMBAL_POS: 0x00020009f79b3c97,
-    DDS_STICK: 0x0002000955e9a0fa,
-    DDS_MOVE_MODE: 0x00020009784c7bfd,
-    DDS_TOF: 0x0002000986e4c05a,
-    DDS_PINBOARD: 0x00020009eebb9ffc,
+    DDS_SERVO: 0x000200095F0059E7,
+    DDS_ARM: 0x0002000926ABD64D,
+    DDS_GRIPPER: 0x00020009124D156A,
+    DDS_GIMBAL_POS: 0x00020009F79B3C97,
+    DDS_STICK: 0x0002000955E9A0FA,
+    DDS_MOVE_MODE: 0x00020009784C7BFD,
+    DDS_TOF: 0x0002000986E4C05A,
+    DDS_PINBOARD: 0x00020009EEBB9FFC,
 }
 
 DDS_SUB_TYPE_EVENT = 1
@@ -87,14 +87,14 @@ dds_cmd_filter = {(0x48, 0x08)}
 
 
 class _AutoRegisterSubject(type):
-    '''hepler to automatically register Proto Class whereever they're defined '''
+    """hepler to automatically register Proto Class whereever they're defined"""
 
     def __new__(mcs, name, bases, attrs, **kw):
         return super().__new__(mcs, name, bases, attrs, **kw)
 
     def __init__(cls, name, bases, attrs, **kw):
         super().__init__(name, bases, attrs, **kw)
-        if name == 'Subject':
+        if name == "Subject":
             return
         key = name
         if key in registered_subjects.keys():
@@ -196,25 +196,44 @@ class Subscriber(module.Module):
                 logger.debug("Subscriber: msg: {0}".format(msg))
                 proto = msg.get_proto()
                 if proto is None:
-                    logger.warning("Subscriber: _publish, msg.get_proto None, msg:{0}".format(msg))
+                    logger.warning(
+                        "Subscriber: _publish, msg.get_proto None, msg:{0}".format(msg)
+                    )
                     continue
-                if handler.subject.type == DDS_SUB_TYPE_PERIOD and\
-                        msg.cmdset == 0x48 and msg.cmdid == 0x08:
-                    logger.debug("Subscriber: _publish: msg_id:{0}, subject_id:{1}".format(proto._msg_id,
-                                                                                           handler.subject._subject_id))
+                if (
+                    handler.subject.type == DDS_SUB_TYPE_PERIOD
+                    and msg.cmdset == 0x48
+                    and msg.cmdid == 0x08
+                ):
+                    logger.debug(
+                        "Subscriber: _publish: msg_id:{0}, subject_id:{1}".format(
+                            proto._msg_id, handler.subject._subject_id
+                        )
+                    )
                     if proto._msg_id == handler.subject._subject_id:
                         handler.subject.decode(proto._data_buf)
                         if handler.subject._task is None:
-                            handler.subject._task = self.excutor.submit(handler.subject.exec)
+                            handler.subject._task = self.excutor.submit(
+                                handler.subject.exec
+                            )
                         if handler.subject._task.done() is True:
-                            handler.subject._task = self.excutor.submit(handler.subject.exec)
+                            handler.subject._task = self.excutor.submit(
+                                handler.subject.exec
+                            )
                 elif handler.subject.type == DDS_SUB_TYPE_EVENT:
-                    if handler.subject.cmdset == msg.cmdset and handler.subject.cmdid == msg.cmdid:
+                    if (
+                        handler.subject.cmdset == msg.cmdset
+                        and handler.subject.cmdid == msg.cmdid
+                    ):
                         handler.subject.decode(proto._data_buf)
                         if handler.subject._task is None:
-                            handler.subject._task = self.excutor.submit(handler.subject.exec)
+                            handler.subject._task = self.excutor.submit(
+                                handler.subject.exec
+                            )
                         if handler.subject._task.done() is True:
-                            handler.subject._task = self.excutor.submit(handler.subject.exec)
+                            handler.subject._task = self.excutor.submit(
+                                handler.subject.exec
+                            )
             self._dds_mutex.release()
             logger.info("Subscriber: _publish, msg is {0}".format(msg))
 
@@ -225,7 +244,7 @@ class Subscriber(module.Module):
         dds_cmd_filter.remove((cmd_set, cmd_id))
 
     def add_subject_event_info(self, subject, callback=None, *args):
-        """ 添加事件订阅
+        """添加事件订阅
 
         :param subject: 事件订阅对应的subject
         :param callback: 事件订阅对应的解析函数
@@ -241,7 +260,7 @@ class Subscriber(module.Module):
         return True
 
     def del_subject_event_info(self, subject):
-        """ 删除事件订阅
+        """删除事件订阅
 
         :param subject: 事件订阅对应的subject
         :param callback: 事件订阅对应的解析函数
@@ -256,7 +275,7 @@ class Subscriber(module.Module):
         return True
 
     def add_subject_info(self, subject, callback=None, *args):
-        """ 请求数据订阅底层接口
+        """请求数据订阅底层接口
 
         :param subject: 数据订阅对应subject
         :param callback: 订阅数据对应的解析函数
@@ -279,13 +298,16 @@ class Subscriber(module.Module):
         return self._send_sync_proto(proto, protocol.host2byte(9, 0))
 
     def del_subject_info(self, subject_name):
-        """ 删除数据订阅消息
+        """删除数据订阅消息
 
         :param subject_name: 要删除的订阅subject
         :return: bool: 删除数据订阅结果
         """
-        logger.debug("Subscriber: del_subject_info: name:{0}, self._publisher:{1}".format(subject_name,
-                     self._publisher))
+        logger.debug(
+            "Subscriber: del_subject_info: name:{0}, self._publisher:{1}".format(
+                subject_name, self._publisher
+            )
+        )
         if subject_name in self._publisher:
             subject_id = self._publisher[subject_name].subject._subject_id
             if self._publisher[subject_name].subject._task.done() is False:
@@ -328,10 +350,13 @@ class TelloSubscriber(object):
 
     @classmethod
     def _msg_recv(cls, self, msg):
-        if protocol.TextMsg.IS_DDS_FLAG in msg.get_proto().resp or IS_AI_FLAG in msg.get_proto().resp:
-            '''
+        if (
+            protocol.TextMsg.IS_DDS_FLAG in msg.get_proto().resp
+            or IS_AI_FLAG in msg.get_proto().resp
+        ):
+            """
             此处判断两个标志位，满足任意一个进入条件
-            '''
+            """
             self._msg = msg
 
     def _dispatch_task(self):
@@ -348,7 +373,11 @@ class TelloSubscriber(object):
                 continue
             proto = msg.get_proto()
             if proto is None:
-                logger.warning("TelloSubscirber: _publist, msg.get_proto None, msg: {0}".format(msg))
+                logger.warning(
+                    "TelloSubscirber: _publist, msg.get_proto None, msg: {0}".format(
+                        msg
+                    )
+                )
                 continue
             for name in self._publisher:
                 handler = self._publisher[name]
@@ -363,7 +392,7 @@ class TelloSubscriber(object):
             time.sleep(interval)
 
     def add_subject_info(self, subject, callback=None, *args):
-        """ 请求数据订阅底层接口
+        """请求数据订阅底层接口
 
         :param subject: 数据订阅对应subject
         :param callback: 订阅数据对应的解析函数
@@ -376,13 +405,16 @@ class TelloSubscriber(object):
         logger.debug("TelloSubscriber: add_subject_info, add sub sucessfully")
 
     def del_subject_info(self, subject_name):
-        """ 删除数据订阅消息
+        """删除数据订阅消息
 
         :param subject_name: 要删除的订阅subject
         :return: bool: 删除数据订阅结果
         """
-        logger.debug("TelloSubscriber: del_subject_info: name:{0}, self._publisher:{1}".format(subject_name,
-                     self._publisher))
+        logger.debug(
+            "TelloSubscriber: del_subject_info: name:{0}, self._publisher:{1}".format(
+                subject_name, self._publisher
+            )
+        )
         if subject_name in self._publisher:
             del self._publisher[subject_name]
             logger.debug("TelloSubscriber: del_subject_info, del sub sucessfully")

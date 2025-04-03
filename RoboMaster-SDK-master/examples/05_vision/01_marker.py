@@ -58,7 +58,7 @@ def on_detect_marker(marker_info):
         print("marker:{0} x:{1}, y:{2}, w:{3}, h:{4}".format(info, x, y, w, h))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="sta")
 
@@ -72,7 +72,15 @@ if __name__ == '__main__':
         img = ep_camera.read_cv2_image(strategy="newest", timeout=0.5)
         for j in range(0, len(markers)):
             cv2.rectangle(img, markers[j].pt1, markers[j].pt2, (255, 255, 255))
-            cv2.putText(img, markers[j].text, markers[j].center, cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3)
+            cv2.putText(
+                img,
+                markers[j].text,
+                markers[j].center,
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1.5,
+                (255, 255, 255),
+                3,
+            )
         cv2.imshow("Markers", img)
         cv2.waitKey(1)
     cv2.destroyAllWindows()

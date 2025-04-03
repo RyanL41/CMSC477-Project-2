@@ -18,7 +18,7 @@ from . import protocol
 from . import logger
 
 
-__all__ = ['Module']
+__all__ = ["Module"]
 
 
 # registered protocol dict.
@@ -26,14 +26,14 @@ registered_modules = {}
 
 
 class _AutoRegisterModule(type):
-    """ help to automatically register Proto Class where ever they're defined """
+    """help to automatically register Proto Class where ever they're defined"""
 
     def __new__(mcs, name, bases, attrs, **kw):
         return super().__new__(mcs, name, bases, attrs, **kw)
 
     def __init__(cls, name, bases, attrs, **kw):
         super().__init__(name, bases, attrs, **kw)
-        key = attrs['_host']
+        key = attrs["_host"]
         if key in registered_modules.keys():
             raise ValueError("Duplicate module class {0}".format(name))
         registered_modules[key] = cls
@@ -63,7 +63,7 @@ class Module(metaclass=_AutoRegisterModule):
         pass
 
     def get_version(self):
-        """ 获取模块版本号
+        """获取模块版本号
 
         :return：字符串，格式为：AA.BB.CC.DD
         """
@@ -73,13 +73,21 @@ class Module(metaclass=_AutoRegisterModule):
             resp_msg = self.client.send_sync_msg(msg)
             if resp_msg is not None:
                 prot = resp_msg.get_proto()
-                version = "{0:02d}.{1:02d}.{2:02d}.{3:02d}".format(prot._aa, prot._bb, prot._cc, prot._dd)
+                version = "{0:02d}.{1:02d}.{2:02d}.{3:02d}".format(
+                    prot._aa, prot._bb, prot._cc, prot._dd
+                )
                 return version
             else:
-                logger.warning("Module: get_version, {0} failed.".format(self.__class__.__name__))
+                logger.warning(
+                    "Module: get_version, {0} failed.".format(self.__class__.__name__)
+                )
                 return None
         except Exception as e:
-            logger.warning("Module: get_version, {0} exception {1}.".format(self.__class__.__name__, str(e)))
+            logger.warning(
+                "Module: get_version, {0} exception {1}.".format(
+                    self.__class__.__name__, str(e)
+                )
+            )
             return None
 
     def _send_sync_proto(self, proto, target=None):
@@ -97,16 +105,25 @@ class Module(metaclass=_AutoRegisterModule):
                 if proto._retcode == 0:
                     return True
                 else:
-                    logger.warning("{0}: send_sync_proto, proto:{1}, retcode:{2} ".format(self.__class__.__name__,
-                                                                                          proto,
-                                                                                          proto._retcode))
+                    logger.warning(
+                        "{0}: send_sync_proto, proto:{1}, retcode:{2} ".format(
+                            self.__class__.__name__, proto, proto._retcode
+                        )
+                    )
                     return False
             else:
-                logger.warning("{0}: send_sync_proto, proto:{1} resp_msg is None.".format(
-                    self.__class__.__name__, proto))
+                logger.warning(
+                    "{0}: send_sync_proto, proto:{1} resp_msg is None.".format(
+                        self.__class__.__name__, proto
+                    )
+                )
                 return False
         except Exception as e:
-            logger.warning("{0}: send_sync_proto, proto:{1}, exception:{2}".format(self.__class__.__name__, proto, e))
+            logger.warning(
+                "{0}: send_sync_proto, proto:{1}, exception:{2}".format(
+                    self.__class__.__name__, proto, e
+                )
+            )
             return False
 
     def _send_async_proto(self, proto, target=None):
@@ -120,5 +137,9 @@ class Module(metaclass=_AutoRegisterModule):
         try:
             return self._client.send_async_msg(msg)
         except Exception as e:
-            logger.error("{0}: _send_async_proto, proto:{1}, exception:{2}".format(self.__class__.__name__, proto, e))
+            logger.error(
+                "{0}: _send_async_proto, proto:{1}, exception:{2}".format(
+                    self.__class__.__name__, proto, e
+                )
+            )
             return False

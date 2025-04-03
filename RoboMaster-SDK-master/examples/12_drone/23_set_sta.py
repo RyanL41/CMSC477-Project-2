@@ -18,7 +18,7 @@ import robomaster
 from robomaster import robot
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     tl_drone = robot.Drone()
     tl_drone.initialize()
 
@@ -26,4 +26,3 @@ if __name__ == '__main__':
     tl_drone.config_sta(ssid="RoboMaster_SDK_WiFi", password="12341234")
 
     tl_drone.close()
-

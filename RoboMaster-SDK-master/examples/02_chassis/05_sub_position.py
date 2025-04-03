@@ -23,7 +23,7 @@ def sub_position_handler(position_info):
     print("chassis position: x:{0}, y:{1}, z:{2}".format(x, y, z))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="sta")
 

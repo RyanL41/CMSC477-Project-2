@@ -24,7 +24,7 @@ from . import dds
 from . import util
 
 
-__all__ = ['Chassis', 'ChassisMoveAction']
+__all__ = ["Chassis", "ChassisMoveAction"]
 
 
 class ChassisMoveAction(action.Action):
@@ -42,7 +42,15 @@ class ChassisMoveAction(action.Action):
 
     def __repr__(self):
         return "action_id:{0}, state:{1}, percent:{2}, x:{3}, y:{4}, z:{5}, xy_speed:{6}, z_speed:{7}".format(
-            self._action_id, self._state, self._percent, self._x, self._y, self._z, self._spd_xy, self._spd_z)
+            self._action_id,
+            self._state,
+            self._percent,
+            self._x,
+            self._y,
+            self._z,
+            self._spd_xy,
+            self._spd_z,
+        )
 
     def encode(self):
         proto = protocol.ProtoPositionMove()
@@ -99,7 +107,7 @@ class PositionSubject(dds.Subject):
         return self._position_x, self._position_y, self._position_z
 
     def data_info(self):
-        ''' cs=0选用当前位置作为坐标原点，否则选用机器人上电时刻位置作为坐标原点'''
+        """cs=0选用当前位置作为坐标原点，否则选用机器人上电时刻位置作为坐标原点"""
         if self._cs == 0:
             if self._first_flag:
                 self._offset_x = self._position_x
@@ -115,7 +123,9 @@ class PositionSubject(dds.Subject):
         return self._position_x, self._position_y, self._position_z
 
     def decode(self, buf):
-        self._position_x, self._position_y, self._position_z = struct.unpack('<fff', buf)
+        self._position_x, self._position_y, self._position_z = struct.unpack(
+            "<fff", buf
+        )
 
 
 class AttiInfoSubject(dds.Subject):
@@ -135,7 +145,7 @@ class AttiInfoSubject(dds.Subject):
         return self._yaw, self._pitch, self._roll
 
     def decode(self, buf):
-        self._yaw, self._pitch, self._roll = struct.unpack('<fff', buf)
+        self._yaw, self._pitch, self._roll = struct.unpack("<fff", buf)
         self._yaw = util.CHASSIS_YAW_CHECKER.proto2val(self._yaw)
         self._pitch = util.CHASSIS_PITCH_CHECKER.proto2val(self._pitch)
         self._roll = util.CHASSIS_ROLL_CHECKER.proto2val(self._roll)
@@ -157,7 +167,7 @@ class ChassisModeSubject(dds.Subject):
         return self._sdk_cur_type
 
     def decode(self, buf):
-        self._mis_cur_type, self._sdk_cur_type = struct.unpack('<BB', buf)
+        self._mis_cur_type, self._sdk_cur_type = struct.unpack("<BB", buf)
 
 
 class SbusSubject(dds.Subject):
@@ -167,7 +177,7 @@ class SbusSubject(dds.Subject):
 
     def __init__(self):
         self._connect_status = 0
-        self._subs_channel = [0]*16
+        self._subs_channel = [0] * 16
 
     def subs_data(self):
         return self._connect_status, self._subs_channel
@@ -176,11 +186,25 @@ class SbusSubject(dds.Subject):
         return self._connect_status, self._subs_channel
 
     def decode(self, buf):
-        [self._connect_status, self._subs_channel[0], self._subs_channel[1], self._subs_channel[2],
-         self._subs_channel[3], self._subs_channel[4], self._subs_channel[5], self._subs_channel[6],
-         self._subs_channel[7], self._subs_channel[8], self._subs_channel[9], self._subs_channel[10],
-         self._subs_channel[11], self._subs_channel[12], self._subs_channel[13], self._subs_channel[14],
-         self._subs_channel[15]] = struct.unpack('<Bhhhhhhhhhhhhhhhh', buf)
+        [
+            self._connect_status,
+            self._subs_channel[0],
+            self._subs_channel[1],
+            self._subs_channel[2],
+            self._subs_channel[3],
+            self._subs_channel[4],
+            self._subs_channel[5],
+            self._subs_channel[6],
+            self._subs_channel[7],
+            self._subs_channel[8],
+            self._subs_channel[9],
+            self._subs_channel[10],
+            self._subs_channel[11],
+            self._subs_channel[12],
+            self._subs_channel[13],
+            self._subs_channel[14],
+            self._subs_channel[15],
+        ] = struct.unpack("<Bhhhhhhhhhhhhhhhh", buf)
 
 
 class VelocitySubject(dds.Subject):
@@ -203,7 +227,9 @@ class VelocitySubject(dds.Subject):
         return self._vgx, self._vgy, self._vgz, self._vbx, self._vby, self._vbz
 
     def decode(self, buf):
-        self._vgx, self._vgy, self._vgz, self._vbx, self._vby, self._vbz = struct.unpack('<ffffff', buf)
+        self._vgx, self._vgy, self._vgz, self._vbx, self._vby, self._vbz = (
+            struct.unpack("<ffffff", buf)
+        )
         self._vgx = util.CHASSIS_SPD_X_CHECKER.proto2val(self._vgx)
         self._vgy = util.CHASSIS_SPD_Y_CHECKER.proto2val(self._vgy)
         self._vgz = util.CHASSIS_SPD_Z_CHECKER.proto2val(self._vgz)
@@ -218,10 +244,10 @@ class EscSubject(dds.Subject):
     type = dds.DDS_SUB_TYPE_PERIOD
 
     def __init__(self):
-        self._speed = [0]*4
-        self._angle = [0]*4
-        self._timestamp = [0]*4
-        self._state = [0]*4
+        self._speed = [0] * 4
+        self._angle = [0] * 4
+        self._timestamp = [0] * 4
+        self._state = [0] * 4
 
     @property
     def esc_info(self):
@@ -231,10 +257,24 @@ class EscSubject(dds.Subject):
         return self._speed, self._angle, self._timestamp, self._state
 
     def decode(self, buf):
-        [self._speed[0], self._speed[1], self._speed[2], self._speed[3],
-         self._angle[0], self._angle[1], self._angle[2], self._angle[3],
-         self._timestamp[0], self._timestamp[1], self._timestamp[2], self._timestamp[3],
-         self._state[0], self._state[1], self._state[2], self._state[3]] = struct.unpack('<hhhhhhhhIIIIBBBB', buf)
+        [
+            self._speed[0],
+            self._speed[1],
+            self._speed[2],
+            self._speed[3],
+            self._angle[0],
+            self._angle[1],
+            self._angle[2],
+            self._angle[3],
+            self._timestamp[0],
+            self._timestamp[1],
+            self._timestamp[2],
+            self._timestamp[3],
+            self._state[0],
+            self._state[1],
+            self._state[2],
+            self._state[3],
+        ] = struct.unpack("<hhhhhhhhIIIIBBBB", buf)
 
 
 class ImuSubject(dds.Subject):
@@ -251,13 +291,34 @@ class ImuSubject(dds.Subject):
         self._gyro_z = 0
 
     def imu_info(self):
-        return self._acc_x, self._acc_y, self._acc_z, self._gyro_x, self._gyro_y, self._gyro_z
+        return (
+            self._acc_x,
+            self._acc_y,
+            self._acc_z,
+            self._gyro_x,
+            self._gyro_y,
+            self._gyro_z,
+        )
 
     def data_info(self):
-        return self._acc_x, self._acc_y, self._acc_z, self._gyro_x, self._gyro_y, self._gyro_z
+        return (
+            self._acc_x,
+            self._acc_y,
+            self._acc_z,
+            self._gyro_x,
+            self._gyro_y,
+            self._gyro_z,
+        )
 
     def decode(self, buf):
-        self._acc_x, self._acc_y, self._acc_z, self._gyro_x, self._gyro_y, self._gyro_z = struct.unpack('<ffffff', buf)
+        (
+            self._acc_x,
+            self._acc_y,
+            self._acc_z,
+            self._gyro_x,
+            self._gyro_y,
+            self._gyro_z,
+        ) = struct.unpack("<ffffff", buf)
         self._acc_x = util.CHASSIS_ACC_CHECKER.proto2val(self._acc_x)
         self._acc_y = util.CHASSIS_ACC_CHECKER.proto2val(self._acc_y)
         self._acc_z = util.CHASSIS_ACC_CHECKER.proto2val(self._acc_z)
@@ -286,30 +347,34 @@ class SaStatusSubject(dds.Subject):
         self.resv = 0
 
     def sa_status(self):
-        return self._static_flag, \
-               self._up_hill, \
-               self._down_hill, \
-               self._on_slope, \
-               self._is_pick_up, \
-               self._slip_flag, \
-               self._impact_x, \
-               self._impact_y, \
-               self._impact_z, \
-               self._roll_over, \
-               self._hill_static
+        return (
+            self._static_flag,
+            self._up_hill,
+            self._down_hill,
+            self._on_slope,
+            self._is_pick_up,
+            self._slip_flag,
+            self._impact_x,
+            self._impact_y,
+            self._impact_z,
+            self._roll_over,
+            self._hill_static,
+        )
 
     def data_info(self):
-        return self._static_flag, \
-               self._up_hill, \
-               self._down_hill, \
-               self._on_slope, \
-               self._is_pick_up, \
-               self._slip_flag, \
-               self._impact_x, \
-               self._impact_y, \
-               self._impact_z, \
-               self._roll_over, \
-               self._hill_static
+        return (
+            self._static_flag,
+            self._up_hill,
+            self._down_hill,
+            self._on_slope,
+            self._is_pick_up,
+            self._slip_flag,
+            self._impact_x,
+            self._impact_y,
+            self._impact_z,
+            self._roll_over,
+            self._hill_static,
+        )
 
     def decode(self, buf):
         self._static_flag = buf[0] & 0x01
@@ -326,7 +391,7 @@ class SaStatusSubject(dds.Subject):
 
 
 class Chassis(module.Module):
-    """ EP 底盘模块，可以控制底盘的速度、位置、订阅底盘的数据，控制麦克纳姆轮等操作 """
+    """EP 底盘模块，可以控制底盘的速度、位置、订阅底盘的数据，控制麦克纳姆轮等操作"""
 
     _host = protocol.host2byte(3, 6)
 
@@ -350,7 +415,7 @@ class Chassis(module.Module):
         return self._send_sync_proto(proto)
 
     def stick_overlay(self, fusion_mode=0):
-        """ 设置底盘的杆量叠加模式
+        """设置底盘的杆量叠加模式
         :param fusion_mode: int:[0,1,2]  0 = 关闭SDK的杆量叠加, 1 = 使能杆量叠加,速度正方向为车身坐标系, 2 = 使能SDK模式,速度正方向为云台朝向
         :return: bool:调用结果
         """
@@ -360,7 +425,7 @@ class Chassis(module.Module):
 
     # drives.
     def drive_wheels(self, w1=0, w2=0, w3=0, w4=0, timeout=None):
-        """　设置麦轮转速
+        """设置麦轮转速
 
         :param w1: int:[-1000,1000]，右前麦轮速度，以车头方向前进旋转为正方向，单位 rpm
         :param w2: int:[-1000,1000]，左前麦轮速度，以车头方向前进旋转为正方向，单位 rpm
@@ -377,7 +442,9 @@ class Chassis(module.Module):
             if self._auto_timer:
                 if self._auto_timer.is_alive():
                     self._auto_timer.cancel()
-            self._auto_timer = threading.Timer(timeout, self._auto_stop_timer, args=("drive_wheels",))
+            self._auto_timer = threading.Timer(
+                timeout, self._auto_stop_timer, args=("drive_wheels",)
+            )
             self._auto_timer.start()
             return self._send_sync_proto(proto)
         return self._send_sync_proto(proto)
@@ -393,7 +460,7 @@ class Chassis(module.Module):
             logger.warning("Chassis: unsupported api:{0}".format(api))
 
     def drive_speed(self, x=0.0, y=0.0, z=0.0, timeout=None):
-        """ 设置底盘速度，立即生效
+        """设置底盘速度，立即生效
 
         :param x: float:[-3.5,3.5]，x 轴向运动速度即前进速度，单位 m/s
         :param y: float:[-3.5,3.5]，y 轴向运动速度即横移速度，单位 m/s
@@ -404,18 +471,26 @@ class Chassis(module.Module):
         proto._x_spd = util.CHASSIS_SPD_X_CHECKER.val2proto(x)
         proto._y_spd = util.CHASSIS_SPD_Y_CHECKER.val2proto(y)
         proto._z_spd = util.CHASSIS_SPD_Z_CHECKER.val2proto(z)
-        logger.info("x_spd:{0:f}, y_spd:{1:f}, z_spd:{2:f}".format(proto._x_spd, proto._y_spd, proto._z_spd))
+        logger.info(
+            "x_spd:{0:f}, y_spd:{1:f}, z_spd:{2:f}".format(
+                proto._x_spd, proto._y_spd, proto._z_spd
+            )
+        )
         if timeout:
             if self._auto_timer:
                 if self._auto_timer.is_alive():
                     self._auto_timer.cancel()
-            self._auto_timer = threading.Timer(timeout, self._auto_stop_timer, args=("drive_speed",))
+            self._auto_timer = threading.Timer(
+                timeout, self._auto_stop_timer, args=("drive_speed",)
+            )
             self._auto_timer.start()
             return self._send_sync_proto(proto)
         return self._send_sync_proto(proto)
 
-    def set_pwm_value(self, pwm1=None, pwm2=None, pwm3=None, pwm4=None, pwm5=None, pwm6=None):
-        """ 设置PWM输出占空比
+    def set_pwm_value(
+        self, pwm1=None, pwm2=None, pwm3=None, pwm4=None, pwm5=None, pwm6=None
+    ):
+        """设置PWM输出占空比
 
         :param pwm1: int:[0,100]，pwm输出占空比，单位%
         :param pwm2: int:[0,100]，pwm输出占空比，单位%
@@ -430,24 +505,26 @@ class Chassis(module.Module):
             proto._mask = 1
             proto._pwm1 = util.PWM_VALUE_CHECKER.val2proto(pwm1)
         if pwm2:
-            proto._mask |= (1 << 1)
+            proto._mask |= 1 << 1
             proto._pwm2 = util.PWM_VALUE_CHECKER.val2proto(pwm2)
         if pwm3:
-            proto._mask |= (1 << 2)
+            proto._mask |= 1 << 2
             proto._pwm3 = util.PWM_VALUE_CHECKER.val2proto(pwm3)
         if pwm4:
-            proto._mask |= (1 << 3)
+            proto._mask |= 1 << 3
             proto._pwm4 = util.PWM_VALUE_CHECKER.val2proto(pwm4)
         if pwm5:
-            proto._mask |= (1 << 4)
+            proto._mask |= 1 << 4
             proto._pwm5 = util.PWM_VALUE_CHECKER.val2proto(pwm5)
         if pwm6:
-            proto._mask |= (1 << 5)
+            proto._mask |= 1 << 5
             proto._pwm6 = util.PWM_VALUE_CHECKER.val2proto(pwm6)
         return self._send_sync_proto(proto)
 
-    def set_pwm_freq(self, pwm1=None, pwm2=None, pwm3=None, pwm4=None, pwm5=None, pwm6=None):
-        """ 设置PWM输出频率
+    def set_pwm_freq(
+        self, pwm1=None, pwm2=None, pwm3=None, pwm4=None, pwm5=None, pwm6=None
+    ):
+        """设置PWM输出频率
 
         :param pwm1~6: int:[0,50000]，pwm输出频率，单位Hz
         """
@@ -457,25 +534,25 @@ class Chassis(module.Module):
             proto._mask = 1
             proto._pwm1 = util.PWM_VALUE_CHECKER.val2proto(pwm1)
         if pwm2:
-            proto._mask |= (1 << 1)
+            proto._mask |= 1 << 1
             proto._pwm2 = util.PWM_VALUE_CHECKER.val2proto(pwm2)
         if pwm3:
-            proto._mask |= (1 << 2)
+            proto._mask |= 1 << 2
             proto._pwm3 = util.PWM_VALUE_CHECKER.val2proto(pwm3)
         if pwm4:
-            proto._mask |= (1 << 3)
+            proto._mask |= 1 << 3
             proto._pwm4 = util.PWM_VALUE_CHECKER.val2proto(pwm4)
         if pwm5:
-            proto._mask |= (1 << 4)
+            proto._mask |= 1 << 4
             proto._pwm5 = util.PWM_VALUE_CHECKER.val2proto(pwm5)
         if pwm6:
-            proto._mask |= (1 << 5)
+            proto._mask |= 1 << 5
             proto._pwm6 = util.PWM_VALUE_CHECKER.val2proto(pwm6)
         return self._send_sync_proto(proto)
 
     # actions.
     def move(self, x=0, y=0, z=0, xy_speed=0.5, z_speed=30):
-        """ 控制底盘运动当指定位置，坐标轴原点为当前位置
+        """控制底盘运动当指定位置，坐标轴原点为当前位置
 
         :param x: float: [-5,5]，x轴向运动距离，单位 m
         :param y: float: [-5,5]，y轴向运动距离，单位 m
@@ -490,7 +567,7 @@ class Chassis(module.Module):
 
     # 数据订阅接口
     def sub_position(self, cs=0, freq=5, callback=None, *args, **kw):
-        """ 订阅底盘位置信息
+        """订阅底盘位置信息
 
         :param cs: int: [0,1] 设置底盘位置的坐标系，0 机器人当前位置，1 机器人上电位置
         :param freq: enum: (1, 5, 10, 20, 50) 设置数据订阅数据的推送频率，单位 Hz
@@ -510,7 +587,7 @@ class Chassis(module.Module):
         return sub.add_subject_info(subject, callback, args, kw)
 
     def unsub_position(self):
-        """ 取消订阅底盘位置信息
+        """取消订阅底盘位置信息
 
         :return: bool: 取消数据订阅的结果
         """
@@ -518,7 +595,7 @@ class Chassis(module.Module):
         return sub_dds.del_subject_info(dds.DDS_POSITION)
 
     def sub_attitude(self, freq=5, callback=None, *args, **kw):
-        """ 订阅底盘姿态信息
+        """订阅底盘姿态信息
 
         :param freq: enum: (1, 5, 10, 20, 50) 设置数据订阅数据的推送频率，单位 Hz
         :param callback: 回调函数，返回数据 (yaw, pitch, roll)：
@@ -537,7 +614,7 @@ class Chassis(module.Module):
         return sub.add_subject_info(subject, callback, args, kw)
 
     def unsub_attitude(self):
-        """ 取消订阅底盘姿态信息
+        """取消订阅底盘姿态信息
 
         :return: bool: 取消数据订阅的结果
         """
@@ -573,7 +650,7 @@ class Chassis(module.Module):
         return sub.add_subject_info(subject, callback, args, kw)
 
     def unsub_status(self):
-        """ 取消订阅底盘状态信息
+        """取消订阅底盘状态信息
 
         :return: bool: 取消数据订阅的结果
         """
@@ -581,7 +658,7 @@ class Chassis(module.Module):
         return sub_dds.del_subject_info(dds.DDS_SA_STATUS)
 
     def sub_imu(self, freq=5, callback=None, *args, **kw):
-        """ 订阅底盘IMU陀螺仪信息
+        """订阅底盘IMU陀螺仪信息
 
         :param freq: enum: (1, 5, 10, 20, 50)，设置数据订阅数据的推送频率，单位 Hz
         :param callback: 回调函数，返回数据 (acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z):
@@ -603,7 +680,7 @@ class Chassis(module.Module):
         return sub_dds.add_subject_info(subject, callback, args, kw)
 
     def unsub_imu(self):
-        """ 取消订阅底盘IMU陀螺仪信息
+        """取消订阅底盘IMU陀螺仪信息
 
         :return: bool: 取消数据订阅的结果
         """
@@ -611,7 +688,7 @@ class Chassis(module.Module):
         return sub_dds.del_subject_info(dds.DDS_IMU)
 
     def sub_mode(self, freq=5, callback=None, *args, **kw):
-        """ 订阅底盘模式信息
+        """订阅底盘模式信息
 
         :param freq: enum: (1, 5, 10, 20, 50)，设置数据订阅数据的推送频率，单位 Hz
         :param callback: 回调函数，返回数据 mode:
@@ -628,7 +705,7 @@ class Chassis(module.Module):
         return sub_dds.add_subject_info(subject, callback, args, kw)
 
     def unsub_mode(self):
-        """ 取消订阅底盘模式信息
+        """取消订阅底盘模式信息
 
         :return: bool: 取消数据订阅的结果
         """
@@ -636,7 +713,7 @@ class Chassis(module.Module):
         return sub_dds.del_subject_info(dds.DDS_CHASSIS_MODE)
 
     def sub_esc(self, freq=5, callback=None, *args, **kw):
-        """ 订阅底盘电调信息
+        """订阅底盘电调信息
 
         :param freq: enum: (1, 5, 10, 20, 50)，设置数据订阅数据的推送频率，单位 Hz
         :param callback: 回调函数，返回数据 (speed[4], angle[4], timestamp, state):
@@ -656,7 +733,7 @@ class Chassis(module.Module):
         return sub_dds.add_subject_info(subject, callback, args, kw)
 
     def unsub_esc(self):
-        """ 取消订阅电调信息
+        """取消订阅电调信息
 
         :return: bool: 取消数据订阅的结果
         """
@@ -664,7 +741,7 @@ class Chassis(module.Module):
         return sub_dds.del_subject_info(dds.DDS_ESC)
 
     def sub_velocity(self, freq=5, callback=None, *args, **kw):
-        """ 订阅底盘加速度信息
+        """订阅底盘加速度信息
 
         :param freq: enum:(1, 5, 10, 20, 50) 设置数据订阅数据的推送频率，单位 Hz
         :param callback: 回调函数，返回数据（vgx, vgy, vgz, vbx, vby, vbz)：
@@ -686,7 +763,7 @@ class Chassis(module.Module):
         return sub_dds.add_subject_info(subject, callback, args, kw)
 
     def unsub_velocity(self):
-        """ 取消订阅底盘加速度信息
+        """取消订阅底盘加速度信息
 
         :return: bool: 取消数据订阅的结果
         """
@@ -694,7 +771,7 @@ class Chassis(module.Module):
         return sub_dds.del_subject_info(dds.DDS_VELOCITY)
 
     def _sub_sbus(self, freq=5, callback=None, *args, **kw):
-        """ 订阅底盘SBUS信息
+        """订阅底盘SBUS信息
 
         :param freq: enum: (1, 5, 10, 20, 50)，设置数据订阅数据的推送频率，单位 Hz
         :param callback: 回调函数，返回数据 (connect_status, sbus_channel[16]):
@@ -712,7 +789,7 @@ class Chassis(module.Module):
         return sub_dds.add_subject_info(subject, callback, args, kw)
 
     def _unsub_sbus(self):
-        """ 取消订阅SBUS信息
+        """取消订阅SBUS信息
 
         :return: bool: 取消数据订阅的结果
         """

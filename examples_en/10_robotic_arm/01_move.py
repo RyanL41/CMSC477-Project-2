@@ -18,19 +18,19 @@ import robomaster
 from robomaster import robot
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="sta", sn="3JKCH8800100YN")
 
     ep_arm = ep_robot.robotic_arm
 
     # Move forward 20mm
-    #ep_arm.move(x=20, y=0).wait_for_completed()
+    # ep_arm.move(x=20, y=0).wait_for_completed()
     # Move backward 20mm
-    #ep_arm.move(x=-20, y=0).wait_for_completed()
+    # ep_arm.move(x=-20, y=0).wait_for_completed()
     # Move upward 20mm
     ep_arm.move(x=0, y=20).wait_for_completed()
     # Move downward 20mm
-    #ep_arm.move(x=0, y=-20).wait_for_completed()
+    # ep_arm.move(x=0, y=-20).wait_for_completed()
 
     ep_robot.close()

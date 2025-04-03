@@ -10,6 +10,7 @@ class RobotConnection(object):
     """
     Create a RobotConnection object with a given robot ip.
     """
+
     VIDEO_PORT = 40921
     AUDIO_PORT = 40922
     CTRL_PORT = 40923
@@ -17,7 +18,7 @@ class RobotConnection(object):
     EVENT_PORT = 40925
     IP_PORT = 40926
 
-    def __init__(self, robot_ip=''):
+    def __init__(self, robot_ip=""):
         self.robot_ip = robot_ip
 
         self.video_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -27,8 +28,8 @@ class RobotConnection(object):
         self.event_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.ip_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-        self.push_socket.bind(('', RobotConnection.PUSH_PORT))
-        self.ip_socket.bind(('', RobotConnection.IP_PORT))
+        self.push_socket.bind(("", RobotConnection.PUSH_PORT))
+        self.ip_socket.bind(("", RobotConnection.IP_PORT))
 
         self.cmd_socket_list = [self.ctrl_socket, self.push_socket, self.event_socket]
         self.cmd_socket_msg_queue = {
@@ -36,7 +37,7 @@ class RobotConnection(object):
             self.audio_socket: queue.Queue(32),
             self.ctrl_socket: queue.Queue(16),
             self.push_socket: queue.Queue(16),
-            self.event_socket: queue.Queue(16)
+            self.event_socket: queue.Queue(16),
         }
         self.cmd_socket_recv_thread = threading.Thread(target=self.__socket_recv_task)
 
@@ -55,7 +56,7 @@ class RobotConnection(object):
         If optional arg 'timeout' is None (the default), block if necessary until
         get robot ip from broadcast port. If 'timeout' is a non-negative number,
         it blocks at most 'timeout' seconds and return None if no data back from
-        robot broadcast port within the time. Otherwise, return the robot ip 
+        robot broadcast port within the time. Otherwise, return the robot ip
         immediately.
         """
         self.ip_socket.settimeout(timeout)
@@ -63,14 +64,16 @@ class RobotConnection(object):
         try:
             msg, addr = self.ip_socket.recvfrom(1024)
         except Exception as e:
-            print('Get robot ip failed, please check the robot networking-mode and connection !')
+            print(
+                "Get robot ip failed, please check the robot networking-mode and connection !"
+            )
         else:
-            msg = msg.decode('utf-8')
-            msg = msg[msg.find('robot ip ') + len('robot ip ') : ]
+            msg = msg.decode("utf-8")
+            msg = msg[msg.find("robot ip ") + len("robot ip ") :]
 
         return msg
 
-    def open(self): 
+    def open(self):
         """
         Open the connection
 
@@ -83,15 +86,15 @@ class RobotConnection(object):
             self.ctrl_socket.connect((self.robot_ip, RobotConnection.CTRL_PORT))
             self.event_socket.connect((self.robot_ip, RobotConnection.EVENT_PORT))
         except Exception as e:
-            print('Connection failed, the reason is %s'%e)
+            print("Connection failed, the reason is %s" % e)
             return False
         else:
             self.is_shutdown = False
-            self.cmd_socket_recv_thread.start() 
-            print('Connection successful')
+            self.cmd_socket_recv_thread.start()
+            print("Connection successful")
             return True
 
-    def close(self): 
+    def close(self):
         """
         Close the connection
         """
@@ -99,14 +102,14 @@ class RobotConnection(object):
         self.cmd_socket_recv_thread.join()
 
     def start_video_recv(self):
-        assert not self.is_shutdown, 'CONNECTION INVALID'
+        assert not self.is_shutdown, "CONNECTION INVALID"
         if self.video_socket not in self.cmd_socket_list:
             self.video_socket.settimeout(5)
             try:
                 self.video_socket.connect((self.robot_ip, RobotConnection.VIDEO_PORT))
             except Exception as e:
-                print('Connection failed, the reason is %s'%e)
-                return False 
+                print("Connection failed, the reason is %s" % e)
+                return False
             self.cmd_socket_list.append(self.video_socket)
         return True
 
@@ -116,13 +119,13 @@ class RobotConnection(object):
         return True
 
     def start_audio_recv(self):
-        assert not self.is_shutdown, 'CONNECTION INVALID'
+        assert not self.is_shutdown, "CONNECTION INVALID"
         if self.audio_socket not in self.cmd_socket_list:
             self.audio_socket.settimeout(5)
             try:
                 self.audio_socket.connect((self.robot_ip, RobotConnection.AUDIO_PORT))
             except Exception as e:
-                print('Connection failed, the reason is %s'%e)
+                print("Connection failed, the reason is %s" % e)
                 return False
             self.cmd_socket_list.append(self.audio_socket)
         return True
@@ -136,7 +139,7 @@ class RobotConnection(object):
         """
         Send data to control port
         """
-        msg += ';'
+        msg += ";"
         self.__send_data(self.ctrl_socket, msg)
 
     def recv_video_data(self, timeout=None, latest_data=False):
@@ -147,7 +150,7 @@ class RobotConnection(object):
         get data from control port. If 'timeout' is a non-negative number,
         it blocks at most 'timeout' seconds and reuturn None if no data back from
         robot video port within the time. Otherwise, return the data immediately.
- 
+
         If optional arg 'latest_data' is set to True, it will return the latest
         data, instead of the data in queue tail.
 
@@ -162,7 +165,7 @@ class RobotConnection(object):
         get data from control port. If 'timeout' is a non-negative number,
         it blocks at most 'timeout' seconds and reuturn None if no data back from
         robot video port within the time. Otherwise, return the data immediately.
- 
+
         If optional arg 'latest_data' is set to True, it will return the latest
         data, instead of the data in queue tail.
 
@@ -177,7 +180,7 @@ class RobotConnection(object):
         get data from control port. If 'timeout' is a non-negative number,
         it blocks at most 'timeout' seconds and reuturn None if no data back from
         robot control port within the time. Otherwise, return the data immediately.
- 
+
         If optional arg 'latest_data' is set to True, it will return the latest
         data, instead of the data in queue tail.
 
@@ -192,7 +195,7 @@ class RobotConnection(object):
         get data from push port. If 'timeout' is a non-negative number,
         it blocks at most 'timeout' seconds and reuturn None if no data back from
         robot push port within the time. Otherwise, return the data immediately.
- 
+
         If optional arg 'latest_data' is set to True, it will return the latest
         data, instead of the data in queue tail.
         """
@@ -206,18 +209,18 @@ class RobotConnection(object):
         get data from event port. If 'timeout' is a non-negative number,
         it blocks at most 'timeout' seconds and reuturn None if no data back from
         robot event port within the time. Otherwise, return the data immediately.
- 
+
         If optional arg 'latest_data' is set to True, it will return the latest
         data, instead of the data in queue tail.
         """
         return self.__recv_data(self.event_socket, timeout, latest_data)
 
     def __send_data(self, socket_obj, data):
-        assert not self.is_shutdown, 'CONECTION INVALID'
-        return socket_obj.send(data.encode('utf-8'))
-        
+        assert not self.is_shutdown, "CONECTION INVALID"
+        return socket_obj.send(data.encode("utf-8"))
+
     def __recv_data(self, socket_obj, timeout, latest_data):
-        assert not self.is_shutdown, 'CONECTION INVALID'
+        assert not self.is_shutdown, "CONECTION INVALID"
         msg = None
         if latest_data:
             while self.cmd_socket_msg_queue[socket_obj].qsize() > 1:
@@ -228,10 +231,10 @@ class RobotConnection(object):
             return None
         else:
             return msg
-        
+
     def __socket_recv_task(self):
         while not self.is_shutdown:
-            rlist, _, _  = select.select(self.cmd_socket_list, [], [], 2)
+            rlist, _, _ = select.select(self.cmd_socket_list, [], [], 2)
 
             for s in rlist:
                 msg, addr = s.recvfrom(4096)
@@ -250,56 +253,56 @@ def test():
     """
     Test funciton
 
-    Connect robot and query the version 
+    Connect robot and query the version
     """
-    robot = RobotConnection('192.168.42.2')
+    robot = RobotConnection("192.168.42.2")
     robot.open()
 
-    robot.send_data('command')
-    print('send data to robot   : command')
+    robot.send_data("command")
+    print("send data to robot   : command")
     recv = robot.recv_ctrl_data(5)
-    print('recv data from robot : %s'%recv)
+    print("recv data from robot : %s" % recv)
 
-    robot.send_data('version ?')
-    print('send data to robot   : version ?')
+    robot.send_data("version ?")
+    print("send data to robot   : version ?")
     recv = robot.recv_ctrl_data(5)
-    print('recv data from robot : %s'%recv)
+    print("recv data from robot : %s" % recv)
 
-    robot.send_data('stream on')
-    print('send data to robot   : stream on')
+    robot.send_data("stream on")
+    print("send data to robot   : stream on")
     recv = robot.recv_ctrl_data(5)
-    print('recv data from robot : %s'%recv)
+    print("recv data from robot : %s" % recv)
     result = robot.start_video_recv()
     if result:
         stream_data = robot.recv_video_data(5)
-        print('recv video data from robot %s'%stream_data)
+        print("recv video data from robot %s" % stream_data)
         robot.stop_video_recv()
-    robot.send_data('stream off')
-    print('send data to robot   : stream off')
+    robot.send_data("stream off")
+    print("send data to robot   : stream off")
     recv = robot.recv_ctrl_data(5)
-    print('recv data from robot : %s'%recv)
+    print("recv data from robot : %s" % recv)
 
-    robot.send_data('audio on')
-    print('send data to robot   : audio on')
+    robot.send_data("audio on")
+    print("send data to robot   : audio on")
     recv = robot.recv_ctrl_data(5)
-    print('recv data from robot : %s'%recv)
+    print("recv data from robot : %s" % recv)
     result = robot.start_audio_recv()
     if result:
         stream_data = robot.recv_audio_data(5)
-        print('recv audio data from robot %s'%stream_data)
+        print("recv audio data from robot %s" % stream_data)
         robot.stop_audio_recv()
-    robot.send_data('audio off')
-    print('send data to robot   : audio off')
+    robot.send_data("audio off")
+    print("send data to robot   : audio off")
     recv = robot.recv_ctrl_data(5)
-    print('recv data from robot : %s'%recv)
+    print("recv data from robot : %s" % recv)
 
-    robot.send_data('quit')
-    print('send data to robot   : quit')
+    robot.send_data("quit")
+    print("send data to robot   : quit")
     recv = robot.recv_ctrl_data(5)
-    print('recv data from robot : %s'%recv)
+    print("recv data from robot : %s" % recv)
 
     robot.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test()

@@ -29,13 +29,13 @@ from . import logger
 from . import config
 
 
-CONNECTION_USB_RNDIS = 'rndis'
-CONNECTION_WIFI_AP = 'ap'
-CONNECTION_WIFI_STA = 'sta'
-CONNECTION_PROTO_TCP = 'tcp'
-CONNECTION_PROTO_UDP = 'udp'
+CONNECTION_USB_RNDIS = "rndis"
+CONNECTION_WIFI_AP = "ap"
+CONNECTION_WIFI_STA = "sta"
+CONNECTION_PROTO_TCP = "tcp"
+CONNECTION_PROTO_UDP = "udp"
 
-__all__ = ['Connection']
+__all__ = ["Connection"]
 
 
 def get_local_ip():
@@ -51,19 +51,19 @@ def get_local_ip():
 
 
 def get_sn_form_data(data):
-    """ 从 data 中获取 sn 字段
+    """从 data 中获取 sn 字段
 
     :param data:
     :return:
     """
-    data = data.split(b'\x00')
+    data = data.split(b"\x00")
     recv_sn = data[0]
-    recv_sn = recv_sn.decode(encoding='utf-8')
+    recv_sn = recv_sn.decode(encoding="utf-8")
     return recv_sn
 
 
 def scan_robot_ip(user_sn=None, timeout=3.0):
-    """ 扫描机器人的IP地址
+    """扫描机器人的IP地址
 
     :return: 机器人的IP地址
     """
@@ -101,7 +101,11 @@ def scan_robot_ip(user_sn=None, timeout=3.0):
             s.bind(("0.0.0.0", config.ROBOT_BROADCAST_PORT))
             s.settimeout(timeout)
             data, ip = s.recvfrom(1024)
-            logger.info("conn: scan_robot_ip, data:{0}, ip:{1}".format(binascii.hexlify(data), ip))
+            logger.info(
+                "conn: scan_robot_ip, data:{0}, ip:{1}".format(
+                    binascii.hexlify(data), ip
+                )
+            )
             return ip[0]
     except Exception as e:
         logger.error("scan_robot_ip: exception {0}".format(e))
@@ -109,7 +113,7 @@ def scan_robot_ip(user_sn=None, timeout=3.0):
 
 
 def scan_robot_ip_list(timeout=3.0):
-    """ 扫描局域网内的机器人IP地址
+    """扫描局域网内的机器人IP地址
 
     :param timeout: 超时时间
     :return: list，扫描到的小车IP列表
@@ -125,7 +129,7 @@ def scan_robot_ip_list(timeout=3.0):
     start = time.time()
     while True:
         end = time.time()
-        if end-start > timeout:
+        if end - start > timeout:
             break
         s.settimeout(1)
         try:
@@ -133,11 +137,19 @@ def scan_robot_ip_list(timeout=3.0):
         except Exception as e:
             logger.warning("scan_robot_ip_list: socket recv, {0}".format(e))
             continue
-        logger.info("conn: scan_robot_ip, data:{0}, ip:{1}".format(data[:-1].decode(encoding='utf-8'), ip))
+        logger.info(
+            "conn: scan_robot_ip, data:{0}, ip:{1}".format(
+                data[:-1].decode(encoding="utf-8"), ip
+            )
+        )
         if ip[0] not in ip_list:
             ip_list.append(ip[0])
             logger.info("conn: scan_robot_ip_list, ip_list:{0}".format(ip_list))
-            print("find robot sn:{0}, ip:{1}".format(str(data[:-1].decode(encoding='utf-8')), ip[0]))
+            print(
+                "find robot sn:{0}, ip:{1}".format(
+                    str(data[:-1].decode(encoding="utf-8")), ip[0]
+                )
+            )
     return ip_list
 
 
@@ -156,15 +168,25 @@ class BaseConnection(object):
                 self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 self._sock.bind(self._host_addr)
                 self._sock.connect(self._target_addr)
-                logger.info("TcpConnection, connect success {0}".format(self._host_addr))
+                logger.info(
+                    "TcpConnection, connect success {0}".format(self._host_addr)
+                )
             elif self._proto_type == CONNECTION_PROTO_UDP:
                 self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 self._sock.bind(self._host_addr)
                 logger.info("UdpConnection, bind {0}".format(self._host_addr))
             else:
-                logger.error("Connection: {0} unexpected connection param set".format(self._proto_type))
+                logger.error(
+                    "Connection: {0} unexpected connection param set".format(
+                        self._proto_type
+                    )
+                )
         except Exception as e:
-            logger.warning("udpConnection: create, host_addr:{0}, exception:{1}".format(self._host_addr, e))
+            logger.warning(
+                "udpConnection: create, host_addr:{0}, exception:{1}".format(
+                    self._host_addr, e
+                )
+            )
             raise
 
     def close(self):
@@ -193,7 +215,11 @@ class BaseConnection(object):
         else:
             if isinstance(msg, protocol.MsgBase):
                 if not msg.unpack_protocol():
-                    logger.warning("Connection: recv, msg.unpack_protocol failed, msg:{0}".format(msg))
+                    logger.warning(
+                        "Connection: recv, msg.unpack_protocol failed, msg:{0}".format(
+                            msg
+                        )
+                    )
             return msg
 
     def send(self, buf):
@@ -214,7 +240,9 @@ class BaseConnection(object):
 
 
 class Connection(BaseConnection):
-    def __init__(self, host_addr, target_addr, proto="v1", protocol=CONNECTION_PROTO_UDP):
+    def __init__(
+        self, host_addr, target_addr, proto="v1", protocol=CONNECTION_PROTO_UDP
+    ):
         self._host_addr = host_addr
         self._target_addr = target_addr
         self._proto = proto
@@ -224,7 +252,9 @@ class Connection(BaseConnection):
         self._buf = bytearray()
 
     def __repr__(self):
-        return "Connection, host:{0}, target:{1}".format(self._host_addr, self._target_addr)
+        return "Connection, host:{0}, target:{1}".format(
+            self._host_addr, self._target_addr
+        )
 
     @property
     def target_addr(self):
@@ -262,16 +292,24 @@ class SdkConnection(BaseConnection):
                     if prot._state == 0:
                         logger.info("SdkConnection: accept connection.")
                     if prot._state == 1:
-                        logger.error("SdkConnection: reject connection, service is busy!")
+                        logger.error(
+                            "SdkConnection: reject connection, service is busy!"
+                        )
                         return False, None
                     if prot._state == 2:
-                        logger.info("SdkConnection: got config ip:{0}".format(prot._config_ip))
+                        logger.info(
+                            "SdkConnection: got config ip:{0}".format(prot._config_ip)
+                        )
                         return True, prot._config_ip
         except socket.timeout:
             logger.error("SdkConnection: RECV TimeOut!")
             raise
         except Exception as e:
-            logger.warning("SdkConnection: switch_remote_route, exception:{0}, Please Check Connections.".format(e))
+            logger.warning(
+                "SdkConnection: switch_remote_route, exception:{0}, Please Check Connections.".format(
+                    e
+                )
+            )
             logger.warning("SdkConnection:{0}".format(traceback.format_exc()))
             return False, None
 
@@ -287,20 +325,30 @@ class SdkConnection(BaseConnection):
             if config.LOCAL_IP_STR:
                 proto._ip = config.LOCAL_IP_STR
             else:
-                proto._ip = '0.0.0.0'
-            logger.info("Robot: request_connection, ap get local ip:{0}".format(proto._ip))
-            proto._port = random.randint(config.ROBOT_SDK_PORT_MIN, config.ROBOT_SDK_PORT_MAX)
+                proto._ip = "0.0.0.0"
+            logger.info(
+                "Robot: request_connection, ap get local ip:{0}".format(proto._ip)
+            )
+            proto._port = random.randint(
+                config.ROBOT_SDK_PORT_MIN, config.ROBOT_SDK_PORT_MAX
+            )
             proxy_addr = (config.ROBOT_DEFAULT_WIFI_ADDR[0], config.ROBOT_PROXY_PORT)
             remote_addr = config.ROBOT_DEFAULT_WIFI_ADDR
             local_addr = (proto._ip, proto._port)
         elif conn_type is CONNECTION_WIFI_STA:
             proto._connection = 1
-            local_ip = '0.0.0.0'
+            local_ip = "0.0.0.0"
             if config.LOCAL_IP_STR:
                 local_ip = config.LOCAL_IP_STR
             proto.ip = local_ip
-            proto._port = random.randint(config.ROBOT_SDK_PORT_MIN, config.ROBOT_SDK_PORT_MAX)
-            logger.info("SdkConnection: request_connection with ip:{0}, port:{1}".format(local_ip, proto._port))
+            proto._port = random.randint(
+                config.ROBOT_SDK_PORT_MIN, config.ROBOT_SDK_PORT_MAX
+            )
+            logger.info(
+                "SdkConnection: request_connection with ip:{0}, port:{1}".format(
+                    local_ip, proto._port
+                )
+            )
             if config.ROBOT_IP_STR:
                 remote_ip = config.ROBOT_IP_STR
             else:
@@ -313,13 +361,16 @@ class SdkConnection(BaseConnection):
         elif conn_type is CONNECTION_USB_RNDIS:
             proto._connection = 2
             proto._ip = config.ROBOT_DEFAULT_LOCAL_RNDIS_ADDR[0]
-            proto._port = random.randint(config.ROBOT_SDK_PORT_MIN,
-                                         config.ROBOT_SDK_PORT_MAX)
+            proto._port = random.randint(
+                config.ROBOT_SDK_PORT_MIN, config.ROBOT_SDK_PORT_MAX
+            )
             proxy_addr = (config.ROBOT_DEFAULT_RNDIS_ADDR[0], config.ROBOT_PROXY_PORT)
             local_addr = (config.ROBOT_DEFAULT_LOCAL_RNDIS_ADDR[0], proto._port)
             remote_addr = config.ROBOT_DEFAULT_RNDIS_ADDR
-        logger.info("SdkConnection: request_connection, local addr {0}, remote_addr {1}, "
-                    "proxy addr {2}".format(local_addr, remote_addr, proxy_addr))
+        logger.info(
+            "SdkConnection: request_connection, local addr {0}, remote_addr {1}, "
+            "proxy addr {2}".format(local_addr, remote_addr, proxy_addr)
+        )
         proto._host = sdk_host
         if proto_type == CONNECTION_PROTO_TCP:
             proto._protocol = 1
@@ -337,10 +388,16 @@ class SdkConnection(BaseConnection):
                 return False, local_addr, remote_addr
             return result, local_addr, remote_addr
         except socket.timeout:
-            logger.warning("SdkConnection: Connection Failed, please check hareware connections!!!")
+            logger.warning(
+                "SdkConnection: Connection Failed, please check hareware connections!!!"
+            )
             return False, local_addr, remote_addr
         except Exception as e:
-            logger.warning("SdkConnection: request_connection, switch_remote_route exception {0}".format(str(e)))
+            logger.warning(
+                "SdkConnection: request_connection, switch_remote_route exception {0}".format(
+                    str(e)
+                )
+            )
             return False, local_addr, remote_addr
 
 
@@ -369,9 +426,13 @@ class StreamConnection(object):
                 self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 self._sock.bind(addr)
             else:
-                logger.error("StreamConnection: ip_proto:{0} not supperted.".format(ip_proto))
+                logger.error(
+                    "StreamConnection: ip_proto:{0} not supperted.".format(ip_proto)
+                )
         except Exception as e:
-            logger.error("StreamConnection: connect addr {0}, exception {1}".format(addr, e))
+            logger.error(
+                "StreamConnection: connect addr {0}, exception {1}".format(addr, e)
+            )
             return False
         self._sock_recv = threading.Thread(target=self._recv_task)
         self._sock_recv.start()
@@ -400,11 +461,16 @@ class StreamConnection(object):
                     break
                 self._recv_count += 1
                 if self._sock_queue.full():
-                    logger.warning("StreamConnection: _recv_task, sock_data_queue is full.")
+                    logger.warning(
+                        "StreamConnection: _recv_task, sock_data_queue is full."
+                    )
                     self._sock_queue.get()
                 else:
-                    logger.debug("StreamConnection: _recv_task, recv {0}, len:{1}, data:{2}".format(
-                                  self._recv_count, len(data), data))
+                    logger.debug(
+                        "StreamConnection: _recv_task, recv {0}, len:{1}, data:{2}".format(
+                            self._recv_count, len(data), data
+                        )
+                    )
                     self._sock_queue.put(data)
             except socket.timeout:
                 logger.warning("StreamConnection: _recv_task， recv data timeout!")
@@ -436,12 +502,12 @@ class ConnectionHelper:
         self._sta_info.set_info(ssid, password, self._appid)
         buf = self._sta_info.pack()
         buf = algo.simple_encrypt(buf)
-        return bytes.decode(base64.b64encode(buf), encoding='utf-8')
+        return bytes.decode(base64.b64encode(buf), encoding="utf-8")
 
     def get_qrcode_string(self):
         buf = self._sta_info.pack()
         buf = algo.simple_encrypt(buf)
-        return bytes.decode(base64.b64encode(buf), encoding='utf-8')
+        return bytes.decode(base64.b64encode(buf), encoding="utf-8")
 
     def wait_for_connection(self):
         try:
@@ -457,7 +523,7 @@ class ConnectionHelper:
                     conn_info = protocol.STAConnInfo()
                     if conn_info.unpack(decode_buf):
                         if conn_info._recv_appid == self._appid:
-                            s.sendto(self._appid.encode(encoding='utf-8'), ip)
+                            s.sendto(self._appid.encode(encoding="utf-8"), ip)
                             return True
                         else:
                             logger.debug("skip data!")
@@ -483,7 +549,7 @@ class FtpConnection:
 
     def upload(self, src_file, target_file):
         try:
-            fp = open(src_file, 'rb')
+            fp = open(src_file, "rb")
             self._ftp.storbinary("STOR " + target_file, fp, self._bufsize)
             fp.close()
         except Exception as e:

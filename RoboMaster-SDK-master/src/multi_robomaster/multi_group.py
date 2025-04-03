@@ -28,13 +28,14 @@ class RobotGroupBase(object):
         # Input checking should be done in MultiRobot.build_group()
         self._robots_id_in_group_list = robots_group_list  # robot id list
         self._all_robots_dict = all_robots_dict  # all robots in MultiRobot
-        self._group_modules_dict = {}  # the modules of RobotGroup. {name:module-obj, ... }
+        self._group_modules_dict = (
+            {}
+        )  # the modules of RobotGroup. {name:module-obj, ... }
 
     def __del__(self):
         for module_name, module_obj in self._group_modules_dict.items():
             del module_obj
-            logger.info(
-                "RobotGroupBase: __del__ delete module: {}".format(module_name))
+            logger.info("RobotGroupBase: __del__ delete module: {}".format(module_name))
 
     def initialize(self):
         self._scan_group_module()
@@ -70,11 +71,15 @@ class RobotGroupBase(object):
                 get_result = False
                 logger.error(
                     "[MulitRobot] robot id {0}: the {1} module is not online".format(
-                        robot_id, name))
+                        robot_id, name
+                    )
+                )
         if get_result:
             logger.debug(
                 "RobotGroup: get_group_module, group modules {0}".format(
-                    self._group_modules_dict))
+                    self._group_modules_dict
+                )
+            )
             return self._group_modules_dict[name]
         else:
             return None
@@ -84,25 +89,30 @@ class RobotGroupBase(object):
         return self._robots_id_in_group_list
 
     def append(self, robots_id_list):
-        """ Add robots to the group
+        """Add robots to the group
 
         :param robots_id_list:
         :return:
         """
         check_result, robot_id = tool.check_robots_id(
-            robots_id_list, self._all_robots_dict)
+            robots_id_list, self._all_robots_dict
+        )
         if not check_result:
-            raise Exception('Robot id %d is not exist' % robot_id)
+            raise Exception("Robot id %d is not exist" % robot_id)
         for robot_id in robots_id_list:
             if robot_id in self._robots_id_in_group_list:
                 logger.warning(
                     "RobotGroupBase: robot id {0} is in group {1}".format(
-                        robot_id, self._robots_id_in_group_list))
+                        robot_id, self._robots_id_in_group_list
+                    )
+                )
             else:
                 self._robots_id_in_group_list.append(robot_id)
                 logger.info(
                     "RobotGroupBase: robot id {0} has been added into  group {1}".format(
-                        robot_id, self._robots_id_in_group_list))
+                        robot_id, self._robots_id_in_group_list
+                    )
+                )
 
     def remove(self, robots_id_list):
         """remove the robots from robot group
@@ -115,13 +125,17 @@ class RobotGroupBase(object):
             if robot_id not in self._robots_id_in_group_list:
                 logger.warning(
                     "RobotGroupBase: robot id {0} is not in group {1}".format(
-                        robot_id, self._robots_id_in_group_list))
+                        robot_id, self._robots_id_in_group_list
+                    )
+                )
                 final_result = False
             else:
                 self._robots_id_in_group_list.remove(robot_id)
                 logger.info(
                     "RobotGroupBase:  robot id {0} has been removed from  group {1}".format(
-                        robot_id, self._robots_id_in_group_list))
+                        robot_id, self._robots_id_in_group_list
+                    )
+                )
         return final_result
 
     def execute_action(self, action_name, *args, **kw):
@@ -137,7 +151,11 @@ class RobotGroupBase(object):
         for robot_id in self._robots_id_in_group_list:
             robot_obj = self.all_robots_dict[robot_id]
             action_dict[robot_id] = getattr(robot_obj, action_name)(*args, **kw)
-            logger.info("Multi Module robot id {0}: begin to execute the action".format(robot_id))
+            logger.info(
+                "Multi Module robot id {0}: begin to execute the action".format(
+                    robot_id
+                )
+            )
         multi_action = multi_module.MultiAction(action_dict)
         return multi_action
 
@@ -154,13 +172,17 @@ class RobotGroupBase(object):
         result_dict = {}  # {robot_id: result, ... }
         for robot_id in self._robots_id_in_group_list:
             robot_obj = self.all_robots_dict[robot_id]
-            exec_cmd_thread = tool.TelloThread(target=getattr(robot_obj, command_name), *input_args, **input_kw)
+            exec_cmd_thread = tool.TelloThread(
+                target=getattr(robot_obj, command_name), *input_args, **input_kw
+            )
             thread_dict[robot_id] = exec_cmd_thread
         second_time = time.time()
         # start threads
         for robot_id, thread_obj in thread_dict.items():
             thread_obj.start()
-        logger.debug("send command start spend time {0}".format(time.time() - second_time))
+        logger.debug(
+            "send command start spend time {0}".format(time.time() - second_time)
+        )
         for robot_id, exec_cmd_thread in thread_dict.items():
             exec_cmd_thread.join()
             result_dict[robot_id] = exec_cmd_thread.get_result()
@@ -170,12 +192,12 @@ class RobotGroupBase(object):
         return result_dict
 
     def get_sn(self):
-        """ 获取组内机器的sn编号
+        """获取组内机器的sn编号
 
         :param args:
         :return: dict: {robot_id: SN, ... }储存机器sn编号的字典，字典的键为机器的编号，值为对应的机器的sn号码
         """
-        return self.execute_command('get_sn')
+        return self.execute_command("get_sn")
 
 
 class RMGroup(RobotGroupBase):
@@ -184,12 +206,12 @@ class RMGroup(RobotGroupBase):
         super().__init__(robots_group_list, all_robots_dict)
 
     def _scan_group_module(self):
-        _chassis = multi_module.MultiRmModule(self, 'Chassis')
-        _gimbal = multi_module.MultiRmModule(self, 'Gimbal')
-        _blaster = multi_module.MultiRmModule(self, 'Blaster')
-        _led = multi_module.MultiRmModule(self, 'Led')
-        _robotic_arm = multi_module.MultiRmModule(self, 'RoboticArm')
-        _gripper = multi_module.MultiRmModule(self, 'Gripper')
+        _chassis = multi_module.MultiRmModule(self, "Chassis")
+        _gimbal = multi_module.MultiRmModule(self, "Gimbal")
+        _blaster = multi_module.MultiRmModule(self, "Blaster")
+        _led = multi_module.MultiRmModule(self, "Led")
+        _robotic_arm = multi_module.MultiRmModule(self, "RoboticArm")
+        _gripper = multi_module.MultiRmModule(self, "Gripper")
         self._group_modules_dict[_chassis.name] = _chassis
         self._group_modules_dict[_gimbal.name] = _gimbal
         self._group_modules_dict[_blaster.name] = _blaster
@@ -204,18 +226,28 @@ class RMGroup(RobotGroupBase):
             all_result = result and all_result
             if not result:
                 logger.error(
-                    "RobotGroup: set group_robots_mode {0}, robot id {1} set mode error!".format(mode, robot_id))
+                    "RobotGroup: set group_robots_mode {0}, robot id {1} set mode error!".format(
+                        mode, robot_id
+                    )
+                )
             else:
                 logger.info(
-                    "RobotGroup: set group_robots_mode {0}, robot id {1} set mode successfully!".format(mode, robot_id))
+                    "RobotGroup: set group_robots_mode {0}, robot id {1} set mode successfully!".format(
+                        mode, robot_id
+                    )
+                )
         if all_result:
             logger.info(
                 "RobotGroup: set_group_robots_mode {1}, group {0}  set successfully".format(
-                    self._robots_id_in_group_list, mode))
+                    self._robots_id_in_group_list, mode
+                )
+            )
         else:
             logger.info(
                 "RobotGroup: set_group_robots_mode {1}, group {0} set error".format(
-                    self._robots_id_in_group_list, mode))
+                    self._robots_id_in_group_list, mode
+                )
+            )
         return all_result
 
     def play_sound(self, sound_id, times=1):
@@ -226,46 +258,47 @@ class RMGroup(RobotGroupBase):
         """
         final_result = False
         for robot_id in self._robots_id_in_group_list:
-            result = self._all_robots_dict[robot_id].play_sound(
-                sound_id, times)
+            result = self._all_robots_dict[robot_id].play_sound(sound_id, times)
             if not result:
-                logger.warning("RobotGroup: Robot id {0} play_sound failed".format(robot_id))
+                logger.warning(
+                    "RobotGroup: Robot id {0} play_sound failed".format(robot_id)
+                )
             final_result = final_result and result
         return final_result
 
     @property
     def chassis(self):
-        """ Get chassis obj """
+        """Get chassis obj"""
         return self.get_group_module("Chassis")
 
     @property
     def gimbal(self):
-        """ Get gimbal obj """
+        """Get gimbal obj"""
         return self.get_group_module("Gimbal")
 
     @property
     def blaster(self):
-        """ Get blaster obj """
+        """Get blaster obj"""
         return self.get_group_module("Blaster")
 
     @property
     def led(self):
-        """ Get led obj """
+        """Get led obj"""
         return self.get_group_module("Led")
 
     @property
     def robotic_arm(self):
-        """ Get arm obj """
+        """Get arm obj"""
         return self.get_group_module("RoboticArm")
 
     @property
     def sensor(self):
-        """ Get sensor obj"""
+        """Get sensor obj"""
         return self.get_group_module("DistanceSensor")
 
     @property
     def gripper(self):
-        """ Get gripper obj """
+        """Get gripper obj"""
         return self.get_group_module("Gripper")
 
 
@@ -279,7 +312,9 @@ class SingleDroneInGroup(multi_module.TelloAction):
         self.event = threading.Event()
         self.robot_group_host_list = []
         self.event.set()
-        self._dispatcher = multi_module.TelloDispatcher(self._client, self.event, {self._robot_host: self._robot_id})
+        self._dispatcher = multi_module.TelloDispatcher(
+            self._client, self.event, {self._robot_host: self._robot_id}
+        )
         self._dispatcher.action_host_list = [self._robot_host]
 
     def close(self):
@@ -299,7 +334,9 @@ class SingleDroneInGroup(multi_module.TelloAction):
 
 class TelloGroup(RobotGroupBase):
 
-    def __init__(self, client, robot_id_group_list, _robot_id_dict={}, _robot_host_dict={}):
+    def __init__(
+        self, client, robot_id_group_list, _robot_id_dict={}, _robot_host_dict={}
+    ):
         super().__init__(robot_id_group_list, _robot_id_dict)
         self._robot_host_dict = _robot_host_dict
         self._robot_group_host_list = []
@@ -313,16 +350,19 @@ class TelloGroup(RobotGroupBase):
             self._robot_group_host_list.append(host)
 
     def get_sn(self):
-        """ find sn in group"""
-        return [self._all_robots_dict[robot_id] for robot_id in self._robots_id_in_group_list]
+        """find sn in group"""
+        return [
+            self._all_robots_dict[robot_id]
+            for robot_id in self._robots_id_in_group_list
+        ]
 
     @property
     def robot_group_host_list(self):
         return self._robot_group_host_list
 
     def get_robot(self, robot_id):
-        """  get Drone obj """
+        """get Drone obj"""
         robot_sn = self._all_robots_dict[robot_id]
         robot_host = self._robot_host_dict[robot_sn]
-        logger.info('get robot:SN:{}, HOST:{}' .format(robot_sn, robot_host))
+        logger.info("get robot:SN:{}, HOST:{}".format(robot_sn, robot_host))
         return SingleDroneInGroup(self.client, robot_id, robot_sn, robot_host)

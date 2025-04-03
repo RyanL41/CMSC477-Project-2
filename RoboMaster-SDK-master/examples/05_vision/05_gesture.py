@@ -59,7 +59,7 @@ def on_detect_person(gesture_info):
     value_lock.release()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="rndis")
 
@@ -75,7 +75,15 @@ if __name__ == '__main__':
         for j in range(0, len(gestures)):
             value_lock.acquire()
             cv2.rectangle(img, gestures[j].pt1, gestures[j].pt2, (255, 255, 255))
-            cv2.putText(img, gestures[j].text, gestures[j].center, cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 3)
+            cv2.putText(
+                img,
+                gestures[j].text,
+                gestures[j].center,
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1.5,
+                (255, 255, 255),
+                3,
+            )
             value_lock.release()
         cv2.imshow("Gestures", img)
         key = cv2.waitKey(1)

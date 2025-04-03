@@ -55,7 +55,7 @@ def light_order(robot_group):
         # robot_obj.play_sound(music_note).wait_for_completed(0.5)
         # 音符的编码顺序为 1A -> 1ASharp -> 1B -> 1BSharp... ，因此每次要移动两个编码才能到下一个音符
         music_note += 2
-        robot_obj.blaster.fire(fire_type='water', times=1)
+        robot_obj.blaster.fire(fire_type="water", times=1)
         if count & 0x01:
             robot_obj.led.set_led(led.COMP_ALL, 255, 1, 1, led.EFFECT_ON)
             robot_obj.gimbal.moveto(0, 0, 180, 180).wait_for_completed()
@@ -196,17 +196,29 @@ def nod_action(robot_group):
     robot_group.gimbal.moveto(0, 0, 100, 100).wait_for_completed()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # robomaster.config.LOCAL_IP_STR = "192.168.1.111"
     # get robot sn by run the exmaples of /15_multi_robot/multi_ep/01_scan_robot_sn.py
-    robots_sn_list = ['3JKDH3B00138T0', '3JKDH3B001628K', '3JKDH3B0016UMV',
-                      '3JKDH3B001M8MW', '3JKDH3B001PQ53', '3JKDH3B001470C']
+    robots_sn_list = [
+        "3JKDH3B00138T0",
+        "3JKDH3B001628K",
+        "3JKDH3B0016UMV",
+        "3JKDH3B001M8MW",
+        "3JKDH3B001PQ53",
+        "3JKDH3B001470C",
+    ]
 
     multi_robots = multi_robot.MultiEP()
     multi_robots.initialize()
     # 本例程只支持带云台的EP车，不支持夹爪的EP车, 如有夹爪请自行修改代码
-    number = multi_robots.number_id_by_sn([0, robots_sn_list[0]], [1, robots_sn_list[1]], [2, robots_sn_list[2]],
-                                          [3, robots_sn_list[3]], [4, robots_sn_list[4]], [5, robots_sn_list[5]])
+    number = multi_robots.number_id_by_sn(
+        [0, robots_sn_list[0]],
+        [1, robots_sn_list[1]],
+        [2, robots_sn_list[2]],
+        [3, robots_sn_list[3]],
+        [4, robots_sn_list[4]],
+        [5, robots_sn_list[5]],
+    )
     print("The number of robot is: {0}".format(number))
     robot_group_all = multi_robots.build_group([0, 1, 2, 3, 4, 5])
     robot_group_ep_gimbal = multi_robots.build_group([0, 2, 4])
@@ -216,19 +228,28 @@ if __name__ == '__main__':
     ep_arm_leader = multi_robots.build_group([3])
     # 初始摆放，云台向左，云台向右，依次摆放
     multi_robots.run([robot_group_all, reset_task])
-    multi_robots.run([robot_group_ep_gimbal, ep_gimbal_initial_pos], [robot_group_ep_arm, ep_arm_initial_pos])
+    multi_robots.run(
+        [robot_group_ep_gimbal, ep_gimbal_initial_pos],
+        [robot_group_ep_arm, ep_arm_initial_pos],
+    )
     # 依次点亮灯，抬起云台
     multi_robots.run([robot_group_all, light_order])
     # 两组向两面散开
     multi_robots.run([robot_group_all, move_forward])
     # 面向观众
-    multi_robots.run([robot_group_ep_gimbal, rotate_left], [robot_group_ep_arm, rotate_right])
+    multi_robots.run(
+        [robot_group_ep_gimbal, rotate_left], [robot_group_ep_arm, rotate_right]
+    )
     # 两边对齐
     multi_robots.run([robot_group_ep_gimbal, move_backward])
     # 灯效闪烁
-    multi_robots.run([robot_group_ep_gimbal, led_red_blink], [robot_group_ep_arm, led_grey_blink])
+    multi_robots.run(
+        [robot_group_ep_gimbal, led_red_blink], [robot_group_ep_arm, led_grey_blink]
+    )
     # 两边转头面向对方
-    multi_robots.run([robot_group_ep_gimbal, rotate_left], [robot_group_ep_arm, rotate_right])
+    multi_robots.run(
+        [robot_group_ep_gimbal, rotate_left], [robot_group_ep_arm, rotate_right]
+    )
     # 步兵leader 舞
     multi_robots.run([ep_gimbal_leader, rotate_dance])
     # 点头
@@ -238,18 +259,32 @@ if __name__ == '__main__':
     # 步兵点头
     multi_robots.run([robot_group_ep_gimbal, nod_action])
     # 面向观众
-    multi_robots.run([robot_group_ep_gimbal, rotate_right], [robot_group_ep_arm, rotate_left])
+    multi_robots.run(
+        [robot_group_ep_gimbal, rotate_right], [robot_group_ep_arm, rotate_left]
+    )
     # 灯效
-    multi_robots.run([robot_group_ep_gimbal, led_red_solid], [robot_group_ep_arm, led_grey_solid])
+    multi_robots.run(
+        [robot_group_ep_gimbal, led_red_solid], [robot_group_ep_arm, led_grey_solid]
+    )
     # 两边左右旋转
-    multi_robots.run([robot_group_ep_gimbal, rotate_right], [robot_group_ep_arm, rotate_left])
-    multi_robots.run([robot_group_ep_gimbal, rotate_left], [robot_group_ep_arm, rotate_right])
-    multi_robots.run([robot_group_ep_gimbal, rotate_circle_right], [robot_group_ep_arm, rotate_circle_left])
-    multi_robots.run([robot_group_ep_gimbal, rotate_circle_left], [robot_group_ep_arm, rotate_circle_right])
+    multi_robots.run(
+        [robot_group_ep_gimbal, rotate_right], [robot_group_ep_arm, rotate_left]
+    )
+    multi_robots.run(
+        [robot_group_ep_gimbal, rotate_left], [robot_group_ep_arm, rotate_right]
+    )
+    multi_robots.run(
+        [robot_group_ep_gimbal, rotate_circle_right],
+        [robot_group_ep_arm, rotate_circle_left],
+    )
+    multi_robots.run(
+        [robot_group_ep_gimbal, rotate_circle_left],
+        [robot_group_ep_arm, rotate_circle_right],
+    )
     # 结束队形,对天空放礼炮->
-    multi_robots.run([robot_group_ep_gimbal, gimbal_right_up], [robot_group_ep_arm, gimbal_left_up])
+    multi_robots.run(
+        [robot_group_ep_gimbal, gimbal_right_up], [robot_group_ep_arm, gimbal_left_up]
+    )
     multi_robots.run([robot_group_all, ending_formation])
 
     print("Game over")
-
-

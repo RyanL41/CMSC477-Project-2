@@ -118,19 +118,25 @@ class MultiRobotBase(object):
         pass
 
     def remove_group(self, group_list):
-        """ remove group from MultiRobot obj
+        """remove group from MultiRobot obj
 
         :param group_list:
         :return:
         """
         for group in group_list:
             if group not in self._group_list:
-                logger.warning("MultiRobotBase group {0} do not exist".format(
-                    group._robots_id_in_group_list))
+                logger.warning(
+                    "MultiRobotBase group {0} do not exist".format(
+                        group._robots_id_in_group_list
+                    )
+                )
             else:
                 self._group_list.remove(group)
-                logger.info("MultiRobotBase: group {0} has removed".format(
-                    group._robots_id_in_group_list))
+                logger.info(
+                    "MultiRobotBase: group {0} has removed".format(
+                        group._robots_id_in_group_list
+                    )
+                )
 
     def run(self, *exec_list):
         """Execute the action from the input list
@@ -143,10 +149,13 @@ class MultiRobotBase(object):
         if not type(exec_list) is tuple:
             tuple(exec_list)
             logger.info(
-                "MultiRobot: run type(exec_list) is not tuple, exec_list: {0}".format(exec_list))
+                "MultiRobot: run type(exec_list) is not tuple, exec_list: {0}".format(
+                    exec_list
+                )
+            )
         for robot_group, group_task in exec_list:
             if robot_group not in self._group_list:
-                raise Exception('Input group', robot_group, 'is not built')
+                raise Exception("Input group", robot_group, "is not built")
 
             exec_thread = threading.Thread(target=group_task, args=(robot_group,))
             exec_thread.start()
@@ -158,7 +167,8 @@ class MultiRobotBase(object):
 
 
 class MultiEP(MultiRobotBase):
-    """ S1_EP"""
+    """S1_EP"""
+
     def __init__(self):
         super().__init__()
 
@@ -177,7 +187,7 @@ class MultiEP(MultiRobotBase):
             robot_obj.initialize(proto_type)
 
     def _scan_multi_robot(self, proto_type=config.DEFAULT_PROTO_TYPE):
-        """ Automatic scanning of robots in the network
+        """Automatic scanning of robots in the network
 
         :return:
         """
@@ -192,15 +202,24 @@ class MultiEP(MultiRobotBase):
             if config.LOCAL_IP_STR:
                 proto._ip = config.LOCAL_IP_STR
             else:
-                proto._ip = '0.0.0.0'
-            proto._port = random.randint(config.ROBOT_SDK_PORT_MIN, config.ROBOT_SDK_PORT_MAX)
-            msg = protocol.Msg(robot.ROBOT_DEFAULT_HOST, protocol.host2byte(9, 0), proto)
+                proto._ip = "0.0.0.0"
+            proto._port = random.randint(
+                config.ROBOT_SDK_PORT_MIN, config.ROBOT_SDK_PORT_MAX
+            )
+            msg = protocol.Msg(
+                robot.ROBOT_DEFAULT_HOST, protocol.host2byte(9, 0), proto
+            )
             result, local_ip = sdk_conn.switch_remote_route(msg, proxy_addr)
             proto._ip = local_ip
-            logger.info("request connection ip:{0} port:{1}".format(proto._ip, proto._port))
+            logger.info(
+                "request connection ip:{0} port:{1}".format(proto._ip, proto._port)
+            )
             if result:
-                conn1 = conn.Connection((proto._ip, proto._port), (ip, config.ROBOT_DEVICE_PORT),
-                                        protocol=proto_type)
+                conn1 = conn.Connection(
+                    (proto._ip, proto._port),
+                    (ip, config.ROBOT_DEVICE_PORT),
+                    protocol=proto_type,
+                )
                 logger.info("connection {0}".format(conn1))
                 cli = client.Client(9, 6, conn1)
                 rob = robot.Robot(cli)
@@ -219,8 +238,11 @@ class MultiEP(MultiRobotBase):
         robot_group = multi_group.RMGroup(robot_id_list, self._robots_dict)
         robot_group.initialize()
         self._group_list.append(robot_group)
-        logger.info("MultiRobot: build_group successfully, group.robots_in_group_list : {0}".format(
-            robot_group._robots_id_in_group_list))
+        logger.info(
+            "MultiRobot: build_group successfully, group.robots_in_group_list : {0}".format(
+                robot_group._robots_id_in_group_list
+            )
+        )
         return robot_group
 
     def set_all_robots_mode(self, mode="gimbal_lead"):
@@ -281,13 +303,19 @@ class MultiDrone(MultiRobotBase):
 
     @staticmethod
     def reset_all_robot():
-        logger.warning("Drone obj does not support this api \napi name:{}\napi location:{}"
-                       .format(sys._getframe().f_code.co_name, sys._getframe().f_lineno))
+        logger.warning(
+            "Drone obj does not support this api \napi name:{}\napi location:{}".format(
+                sys._getframe().f_code.co_name, sys._getframe().f_lineno
+            )
+        )
 
     @staticmethod
     def all_robots():
-        logger.warning("Drone obj does not support this api \napi name:{}\napi location:{}"
-                       .format(sys._getframe().f_code.co_name, sys._getframe().f_lineno))
+        logger.warning(
+            "Drone obj does not support this api \napi name:{}\napi location:{}".format(
+                sys._getframe().f_code.co_name, sys._getframe().f_lineno
+            )
+        )
 
     @property
     def robots_num(self):
@@ -298,10 +326,16 @@ class MultiDrone(MultiRobotBase):
         robot_group_host_list = []
         for robot_group, group_task in exec_list:
             if robot_group not in self._group_list:
-                raise Exception('Input group', robot_group, 'is not built')
-            self.tello_action = multi_module.TelloAction(self._client, self._robot_id_dict, self._robot_sn_dict,
-                                                         self._robot_host_dict)
-            exec_thread = threading.Thread(target=group_task, args=(self.tello_action.action_group(robot_group),))
+                raise Exception("Input group", robot_group, "is not built")
+            self.tello_action = multi_module.TelloAction(
+                self._client,
+                self._robot_id_dict,
+                self._robot_sn_dict,
+                self._robot_host_dict,
+            )
+            exec_thread = threading.Thread(
+                target=group_task, args=(self.tello_action.action_group(robot_group),)
+            )
             _groups_exec_dict[robot_group] = exec_thread
             robot_group_host_list.append(robot_group.robot_group_host_list)
 
@@ -320,11 +354,14 @@ class MultiDrone(MultiRobotBase):
         logger.info("MultiRobotBase: run, Action is completed")
 
     def build_group(self, robot_id_group_list):
-        check_result, robot_id = tool.check_robots_id(robot_id_group_list, self._robot_id_dict)
+        check_result, robot_id = tool.check_robots_id(
+            robot_id_group_list, self._robot_id_dict
+        )
         if not check_result:
             raise Exception("Robot Id %d is not exist" % robot_id)
-        tello_groups = multi_group.TelloGroup(self._client, robot_id_group_list,
-                                              self._robot_id_dict, self._robot_sn_dict)
+        tello_groups = multi_group.TelloGroup(
+            self._client, robot_id_group_list, self._robot_id_dict, self._robot_sn_dict
+        )
         self._group_list.append(tello_groups)
         return tello_groups
 
@@ -347,7 +384,7 @@ class MultiDrone(MultiRobotBase):
             if proto.text is None:
                 raise Exception("recv data is None")
             self._robot_sn_dict[proto.text] = proto.host  # find host by sn
-            time.sleep(0.1)   # Tello BUG that reply ok in sn? command response
+            time.sleep(0.1)  # Tello BUG that reply ok in sn? command response
 
         return self._robot_sn_dict
 

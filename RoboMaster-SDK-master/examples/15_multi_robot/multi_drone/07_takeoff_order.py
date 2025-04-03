@@ -25,7 +25,7 @@ def group_land(robot_group):
     robot_group.land().wait_for_completed()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # get drone sn by run the expamles of /15_multi_robot/multi_drone/01_scan_ip.py
 
     robot_sn_list = ["0TQZH79ED00HA4", "0TQZH79ED00H5L"]

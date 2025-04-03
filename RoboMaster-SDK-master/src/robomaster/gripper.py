@@ -20,7 +20,7 @@ from . import logger
 from . import dds
 from . import util
 
-__all__ = ['Gripper']
+__all__ = ["Gripper"]
 
 
 class GripperSubject(dds.Subject):
@@ -41,7 +41,9 @@ class GripperSubject(dds.Subject):
         elif self._status == 0:
             return "normal"
         else:
-            logger.warning("GripperSubject: unsupported status:{0}".format(self._status))
+            logger.warning(
+                "GripperSubject: unsupported status:{0}".format(self._status)
+            )
             return ""
 
     def data_info(self):
@@ -52,7 +54,7 @@ class GripperSubject(dds.Subject):
 
 
 class Gripper(module.Module):
-    """ EP 机械爪模块 """
+    """EP 机械爪模块"""
 
     _host = protocol.host2byte(27, 1)
 
@@ -63,7 +65,7 @@ class Gripper(module.Module):
         pass
 
     def open(self, power=50):
-        """ 控制机械爪张开
+        """控制机械爪张开
 
         :param power: int: [1, 100]，控制出力
         :return: bool: 调用结果
@@ -74,7 +76,7 @@ class Gripper(module.Module):
         return self._send_sync_proto(proto, protocol.host2byte(3, 6))
 
     def close(self, power=50):
-        """ 控制机械爪关闭
+        """控制机械爪关闭
 
         :param power: int: [1, 100]，控制出力
         :return: bool: 调用结果
@@ -85,7 +87,7 @@ class Gripper(module.Module):
         return self._send_sync_proto(proto, protocol.host2byte(3, 6))
 
     def pause(self):
-        """ 控制机械爪停止
+        """控制机械爪停止
 
         :return: bool: 调用结果
         """
@@ -95,7 +97,7 @@ class Gripper(module.Module):
         return self._send_sync_proto(proto, protocol.host2byte(3, 6))
 
     def sub_status(self, freq=5, callback=None, *args, **kw):
-        """ 订阅夹爪的状态信息
+        """订阅夹爪的状态信息
 
         :param freq: enum: (1, 5, 10, 20, 50)，设置数据订阅数据的推送频率，单位 Hz
         :param callback: 传入数据处理的回调函数,回调函数参数为：
@@ -115,7 +117,7 @@ class Gripper(module.Module):
         return sub.add_subject_info(subject, callback, args, kw)
 
     def unsub_status(self):
-        """ 取消夹爪状态信息订阅
+        """取消夹爪状态信息订阅
 
         :return: 取消订阅结果
         """

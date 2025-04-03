@@ -43,7 +43,9 @@ class MultiAction(object):
         if not self._robots_action_dict:
             logger.error("MultiAction: no action is waiting")
             return False
-        robot_id_executing = []  # dictionary can`t change size during iteration, so use list
+        robot_id_executing = (
+            []
+        )  # dictionary can`t change size during iteration, so use list
         start_time = time.time()
         spent_time = 0
         final_result = False
@@ -51,24 +53,35 @@ class MultiAction(object):
             robot_id_executing.append(robot_id)
         logger.info(
             "MultiAction: Group action start waiting for completed, {0}".format(
-                self._robots_action_dict[robot_id_executing[0]]))
+                self._robots_action_dict[robot_id_executing[0]]
+            )
+        )
         while spent_time < timeout:
             cur_time = time.time()
             spent_time = cur_time - start_time
             if not robot_id_executing:
-                logger.info("MultiAction: wait_for_all_completed. All of robots are completed")
+                logger.info(
+                    "MultiAction: wait_for_all_completed. All of robots are completed"
+                )
                 final_result = True
                 break
             for robot_id, robot_action in self._robots_action_dict.items():
-                if self._robots_action_dict[robot_id].is_completed and (robot_id in robot_id_executing):
+                if self._robots_action_dict[robot_id].is_completed and (
+                    robot_id in robot_id_executing
+                ):
                     action_key = self._robots_action_dict[robot_id].make_action_key()
-                    in_progress_list = self._robots_action_dict[robot_id]._obj._in_progress
+                    in_progress_list = self._robots_action_dict[
+                        robot_id
+                    ]._obj._in_progress
                     # make sure the action has been removed form _in_progress
                     if action_key not in in_progress_list:
                         robot_id_executing.remove(robot_id)
                         logger.info(
                             "MultiAction: wait_for_all_completed. Robot id ({0}) action is completed, "
-                            "action: {1}".format(robot_id, self._robots_action_dict[robot_id]))
+                            "action: {1}".format(
+                                robot_id, self._robots_action_dict[robot_id]
+                            )
+                        )
             time.sleep(0.05)
         # timeout
         if not final_result:
@@ -77,10 +90,16 @@ class MultiAction(object):
                     robot_action._changeto_state(action.ACTION_EXCEPTION)
                     logger.warning(
                         "MultiAction: wait_for_all_completed, timeout! Robot id {}, action {}".format(
-                            robot_id, self._robots_action_dict[robot_id]))
+                            robot_id, self._robots_action_dict[robot_id]
+                        )
+                    )
         else:
             # each robot has completed its action
-            logger.info("MultiAction: wait for all completed successfully, action {0}".format(self._robots_action_dict))
+            logger.info(
+                "MultiAction: wait for all completed successfully, action {0}".format(
+                    self._robots_action_dict
+                )
+            )
         return final_result
 
 
@@ -108,7 +127,7 @@ class TelloDispatcher(object):
         tello_status = tool.TelloStatus(self.cur_action)
         cur_time = time.time()
         while len(_action_host_list) != 0:
-            if time.time()-cur_time > timeout:
+            if time.time() - cur_time > timeout:
                 logger.warning("action: {} ,timeout".format(self.cur_action))
                 break
             qsize = _queue.qsize()
@@ -140,19 +159,21 @@ class TelloDispatcher(object):
                         _action_host_list.remove(proto.host)
                         id_ = self._robot_host_dict[proto.host]
                         logger.info("DRONE id: {}, reply: {}".format(id_, proto.text))
-                        print("DRONE id: {}, reply: {}".format(id_, proto.text))   # output to console
+                        print(
+                            "DRONE id: {}, reply: {}".format(id_, proto.text)
+                        )  # output to console
                     else:
                         _queue.put(proto)
         if self.special == "takeoff":
             while not _queue.empty():
-                _ = _queue.get()    # drone bug: takeoff reply double ok
+                _ = _queue.get()  # drone bug: takeoff reply double ok
         logger.info("wait_for_completed: finished")
         self.event.set()
         return self
 
 
 class MultiModule(object):
-    """ multi-robot`s module object"""
+    """multi-robot`s module object"""
 
     def __init__(self, robot_group, module_name):
         self._robot_group = robot_group
@@ -174,9 +195,15 @@ class MultiModule(object):
         """
         action_dict = {}
         for robot_id in self._robot_group._robots_id_in_group_list:
-            robot_module = self._robot_group.all_robots_dict[robot_id].get_module(self._module_name)
+            robot_module = self._robot_group.all_robots_dict[robot_id].get_module(
+                self._module_name
+            )
             action_dict[robot_id] = getattr(robot_module, action_name)(*args, **kw)
-            logger.info("Multi Module robot id {0}: begin to execute the action".format(robot_id))
+            logger.info(
+                "Multi Module robot id {0}: begin to execute the action".format(
+                    robot_id
+                )
+            )
         multi_action = MultiAction(action_dict)
         return multi_action
 
@@ -192,14 +219,20 @@ class MultiModule(object):
         thread_dict = {}  # {robot_id: thread}
         result_dict = {}  # {robot_id: result, ... }
         for robot_id in self._robot_group._robots_id_in_group_list:
-            robot_module = self._robot_group.all_robots_dict[robot_id].get_module(self._module_name)
-            exec_cmd_thread = tool.TelloThread(getattr(robot_module, command_name), *input_args, **input_kw)
+            robot_module = self._robot_group.all_robots_dict[robot_id].get_module(
+                self._module_name
+            )
+            exec_cmd_thread = tool.TelloThread(
+                getattr(robot_module, command_name), *input_args, **input_kw
+            )
             thread_dict[robot_id] = exec_cmd_thread
         second_time = time.time()
         # start threads
         for robot_id, thread_obj in thread_dict.items():
             thread_obj.start()
-        logger.debug("send command start spend time {0}".format(time.time() - second_time))
+        logger.debug(
+            "send command start spend time {0}".format(time.time() - second_time)
+        )
         for robot_id, exec_cmd_thread in thread_dict.items():
             exec_cmd_thread.join()
             result_dict[robot_id] = exec_cmd_thread.get_result()
@@ -210,7 +243,7 @@ class MultiModule(object):
 
 
 class MultiRmModule(MultiModule):
-    """ Robomaster module """
+    """Robomaster module"""
 
     def __init__(self, robot_group, module_name):
         super().__init__(robot_group, module_name)
@@ -223,7 +256,7 @@ class MultiRmModule(MultiModule):
         :param args:
         :return:
         """
-        return self.execute_action('recenter', *args, **kw)
+        return self.execute_action("recenter", *args, **kw)
 
     def suspend(self, *args, **kw):
         """gimbal suspend
@@ -231,7 +264,7 @@ class MultiRmModule(MultiModule):
         :param args:
         :return:
         """
-        return self.execute_command('suspend', *args, **kw)
+        return self.execute_command("suspend", *args, **kw)
 
     def resume(self, *args, **kw):
         """gimbal resume
@@ -239,7 +272,7 @@ class MultiRmModule(MultiModule):
         :param args:
         :return:
         """
-        return self.execute_command('resume', *args, **kw)
+        return self.execute_command("resume", *args, **kw)
 
     """Only for chassis"""
 
@@ -248,12 +281,12 @@ class MultiRmModule(MultiModule):
 
         :param args:
         :return:
-        """"""
+        """ """
 
         :param args:
         :return:
         """
-        return self.execute_action('drive_wheels', *args, **kw)
+        return self.execute_action("drive_wheels", *args, **kw)
 
     def drive_speed(self, *args, **kw):
         """chassis drive speed
@@ -261,7 +294,7 @@ class MultiRmModule(MultiModule):
         :param args:
         :return:
         """
-        return self.execute_action('drive_wheels', *args, **kw)
+        return self.execute_action("drive_wheels", *args, **kw)
 
     """Only for fire"""
 
@@ -271,7 +304,7 @@ class MultiRmModule(MultiModule):
         :param args:
         :return:
         """
-        return self.execute_command('fire', *args, **kw)
+        return self.execute_command("fire", *args, **kw)
 
     """Share to multiple modules"""
 
@@ -281,7 +314,7 @@ class MultiRmModule(MultiModule):
         :param args:
         :return:
         """
-        return self.execute_action('move', *args, **kw)
+        return self.execute_action("move", *args, **kw)
 
     def moveto(self, *args, **kw):
         """gimbal & chassis moveto
@@ -289,7 +322,7 @@ class MultiRmModule(MultiModule):
         :param args:
         :return:
         """
-        return self.execute_action('moveto', *args, **kw)
+        return self.execute_action("moveto", *args, **kw)
 
     def set_led(self, *args, **kw):
         """blaster & armor led
@@ -297,7 +330,7 @@ class MultiRmModule(MultiModule):
         :param args:
         :return:
         """
-        return self.execute_command('set_led', *args, **kw)
+        return self.execute_command("set_led", *args, **kw)
 
     """Only for gripper"""
 
@@ -307,7 +340,7 @@ class MultiRmModule(MultiModule):
         :param args:
         :return:
         """
-        return self.execute_command('close', *args, **kw)
+        return self.execute_command("close", *args, **kw)
 
     def open(self, *args, **kw):
         """gripper
@@ -315,7 +348,7 @@ class MultiRmModule(MultiModule):
         :param args:
         :return:
         """
-        return self.execute_command('open', *args, **kw)
+        return self.execute_command("open", *args, **kw)
 
     def pause(self):
         """gripper
@@ -323,7 +356,7 @@ class MultiRmModule(MultiModule):
         :param args:
         :return:
         """
-        return self.execute_command('pause')
+        return self.execute_command("pause")
 
 
 class TelloAction(object):
@@ -335,7 +368,9 @@ class TelloAction(object):
         self._robot_host_dict = _robot_host_dict
         self.event = threading.Event()
         self.event.set()
-        self._dispatcher = TelloDispatcher(self._client, self.event, self._robot_host_dict)
+        self._dispatcher = TelloDispatcher(
+            self._client, self.event, self._robot_host_dict
+        )
         self.robot_group_host_list = []
 
     def action_group(self, robot_group):
@@ -369,7 +404,7 @@ class TelloAction(object):
             logger.warning("execute command：{}, timeout".format(action))
 
     def get_sn(self):
-        """ 获取sn
+        """获取sn
 
         :return: _dispatcher对象
         """
@@ -379,7 +414,7 @@ class TelloAction(object):
         return self._dispatcher.wait_for_completed(10)
 
     def get_battery(self):
-        """ 获取电量
+        """获取电量
 
         :return: _dispatcher对象
         """
@@ -389,7 +424,7 @@ class TelloAction(object):
         return self._dispatcher.wait_for_completed(10)
 
     def takeoff(self, retry=True):
-        """ 自动起飞
+        """自动起飞
 
         :param: retry: bool:是否重发命令
         :return: _dispatcher对象
@@ -401,7 +436,7 @@ class TelloAction(object):
         return self._dispatcher
 
     def land(self, retry=True):
-        """ 自动降落
+        """自动降落
 
         :param: retry: bool:是否重发命令
         :return: _dispatcher对象
@@ -412,7 +447,7 @@ class TelloAction(object):
         return self._dispatcher
 
     def up(self, distance, retry=True):
-        """ 向上飞distance厘米，指相对距离
+        """向上飞distance厘米，指相对距离
 
         :param: distance: float:[20, 500]向上飞行的相对距离，单位 cm
         :param: retry: bool:是否重发命令
@@ -421,7 +456,7 @@ class TelloAction(object):
         return self.fly(flight.UP, distance, retry)
 
     def down(self, distance, retry=True):
-        """ 向下飞distance厘米，指相对距离
+        """向下飞distance厘米，指相对距离
 
         :param: distance: float:[20, 500]向下飞行的相对距离，单位 cm
         :param: retry: bool:是否重发命令
@@ -430,7 +465,7 @@ class TelloAction(object):
         return self.fly(flight.DOWN, distance, retry)
 
     def forward(self, distance, retry=True):
-        """ 向前飞distance厘米，指相对距离
+        """向前飞distance厘米，指相对距离
 
         :param: distance: float:[20, 500]向前飞行的相对距离，单位 cm
         :param: retry: bool:是否重发命令
@@ -439,7 +474,7 @@ class TelloAction(object):
         return self.fly(flight.FORWARD, distance, retry)
 
     def backward(self, distance, retry=True):
-        """ 向后飞distance厘米，指相对距离
+        """向后飞distance厘米，指相对距离
 
         :param: distance: float:[20, 500]向后飞行的相对距离，单位 cm
         :param: retry: bool:是否重发命令
@@ -448,7 +483,7 @@ class TelloAction(object):
         return self.fly(flight.BACKWARD, distance, retry)
 
     def left(self, distance, retry=True):
-        """ 向左飞distance厘米，指相对距离
+        """向左飞distance厘米，指相对距离
 
         :param: distance: float:[20, 500]向左飞行的相对距离，单位 cm
         :param: retry: bool:是否重发命令
@@ -457,7 +492,7 @@ class TelloAction(object):
         return self.fly(flight.LEFT, distance, retry)
 
     def right(self, distance, retry=True):
-        """ 向右飞distance厘米，指相对距离
+        """向右飞distance厘米，指相对距离
 
         :param: distance: float:[20, 500]向右飞行的相对距离，单位 cm
         :param: retry: bool:是否重发命令
@@ -466,7 +501,7 @@ class TelloAction(object):
         return self.fly(flight.RIGHT, distance, retry)
 
     def fly(self, _action, distance, retry):
-        """ 控制飞机向指定方向飞行指定距离。
+        """控制飞机向指定方向飞行指定距离。
 
         :param: direction: string: 飞行的方向，"forward" 向上飞行， "back" 向下飞行， "up" 向上飞行，
                                     "down" 向下飞行， "left" 向左飞行， "right" 向右飞行
@@ -480,7 +515,7 @@ class TelloAction(object):
         return self._dispatcher
 
     def rotate(self, angle=0, retry=True):
-        """ 控制飞机旋转指定角度
+        """控制飞机旋转指定角度
 
         :param: angle: float:[-360, 360] 旋转的角度，俯视飞机时，顺时针为正角度，逆时针为负角度
         :param: retry: bool:是否重发命令
@@ -498,7 +533,7 @@ class TelloAction(object):
         return self._dispatcher
 
     def flip_forward(self, retry=True):
-        """ 控制飞机向前翻滚
+        """控制飞机向前翻滚
 
         当电量低于50%时无法完成翻滚
         :param: retry: bool:是否重发命令
@@ -507,7 +542,7 @@ class TelloAction(object):
         return self.flip("f", retry)
 
     def flip_backward(self, retry=True):
-        """ 控制飞机向后翻滚
+        """控制飞机向后翻滚
 
         当电量低于50%时无法完成翻滚
         :param: retry: bool:是否重发命令
@@ -516,7 +551,7 @@ class TelloAction(object):
         return self.flip("b", retry)
 
     def flip_left(self, retry=True):
-        """ 控制飞机向左翻滚
+        """控制飞机向左翻滚
 
         当电量低于50%时无法完成翻滚
         :param: retry: bool:是否重发命令
@@ -525,7 +560,7 @@ class TelloAction(object):
         return self.flip("l", retry)
 
     def flip_right(self, retry=True):
-        """ 控制飞机向右翻滚
+        """控制飞机向右翻滚
 
         当电量低于50%时无法完成翻滚
         :param: retry: bool:是否重发命令
@@ -534,7 +569,7 @@ class TelloAction(object):
         return self.flip("r", retry)
 
     def flip(self, direction="f", retry=True):
-        """ 控制飞机向指定方向翻滚
+        """控制飞机向指定方向翻滚
 
         当电量低于50%时无法完成翻滚
         :param direction: string: 飞机翻转的方向， ’l‘ 向左翻滚，’r‘ 向右翻滚，’f‘ 向前翻滚， ’b‘ 向后翻滚
@@ -547,7 +582,7 @@ class TelloAction(object):
         return self._dispatcher
 
     def go(self, go_dict):
-        """ 控制飞机以设置速度飞向指定坐标位置
+        """控制飞机以设置速度飞向指定坐标位置
 
         :return: _dispatcher对象
         """
@@ -560,7 +595,7 @@ class TelloAction(object):
         return self._dispatcher
 
     def mission_pad_on(self):
-        """ 开启视觉识别
+        """开启视觉识别
 
         :return: _dispatcher对象
         """
@@ -570,16 +605,14 @@ class TelloAction(object):
         return self._dispatcher.wait_for_completed(0.5)
 
     def mission_pad_off(self):
-        """ 关闭视觉识别
-
-        """
+        """关闭视觉识别"""
         cmd = "moff"
         self._dispatcher.cur_action = cmd
         self.send_command(cmd)
         return self._dispatcher.wait_for_completed(0.5)
 
     def motor_on(self):
-        """ 开启静置转桨
+        """开启静置转桨
 
         :return: _dispatcher对象
         """
@@ -589,16 +622,14 @@ class TelloAction(object):
         return self._dispatcher.wait_for_completed(0.5)
 
     def motor_off(self):
-        """ 开启静置转桨
-
-        """
+        """开启静置转桨"""
         cmd = "motoroff"
         self._dispatcher.cur_action = cmd
         self.send_command(cmd)
         return self._dispatcher.wait_for_completed(0.5)
 
     def set_led(self, r=0, g=255, b=0, command_dict=None):
-        """ 设置扩展模块led颜色
+        """设置扩展模块led颜色
 
         :param r: int:[0, 255], 扩展led红色通道的强度
         :param g: int:[0, 255], 扩展led绿色通道的强度
@@ -616,7 +647,7 @@ class TelloAction(object):
         return self._dispatcher.wait_for_completed(0.5)
 
     def set_led_breath(self, freq=1, r=0, g=255, b=0, command_dict=None):
-        """ 设置扩展模块led以指定的颜色与频率实现呼吸效果
+        """设置扩展模块led以指定的颜色与频率实现呼吸效果
 
         :param freq: int:[0.1, 2.5], 扩展led呼吸模式下的频率，共十档，随着数字增大速度变快
         :param r: int:[0, 255], 扩展led红色通道的强度
@@ -634,8 +665,10 @@ class TelloAction(object):
             self.send_command(cmd)
         return self._dispatcher.wait_for_completed(0.5)
 
-    def set_led_blink(self, freq=5, r1=0, g1=255, b1=0, r2=0, g2=255, b2=255, command_dict=None):
-        """ 设置扩展模块led以制定的两种颜色与频率实现闪烁效果
+    def set_led_blink(
+        self, freq=5, r1=0, g1=255, b1=0, r2=0, g2=255, b2=255, command_dict=None
+    ):
+        """设置扩展模块led以制定的两种颜色与频率实现闪烁效果
 
         :param freq: int:[0.1, 10], 扩展ked闪烁模式下的频率， 共十档，随着数字增大速度变快
         :param r1: int:[0, 255], 第一种颜色的红色通道的强度
@@ -657,7 +690,7 @@ class TelloAction(object):
         return self._dispatcher.wait_for_completed(0.5)
 
     def set_mled_bright(self, bright=255):
-        """ 设置点阵屏的亮度
+        """设置点阵屏的亮度
 
         :param bright: int:[0, 255] 点阵屏的亮度
         :return:
@@ -668,7 +701,7 @@ class TelloAction(object):
         return self._dispatcher.wait_for_completed(0.5)
 
     def set_mled_boot(self, display_graph):
-        """ 设置点阵屏的开机画面
+        """设置点阵屏的开机画面
 
         :param display_graph: string: 长度最大为64，点阵屏显示图案的编码字符串，每个字符解读为二进制后对应位置的led点的状态，
         '0'为关闭该位置led，'r'为点亮红色，'b'为点亮蓝色，'p' 为点亮紫色，输入的长度不足64，后面对应的led点默认都是'0'熄灭状态
@@ -681,7 +714,7 @@ class TelloAction(object):
         return self._dispatcher.wait_for_completed(0.5)
 
     def set_mled_sc(self):
-        """ 清除点阵屏开机显示画面
+        """清除点阵屏开机显示画面
 
         :return:
         """
@@ -691,7 +724,7 @@ class TelloAction(object):
         return self._dispatcher.wait_for_completed(0.5)
 
     def set_mled_char(self, color="r", display_char="0", command_dict=None):
-        """ 控制扩展点阵屏模块，显示输入的字符
+        """控制扩展点阵屏模块，显示输入的字符
 
         :param: color: char: 'r'为红色，'b'为蓝色，'p' 为紫色
         :param: display_char: char: [0~9, A~F, heart]， 显示的字符
@@ -708,7 +741,7 @@ class TelloAction(object):
         return self._dispatcher.wait_for_completed(0.5)
 
     def set_mled_graph(self, display_graph, command_dict=None):
-        """ 用户自定义扩展点阵屏显示图案
+        """用户自定义扩展点阵屏显示图案
 
         :param display_graph: string: 长度最大为64，点阵屏显示图案的编码字符串，每个字符解读为二进制后对应位置的led点的状态，
         '0'为关闭该位置led，'r'为点亮红色，'b'为点亮蓝色，'p' 为点亮紫色，输入的长度不足64，后面对应的led点默认都是'0'熄灭状态
@@ -724,8 +757,10 @@ class TelloAction(object):
             self.send_command(cmd)
         return self._dispatcher.wait_for_completed(tool.EXT_TIMEOUT)
 
-    def set_mled_char_scroll(self, direction='l', color='r', freq=1.5, display_str="DJI"):
-        """ 控制扩展点阵屏滚动显示字符串
+    def set_mled_char_scroll(
+        self, direction="l", color="r", freq=1.5, display_str="DJI"
+    ):
+        """控制扩展点阵屏滚动显示字符串
 
         :param: direction: char: 点阵屏滚动方向，'l': 字符串向左移动，'r': 字符串向右移动，'u' 字符串向上移动，'d' 字符串向下移动
         :param: color: char: 点阵屏显示的颜色， 'r'红色，'b'蓝色，'p'紫色
@@ -736,8 +771,10 @@ class TelloAction(object):
         cmd = "EXT mled {0} {1} {2} {3} ".format(direction, color, freq, display_str)
         return self._set_mled_scroll(cmd)
 
-    def set_mled_graph_scroll(self, direction='l', freq=1.5, display_graph=led.TELLO_DISPLAY_GRAPH):
-        """ 控制扩展点阵屏滚动显示图像
+    def set_mled_graph_scroll(
+        self, direction="l", freq=1.5, display_graph=led.TELLO_DISPLAY_GRAPH
+    ):
+        """控制扩展点阵屏滚动显示图像
 
         :param: direction: char: 点阵屏滚动方向，'l': 字符串向左移动，'r': 字符串向右移动，'u' 字符串向上移动，'d' 字符串向下移动
         :param: freq: float:[0.1, 2.5], 点阵屏滚动的频率, 0.1-2.5HZ之间, 随着数字增大速度变快
@@ -748,7 +785,7 @@ class TelloAction(object):
         return self._set_mled_scroll(cmd)
 
     def _set_mled_scroll(self, cmd):
-        """ 控制扩展点阵屏滚动显示
+        """控制扩展点阵屏滚动显示
 
         :return:
         """
@@ -756,7 +793,7 @@ class TelloAction(object):
         self.send_command(cmd)
         return self._dispatcher.wait_for_completed(0.5)
 
-    def set_custom_text(self, text='', command_dict=None):
+    def set_custom_text(self, text="", command_dict=None):
         cmd_formatter = "EXT {}"
         self.event.set()
         if isinstance(command_dict, dict):
@@ -769,7 +806,8 @@ class TelloAction(object):
         command_host_list = []
         if len(command_dict) != len(self.robot_group_host_list):
             logger.error(
-                "TelloAction: go, the inputs robots num does not match the actual robots number in group")
+                "TelloAction: go, the inputs robots num does not match the actual robots number in group"
+            )
             raise Exception("Input robots number is not match!")
         for _id, command in command_dict.items():
             sn = self._robot_id_dict[_id]

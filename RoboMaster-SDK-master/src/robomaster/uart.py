@@ -22,11 +22,11 @@ from . import protocol
 from . import logger
 
 
-__all__ = ['Uart']
+__all__ = ["Uart"]
 
 
 class Uart(module.Module):
-    """ EP 串口模块 """
+    """EP 串口模块"""
 
     _host = protocol.host2byte(3, 0)
 
@@ -58,7 +58,7 @@ class Uart(module.Module):
 
     @classmethod
     def _msg_recv(cls, self, msg):
-        if msg.cmdset != 0x3f or msg.cmdid != 0xc1:
+        if msg.cmdset != 0x3F or msg.cmdid != 0xC1:
             return
         self._msg_queue.put(msg)
         pass
@@ -74,7 +74,9 @@ class Uart(module.Module):
                 continue
             proto = msg.get_proto()
             if proto is None:
-                logger.warning("Subscriber: _publish, msg.get_proto None, msg:{0}".format(msg))
+                logger.warning(
+                    "Subscriber: _publish, msg.get_proto None, msg:{0}".format(msg)
+                )
             else:
                 if self._callback:
                     self.serial_process_decode(proto._buf)
@@ -84,7 +86,7 @@ class Uart(module.Module):
 
     def serial_process_decode(self, msg):
         buf_len = msg._buf[2] << 8 | msg._buf[3]
-        if msg._buf[1] == 1 and msg._len == (buf_len+3):
+        if msg._buf[1] == 1 and msg._len == (buf_len + 3):
             self._rec_data = msg._buf[4:]
 
     def sub_serial_msg(self, callback=None, *args):
@@ -102,10 +104,18 @@ class Uart(module.Module):
     def serial_read_data(self, msg_len):
         pass
 
-    def serial_param_set(self, baud_rate=0, data_bit=1,
-                         odd_even=0, stop_bit=0, rx_en=1,
-                         tx_en=1, rx_size=50, tx_size=50):
-        """ 底盘串口参数设置
+    def serial_param_set(
+        self,
+        baud_rate=0,
+        data_bit=1,
+        odd_even=0,
+        stop_bit=0,
+        rx_en=1,
+        tx_en=1,
+        rx_size=50,
+        tx_size=50,
+    ):
+        """底盘串口参数设置
 
         默认设置：'9600', 'bit8', 'none', '1'
 
@@ -144,7 +154,7 @@ class Uart(module.Module):
             proto._msg_buf = msg_buf.encode()
         # 元祖转字节流
         elif type(msg_buf) == tuple:
-            proto._msg_buf = (','.join('%s' % d for d in msg_buf)).encode()
+            proto._msg_buf = (",".join("%s" % d for d in msg_buf)).encode()
         # 字典转字节流
         elif type(msg_buf) == dict:
             proto._msg_buf = str(msg_buf).encode()

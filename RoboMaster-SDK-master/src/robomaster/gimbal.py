@@ -23,15 +23,15 @@ from . import util
 from . import dds
 
 
-__all__ = ['Gimbal', 'GimbalMoveAction']
+__all__ = ["Gimbal", "GimbalMoveAction"]
 
 
 COORDINATE_NED = 0
 COORDINATE_CUR = 1
 COORDINATE_CAR = 2
-COORDINATE_PNED = 3     # pitch NED mode
-COORDINATE_YCPN = 4     # yaw CAR, pitch NED mode
-COORDINATE_YCPO = 5     # yaw CAR, pitch OFFSET mode
+COORDINATE_PNED = 3  # pitch NED mode
+COORDINATE_YCPN = 4  # yaw CAR, pitch NED mode
+COORDINATE_YCPO = 5  # yaw CAR, pitch OFFSET mode
 
 
 class GimbalMoveAction(action.Action):
@@ -39,7 +39,9 @@ class GimbalMoveAction(action.Action):
     _push_proto_cls = protocol.ProtoGimbalActionPush
     _target = protocol.host2byte(4, 0)
 
-    def __init__(self, pitch=0, yaw=0, pitch_speed=30, yaw_speed=30, coord=COORDINATE_YCPN, **kw):
+    def __init__(
+        self, pitch=0, yaw=0, pitch_speed=30, yaw_speed=30, coord=COORDINATE_YCPN, **kw
+    ):
         super().__init__(**kw)
         self._pitch = pitch
         self._yaw = yaw
@@ -49,21 +51,36 @@ class GimbalMoveAction(action.Action):
         self._coordinate = coord
 
     def __repr__(self):
-        return "action_id:{0}, state:{1}, percent:{2}, pitch:{3}, yaw:{4}, roll:{5}, pitch_speed:{6}, yaw_speed:{7}, " \
-               "coord:{8}".format(self._action_id, self._state, self._percent, self._pitch, self._yaw, self._roll,
-                                  self._pitch_speed, self._yaw_speed, self._coordinate)
+        return (
+            "action_id:{0}, state:{1}, percent:{2}, pitch:{3}, yaw:{4}, roll:{5}, pitch_speed:{6}, yaw_speed:{7}, "
+            "coord:{8}".format(
+                self._action_id,
+                self._state,
+                self._percent,
+                self._pitch,
+                self._yaw,
+                self._roll,
+                self._pitch_speed,
+                self._yaw_speed,
+                self._coordinate,
+            )
+        )
 
     def encode(self):
         proto = protocol.ProtoGimbalRotate()
         proto._pitch = self._pitch
         proto._yaw = self._yaw
-        proto._pitch_speed = util.GIMBAL_PITCH_MOVE_SPEED_SET_CHECKER.val2proto(self._pitch_speed)
-        proto._yaw_speed = util.GIMBAL_YAW_MOVE_SPEED_SET_CHECKER.val2proto(self._yaw_speed)
+        proto._pitch_speed = util.GIMBAL_PITCH_MOVE_SPEED_SET_CHECKER.val2proto(
+            self._pitch_speed
+        )
+        proto._yaw_speed = util.GIMBAL_YAW_MOVE_SPEED_SET_CHECKER.val2proto(
+            self._yaw_speed
+        )
         proto._coordinate = self._coordinate
         return proto
 
     def update_from_push(self, proto):
-        """ 推送消息更新Action状态 """
+        """推送消息更新Action状态"""
         if proto.__class__ is not self._push_proto_cls:
             return
 
@@ -77,7 +94,11 @@ class GimbalMoveAction(action.Action):
         elif proto._action_state == 3:
             self._changeto_state(action.ACTION_STARTED)
         else:
-            logger.warning("GimbalMoveAction: update_from_push, unsupported state {0}".format(proto._action_state))
+            logger.warning(
+                "GimbalMoveAction: update_from_push, unsupported state {0}".format(
+                    proto._action_state
+                )
+            )
             return
 
         self._yaw = float(proto._yaw) / 10.0
@@ -104,9 +125,19 @@ class GimbalRecenterAction(action.Action):
         self._roll = 0
 
     def __repr__(self):
-        return "action_id:{0}, state:{1}, percent:{2}, pitch:{3}, yaw:{4}, roll:{5}, pitch_speed:{6}, " \
-               "yaw_speed:{7}".format(self._action_id, self._state, self._percent, self._pitch, self._yaw,
-                                      self._roll, self._pitch_speed, self._yaw_speed)
+        return (
+            "action_id:{0}, state:{1}, percent:{2}, pitch:{3}, yaw:{4}, roll:{5}, pitch_speed:{6}, "
+            "yaw_speed:{7}".format(
+                self._action_id,
+                self._state,
+                self._percent,
+                self._pitch,
+                self._yaw,
+                self._roll,
+                self._pitch_speed,
+                self._yaw_speed,
+            )
+        )
 
     def encode(self):
         proto = protocol.ProtoGimbalRecenter()
@@ -115,7 +146,7 @@ class GimbalRecenterAction(action.Action):
         return proto
 
     def update_from_push(self, proto):
-        """ 推送消息更新Action状态 """
+        """推送消息更新Action状态"""
         if proto.__class__ is not self._push_proto_cls:
             return
 
@@ -144,24 +175,43 @@ class GimbalPosSubject(dds.Subject):
 
     @property
     def angle(self):
-        return self._pitch_angle, self._yaw_angle, self._pitch_ground_angle, self._yaw_ground_angle
+        return (
+            self._pitch_angle,
+            self._yaw_angle,
+            self._pitch_ground_angle,
+            self._yaw_ground_angle,
+        )
 
     def data_info(self):
-        return self._pitch_angle, self._yaw_angle, self._pitch_ground_angle, self._yaw_ground_angle
+        return (
+            self._pitch_angle,
+            self._yaw_angle,
+            self._pitch_ground_angle,
+            self._yaw_ground_angle,
+        )
 
     def decode(self, buf):
-        [self._yaw_ground_angle, self._pitch_ground_angle, self._yaw_angle,
-         self._pitch_angle, self._res] = struct.unpack('<hhhhB', buf)
+        [
+            self._yaw_ground_angle,
+            self._pitch_ground_angle,
+            self._yaw_angle,
+            self._pitch_angle,
+            self._res,
+        ] = struct.unpack("<hhhhB", buf)
         self._return_center = (self._res >> 2) & 0x01
-        self._option_mode = (self._res & 0x2)
+        self._option_mode = self._res & 0x2
         self._pitch_angle = util.GIMBAL_ATTI_PITCH_CHECKER.proto2val(self._pitch_angle)
         self._yaw_angle = util.GIMBAL_ATTI_YAW_CHECKER.proto2val(self._yaw_angle)
-        self._pitch_ground_angle = util.GIMBAL_ATTI_PITCH_CHECKER.proto2val(self._pitch_ground_angle)
-        self._yaw_ground_angle = util.GIMBAL_ATTI_YAW_CHECKER.proto2val(self._yaw_ground_angle)
+        self._pitch_ground_angle = util.GIMBAL_ATTI_PITCH_CHECKER.proto2val(
+            self._pitch_ground_angle
+        )
+        self._yaw_ground_angle = util.GIMBAL_ATTI_YAW_CHECKER.proto2val(
+            self._yaw_ground_angle
+        )
 
 
 class Gimbal(module.Module):
-    """ EP 云台模块 """
+    """EP 云台模块"""
 
     _host = protocol.host2byte(4, 0)
 
@@ -171,37 +221,41 @@ class Gimbal(module.Module):
 
     # controls
     def suspend(self):
-        """ 控制云台进入休眠状态
+        """控制云台进入休眠状态
 
         :return: bool:调用结果
         """
         proto = protocol.ProtoGimbalCtrl()
-        proto._order_code = 0x2ab5
+        proto._order_code = 0x2AB5
         msg = protocol.Msg(self.client.hostbyte, self._host, proto)
         try:
             self.client.send_async_msg(msg)
             return True
         except Exception as e:
-            logger.warning("Gimbal: suspend, send_async_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Gimbal: suspend, send_async_msg exception {0}".format(str(e))
+            )
             return False
 
     def resume(self):
-        """ 控制云台从休眠状态中恢复
+        """控制云台从休眠状态中恢复
 
         :return: bool:调用结果
         """
         proto = protocol.ProtoGimbalCtrl()
-        proto._order_code = 0x7ef2
+        proto._order_code = 0x7EF2
         msg = protocol.Msg(self.client.hostbyte, self._host, proto)
         try:
             self.client.send_async_msg(msg)
             return True
         except Exception as e:
-            logger.warning("Gimbal: resume, send_async_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Gimbal: resume, send_async_msg exception {0}".format(str(e))
+            )
             return False
 
     def drive_speed(self, pitch_speed=30.0, yaw_speed=30.0):
-        """ 控制以一定速度转动
+        """控制以一定速度转动
 
         :param pitch_speed: float: [-360, 360]，pitch轴速度，单位 °/s
         :param yaw_speed: float: [-360, 360]，yaw 轴速度，单位 °/s
@@ -215,7 +269,7 @@ class Gimbal(module.Module):
 
     # actions
     def recenter(self, pitch_speed=60, yaw_speed=60):
-        """ 控制云台回中
+        """控制云台回中
 
         :param pitch_speed: float: [-360, 360]，pitch轴速度，单位 °/s
         :param yaw_speed: float: [-360, 360]，yaw 轴速度，单位 °/s
@@ -232,7 +286,7 @@ class Gimbal(module.Module):
         return self._send_sync_proto(proto)
 
     def move(self, pitch=0, yaw=0, pitch_speed=30, yaw_speed=30):
-        """ 控制云台运动到指定位置，坐标轴原点为当前位置
+        """控制云台运动到指定位置，坐标轴原点为当前位置
 
         :param pitch: float: [-55, 55]，pitch 轴角度，单位 °
         :param yaw: float: [-55, 55]，yaw 轴角度，单位 °
@@ -247,7 +301,7 @@ class Gimbal(module.Module):
         return action1
 
     def moveto(self, pitch=0, yaw=0, pitch_speed=30, yaw_speed=30):
-        """ 控制云台运动到指定位置，坐标轴原点为上电位置
+        """控制云台运动到指定位置，坐标轴原点为上电位置
 
         :param pitch: int: [-25, 30]，pitch 轴角度，单位 °
         :param yaw: int: [-250, 250]，yaw 轴角度，单位 °
@@ -263,7 +317,7 @@ class Gimbal(module.Module):
 
     # subscribes.
     def sub_angle(self, freq=5, callback=None, *args, **kw):
-        """ 订阅云台姿态角信息
+        """订阅云台姿态角信息
 
         :param freq: enum: (1, 5, 10, 20, 50) 设置数据订阅数据的推送频率，单位 Hz
         :param callback: 回调函数，返回数据 (pitch_angle, yaw_angle, pitch_ground_angle, yaw_ground_angle):
@@ -283,7 +337,7 @@ class Gimbal(module.Module):
         return sub.add_subject_info(subject, callback, args, kw)
 
     def unsub_angle(self):
-        """ 取消云台姿态角订阅
+        """取消云台姿态角订阅
 
         :return: bool: 取消数据订阅的结果
         """

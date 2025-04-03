@@ -19,7 +19,7 @@ import robomaster
 from robomaster import robot
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="sta", sn="3JKCH8800100YN")
 
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     ep_gripper.pause()
 
     # close gripper
-    #ep_gripper.close(power=50)
+    # ep_gripper.close(power=50)
     # time.sleep(1)
     # ep_gripper.pause()
 

@@ -5,7 +5,7 @@ from robomaster import robot
 from robomaster import camera
 
 
-print('model')
+print("model")
 model = YOLO("best.pt")
 
 
@@ -28,26 +28,26 @@ while True:
             model.predictor.args.verbose = False
         result = model.predict(source=frame, show=False)[0]
 
-
         # DIY visualization is much faster than show=True for some reason
         boxes = result.boxes
         for box in boxes:
             classid = int(box.cls.cpu().numpy())
-            print("Classid:",classid)
+            print("Classid:", classid)
             xyxy = box.xyxy.cpu().numpy().flatten()
-            cv2.rectangle(frame,
-                          (int(xyxy[0]), int(xyxy[1])), 
-                          (int(xyxy[2]), int(xyxy[3])),
-                           color=(0, 0, 255), thickness=2)
-            
-        cv2.imshow('frame', frame)
+            cv2.rectangle(
+                frame,
+                (int(xyxy[0]), int(xyxy[1])),
+                (int(xyxy[2]), int(xyxy[3])),
+                color=(0, 0, 255),
+                thickness=2,
+            )
+
+        cv2.imshow("frame", frame)
         key = cv2.waitKey(1)
-        if key == ord('q'):
+        if key == ord("q"):
             break
 
-
-        #print(result)
-
+        # print(result)
 
         end = time.time()
-        print(1.0 / (end-start))
+        print(1.0 / (end - start))

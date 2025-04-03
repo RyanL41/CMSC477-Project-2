@@ -19,7 +19,7 @@ import robomaster
 from robomaster import robot
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="sta")
 
@@ -32,10 +32,14 @@ if __name__ == '__main__':
     ep_gimbal.moveto(pitch=0, yaw=0).wait_for_completed()
 
     # 云台以pitch角速度 50度每秒，yaw角速度100度每秒 旋转到pitch=15, yaw=90
-    ep_gimbal.moveto(pitch=15, yaw=90, pitch_speed=50, yaw_speed=100).wait_for_completed()
+    ep_gimbal.moveto(
+        pitch=15, yaw=90, pitch_speed=50, yaw_speed=100
+    ).wait_for_completed()
 
     # 云台以pitch角速度 100度每秒，yaw角速度30度每秒 旋转到pitch=-15, yaw=-90
-    ep_gimbal.moveto(pitch=-15, yaw=-90, pitch_speed=100, yaw_speed=30).wait_for_completed()
+    ep_gimbal.moveto(
+        pitch=-15, yaw=-90, pitch_speed=100, yaw_speed=30
+    ).wait_for_completed()
 
     # 云台旋转到 pitch=0, yaw=0 位置
     ep_gimbal.moveto(pitch=0, yaw=0).wait_for_completed()
@@ -59,4 +63,3 @@ if __name__ == '__main__':
     ep_gimbal.moveto(pitch=0, yaw=0).wait_for_completed()
 
     ep_robot.close()
-

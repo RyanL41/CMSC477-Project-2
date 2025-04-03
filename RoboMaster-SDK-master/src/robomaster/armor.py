@@ -20,20 +20,20 @@ from . import logger
 from . import dds
 
 
-__all__ = ['Armor']
+__all__ = ["Armor"]
 
 HIT_TYPE_WATER_ATTACK = 0
 HIT_TYPE_IR_ATTACK = 1
 
-COMP_TOP_LEFT = 'top_left'
-COMP_TOP_RIGHT = 'top_right'
-COMP_BOTTOM_LEFT = 'bottom_left'
-COMP_BOTTOM_RIGHT = 'bottom_right'
-COMP_BOTTOM_FRONT = 'bottom_front'
-COMP_BOTTOM_BACK = 'bottom_back'
-COMP_BOTTOM_ALL = 'bottom_all'
-COMP_TOP_ALL = 'top_all'
-COMP_ALL = 'all'
+COMP_TOP_LEFT = "top_left"
+COMP_TOP_RIGHT = "top_right"
+COMP_BOTTOM_LEFT = "bottom_left"
+COMP_BOTTOM_RIGHT = "bottom_right"
+COMP_BOTTOM_FRONT = "bottom_front"
+COMP_BOTTOM_BACK = "bottom_back"
+COMP_BOTTOM_ALL = "bottom_all"
+COMP_TOP_ALL = "top_all"
+COMP_ALL = "all"
 
 
 COMP_TOP_LEFT_MASK = 1 << 5
@@ -42,14 +42,14 @@ COMP_BOTTOM_LEFT_MASK = 1 << 3
 COMP_BOTTOM_RIGHT_MASK = 1 << 2
 COMP_BOTTOM_FRONT_MASK = 1 << 1
 COMP_BOTTOM_BACK_MASK = 1 << 0
-COMP_BOTTOM_ALL_MASK = 0x0f
+COMP_BOTTOM_ALL_MASK = 0x0F
 COMP_TOP_ALL_MASK = 0x30
-COMP_ALL_MASK = 0x3f
+COMP_ALL_MASK = 0x3F
 
 
 class ArmorHitEvent(dds.Subject):
     name = "hit_event"
-    cmdset = 0x3f
+    cmdset = 0x3F
     cmdid = 0x02
     type = dds.DDS_SUB_TYPE_EVENT
 
@@ -61,16 +61,16 @@ class ArmorHitEvent(dds.Subject):
 
     @property
     def armor_id(self):
-        """ 上一次被击打的装甲板ID """
+        """上一次被击打的装甲板ID"""
         return self._armor_id
 
     def armor_comp(self):
-        """ 上一次被击打的装甲板部位 """
+        """上一次被击打的装甲板部位"""
         return Armor.id2comp(self._armor_id)
 
     @property
     def hit_type(self):
-        """ 被击打类型
+        """被击打类型
         :return: enum: ("water", "ir"): water:水弹，ir:红外
         """
         if self._type == HIT_TYPE_IR_ATTACK:
@@ -94,7 +94,7 @@ class ArmorHitEvent(dds.Subject):
 
 class IrHitEvent(dds.Subject):
     name = "ir_event"
-    cmdset = 0x3f
+    cmdset = 0x3F
     cmdid = 0x10
     type = dds.DDS_SUB_TYPE_EVENT
 
@@ -107,7 +107,7 @@ class IrHitEvent(dds.Subject):
 
     @property
     def hit_times(self):
-        """ 受到红外打击的次数 """
+        """受到红外打击的次数"""
         return self._hit_cnt
 
     def data_info(self):
@@ -125,7 +125,7 @@ class Armor(module.Module):
         super().__init__(robot)
 
     def sub_hit_event(self, callback=None, *args, **kw):
-        """ 打击事件订阅
+        """打击事件订阅
 
         :param callback: 回调函数, 返回数据 (armor_id, hit_type)：
 
@@ -142,7 +142,7 @@ class Armor(module.Module):
         return sub.add_subject_event_info(subject, callback, args, kw)
 
     def sub_ir_event(self, callback=None, *args, **kw):
-        """ 红外打击事件订阅
+        """红外打击事件订阅
 
         :param callback: 回调函数, 返回数据 (hit_cnt)
         :param hit_cnt: 受到红外击打的次数
@@ -157,7 +157,7 @@ class Armor(module.Module):
         return sub.add_subject_event_info(subject, callback, args, kw)
 
     def unsub_hit_event(self):
-        """ 取消打击事件订阅
+        """取消打击事件订阅
 
         :return: bool: 取消事件订阅结果
         """
@@ -166,7 +166,7 @@ class Armor(module.Module):
         return sub.del_subject_event_info(subject)
 
     def unsub_ir_event(self):
-        """ 取消红外打击事件订阅
+        """取消红外打击事件订阅
 
         :return: bool: 取消事件订阅结果
         """
@@ -184,7 +184,7 @@ class Armor(module.Module):
         """
         k = 1.5 - sensitivity / 10.0
         proto = protocol.ProtoSetArmorParam()
-        proto._armor_mask = self._comp2mask(comp) & 0x3f
+        proto._armor_mask = self._comp2mask(comp) & 0x3F
         proto._voice_energy_en = 500
         proto._voice_energy_ex = 300
         proto._voice_len_max = 50
@@ -194,12 +194,16 @@ class Armor(module.Module):
         proto._voice_peak_min = int(160 * k)
         proto._voice_peak_ave = int(180 * k)
         proto._voice_peak_final = int(200 * k)
-        logger.info("Armor: set_hit_sensitivity, armor_comp:{0}, sensitivity:{1}".format(comp, sensitivity))
+        logger.info(
+            "Armor: set_hit_sensitivity, armor_comp:{0}, sensitivity:{1}".format(
+                comp, sensitivity
+            )
+        )
         return self._send_sync_proto(proto)
 
     @staticmethod
     def comp2id(comp):
-        """ 装甲部位转换为装甲ID
+        """装甲部位转换为装甲ID
 
         :param comp: enum ("bottom_back", "bottom_front", "bottom_left", "bottom_right", "top_left", "top_right") 装甲部位
         :return: int: [1, 6] 装甲ID
@@ -266,7 +270,9 @@ class Armor(module.Module):
         elif comp_mask == COMP_BOTTOM_RIGHT_MASK:
             comp = COMP_BOTTOM_RIGHT
         else:
-            logger.warning("Armor: mask2comp, unsupported comp_mask:{0}".format(comp_mask))
+            logger.warning(
+                "Armor: mask2comp, unsupported comp_mask:{0}".format(comp_mask)
+            )
         return comp
 
     @staticmethod

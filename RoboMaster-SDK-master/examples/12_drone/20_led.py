@@ -19,7 +19,7 @@ import robomaster
 from robomaster import robot
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     tl_drone = robot.Drone()
     tl_drone.initialize()
 
@@ -27,8 +27,16 @@ if __name__ == '__main__':
 
     tl_led.set_led(r=0, g=0, b=0)
 
-    rgb_list = [(100, 100, 100), (255, 255, 255), (255, 0, 0), (0, 0, 255),
-                (0, 255, 0), (255, 255, 0), (255, 0, 255), (0, 255, 255)]
+    rgb_list = [
+        (100, 100, 100),
+        (255, 255, 255),
+        (255, 0, 0),
+        (0, 0, 255),
+        (0, 255, 0),
+        (255, 255, 0),
+        (255, 0, 255),
+        (0, 255, 255),
+    ]
 
     for rgb_info in rgb_list:
         tl_led.set_led(r=rgb_info[0], g=rgb_info[1], b=rgb_info[2])

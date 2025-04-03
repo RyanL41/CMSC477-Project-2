@@ -24,7 +24,7 @@ def sub_battery_info_handler(battery_info):
     print("Drone battery: soc {0}".format(battery_soc))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     tl_drone = robot.Drone()
     tl_drone.initialize()
 
@@ -36,4 +36,3 @@ if __name__ == '__main__':
     tl_drone.battery.unsub_battery_info()
 
     tl_drone.close()
-

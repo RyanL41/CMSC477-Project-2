@@ -21,7 +21,7 @@ def basic_task(robot_group):
     robot_group.get_battery()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # get drone sn by run the expamles of /15_multi_robot/multi_drone/01_scan_ip.py
 
     robot_sn_list = ["0TQZH79ED00H56", "0TQZH79ED00H89"]
@@ -34,4 +34,3 @@ if __name__ == '__main__':
     tello_group = multi_drone.build_group([0, 1])
     multi_drone.run([tello_group, basic_task])
     multi_drone.close()
-

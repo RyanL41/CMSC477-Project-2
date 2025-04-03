@@ -13,13 +13,16 @@ def test_list(capture, doc):
 
         lst.append("value2")
         m.print_list(lst)
-    assert capture.unordered == """
+    assert (
+        capture.unordered
+        == """
         Entry at position 0: value
         list item 0: inserted-0
         list item 1: overwritten
         list item 2: inserted-2
         list item 3: value2
     """
+    )
 
     assert doc(m.get_list) == "get_list() -> list"
     assert doc(m.print_list) == "print_list(arg0: list) -> None"
@@ -32,12 +35,15 @@ def test_set(capture, doc):
     with capture:
         s.add("key4")
         m.print_set(s)
-    assert capture.unordered == """
+    assert (
+        capture.unordered
+        == """
         key: key1
         key: key2
         key: key3
         key: key4
     """
+    )
 
     assert not m.set_contains(set([]), 42)
     assert m.set_contains({42}, 42)
@@ -54,10 +60,13 @@ def test_dict(capture, doc):
     with capture:
         d["key2"] = "value2"
         m.print_dict(d)
-    assert capture.unordered == """
+    assert (
+        capture.unordered
+        == """
         key: key, value=value
         key: key2, value=value2
     """
+    )
 
     assert not m.dict_contains({}, 42)
     assert m.dict_contains({42: None}, 42)
@@ -105,28 +114,37 @@ def test_capsule(capture):
         a = m.return_capsule_with_destructor()
         del a
         pytest.gc_collect()
-    assert capture.unordered == """
+    assert (
+        capture.unordered
+        == """
         creating capsule
         destructing capsule
     """
+    )
 
     with capture:
         a = m.return_capsule_with_destructor_2()
         del a
         pytest.gc_collect()
-    assert capture.unordered == """
+    assert (
+        capture.unordered
+        == """
         creating capsule
         destructing capsule: 1234
     """
+    )
 
     with capture:
         a = m.return_capsule_with_name_and_destructor()
         del a
         pytest.gc_collect()
-    assert capture.unordered == """
+    assert (
+        capture.unordered
+        == """
         created capsule (1234, 'pointer type description')
         destructing capsule (1234, 'pointer type description')
     """
+    )
 
 
 def test_accessors():
@@ -183,7 +201,7 @@ def test_constructors():
         list: range(3),
         dict: [("two", 2), ("one", 1), ("three", 3)],
         set: [4, 4, 5, 6, 6, 6],
-        memoryview: b'abc'
+        memoryview: b"abc",
     }
     inputs = {k.__name__: v for k, v in data.items()}
     expected = {k.__name__: k(v) for k, v in data.items()}
@@ -205,18 +223,29 @@ def test_constructors():
 def test_implicit_casting():
     """Tests implicit casting when assigning or appending to dicts and lists."""
     z = m.get_implicit_casting()
-    assert z['d'] == {
-        'char*_i1': 'abc', 'char*_i2': 'abc', 'char*_e': 'abc', 'char*_p': 'abc',
-        'str_i1': 'str', 'str_i2': 'str1', 'str_e': 'str2', 'str_p': 'str3',
-        'int_i1': 42, 'int_i2': 42, 'int_e': 43, 'int_p': 44
+    assert z["d"] == {
+        "char*_i1": "abc",
+        "char*_i2": "abc",
+        "char*_e": "abc",
+        "char*_p": "abc",
+        "str_i1": "str",
+        "str_i2": "str1",
+        "str_e": "str2",
+        "str_p": "str3",
+        "int_i1": 42,
+        "int_i2": 42,
+        "int_e": 43,
+        "int_p": 44,
     }
-    assert z['l'] == [3, 6, 9, 12, 15]
+    assert z["l"] == [3, 6, 9, 12, 15]
 
 
 def test_print(capture):
     with capture:
         m.print_function()
-    assert capture == """
+    assert (
+        capture
+        == """
         Hello, World!
         1 2.0 three True -- multiple args
         *args-and-a-custom-separator
@@ -224,14 +253,15 @@ def test_print(capture):
         flush
         py::print + str.format = this
     """
+    )
     assert capture.stderr == "this goes to stderr"
 
     with pytest.raises(RuntimeError) as excinfo:
         m.print_failure()
     assert str(excinfo.value) == "make_tuple(): unable to convert " + (
         "argument of type 'UnregisteredType' to Python object"
-        if debug_enabled else
-        "arguments to Python object (compile in debug mode for details)"
+        if debug_enabled
+        else "arguments to Python object (compile in debug mode for details)"
     )
 
 
@@ -253,8 +283,23 @@ def test_hash():
 
 def test_number_protocol():
     for a, b in [(1, 1), (3, 5)]:
-        li = [a == b, a != b, a < b, a <= b, a > b, a >= b, a + b,
-              a - b, a * b, a / b, a | b, a & b, a ^ b, a >> b, a << b]
+        li = [
+            a == b,
+            a != b,
+            a < b,
+            a <= b,
+            a > b,
+            a >= b,
+            a + b,
+            a - b,
+            a * b,
+            a / b,
+            a | b,
+            a & b,
+            a ^ b,
+            a >> b,
+            a << b,
+        ]
         assert m.test_number_protocol(a, b) == li
 
 

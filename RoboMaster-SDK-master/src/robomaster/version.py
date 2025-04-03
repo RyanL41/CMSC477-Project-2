@@ -19,5 +19,6 @@ SDK_VERSION_MINOR = 1
 SDK_VERSION_REVISION = 1
 SDK_VERSION_BUILD = 68
 
-__version__ = "{0:d}.{1:d}.{2:d}.{3:d}".format(SDK_VERSION_MAJOR, SDK_VERSION_MINOR,
-                                               SDK_VERSION_REVISION, SDK_VERSION_BUILD)
+__version__ = "{0:d}.{1:d}.{2:d}.{3:d}".format(
+    SDK_VERSION_MAJOR, SDK_VERSION_MINOR, SDK_VERSION_REVISION, SDK_VERSION_BUILD
+)

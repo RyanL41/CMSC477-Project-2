@@ -23,10 +23,14 @@ def ai_callback(sub_info):
     num, list_info = sub_info
     for i in range(0, num):
         id, x, y, w, h, C = list_info[i]
-        print("ai target index:{0} id:{1}, x:{2}, y:{3}, w:{4}, h:{5}, C:{6}".format(i, id, x, y, w, h, C))
+        print(
+            "ai target index:{0} id:{1}, x:{2}, y:{3}, w:{4}, h:{5}, C:{6}".format(
+                i, id, x, y, w, h, C
+            )
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="rndis")
 

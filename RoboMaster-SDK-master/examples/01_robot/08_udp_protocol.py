@@ -18,10 +18,10 @@ import robomaster
 from robomaster import robot
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     # 指定连接方式为AP 直连模式, 网络通讯方式 udp
-    ep_robot.initialize(conn_type='ap', proto_type='udp')
+    ep_robot.initialize(conn_type="ap", proto_type="udp")
 
     version = ep_robot.get_version()
     print("Robot Version: {0}".format(version))

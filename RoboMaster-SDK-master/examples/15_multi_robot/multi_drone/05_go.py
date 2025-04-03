@@ -19,17 +19,25 @@ from multi_robomaster import multi_robot
 def base_action_1(robot_group):
     robot_group.mission_pad_on()
     robot_group.takeoff().wait_for_completed()
-    robot_group.go({1: [-50, -50, 100, 100, "m12"], 2: [50, 50, 100, 100, "m12"]}).wait_for_completed()
+    robot_group.go(
+        {1: [-50, -50, 100, 100, "m12"], 2: [50, 50, 100, 100, "m12"]}
+    ).wait_for_completed()
     robot_group.set_mled_char("r", "heart")
-    robot_group.go({1: [-50, 50, 100, 100, "m12"], 2: [50, -50, 100, 100, "m12"]}).wait_for_completed()
+    robot_group.go(
+        {1: [-50, 50, 100, 100, "m12"], 2: [50, -50, 100, 100, "m12"]}
+    ).wait_for_completed()
     robot_group.set_mled_char("p", "heart")
-    robot_group.go({1: [50, 50, 100, 100, "m12"], 2: [-50, -50, 100, 100, "m12"]}).wait_for_completed()
-    robot_group.go({1: [50, -50, 100, 100, "m12"], 2: [-50, 50, 100, 100, "m12"]}).wait_for_completed()
+    robot_group.go(
+        {1: [50, 50, 100, 100, "m12"], 2: [-50, -50, 100, 100, "m12"]}
+    ).wait_for_completed()
+    robot_group.go(
+        {1: [50, -50, 100, 100, "m12"], 2: [-50, 50, 100, 100, "m12"]}
+    ).wait_for_completed()
     robot_group.land().wait_for_completed()
     robot_group.mission_pad_off()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # get drone sn by run the expamles of /15_multi_robot/multi_drone/01_scan_ip.py
 
     robot_sn_list = ["0TQZH79ED00H56", "0TQZH79ED00H89"]

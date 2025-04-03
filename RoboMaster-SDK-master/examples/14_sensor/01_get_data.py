@@ -17,7 +17,7 @@
 from robomaster import robot
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="sta")
 
@@ -36,6 +36,3 @@ if __name__ == '__main__':
     print("sensor adapter id1-port1 duration is {0}ms".format(duration))
 
     ep_robot.close()
-
-
-

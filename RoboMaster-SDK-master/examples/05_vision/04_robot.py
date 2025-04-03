@@ -53,7 +53,7 @@ def on_detect_person(person_info):
         print("robot: x:{0}, y:{1}, w:{2}, h:{3}".format(x, y, w, h))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="sta")
 

@@ -19,15 +19,15 @@ from . import protocol
 from . import dds
 from . import logger
 
-__all__ = ['AiModule', 'TelloAI']
+__all__ = ["AiModule", "TelloAI"]
 
 IS_AI_FLAG = ";degree:"
 
 
 class AiModuleEvent(dds.Subject):
     name = "ai_event"
-    cmdset = 0x3f
-    cmdid = 0xea
+    cmdset = 0x3F
+    cmdid = 0xEA
     type = dds.DDS_SUB_TYPE_EVENT
 
     def __init__(self):
@@ -42,7 +42,7 @@ class AiModuleEvent(dds.Subject):
 
 
 class AiModule(module.Module):
-    """ EP AI模块"""
+    """EP AI模块"""
 
     _host = protocol.host2byte(15, 1)
 
@@ -54,7 +54,7 @@ class AiModule(module.Module):
         return self._send_async_proto(proto, target=protocol.host2byte(9, 2))
 
     def sub_ai_event(self, callback=None, *args, **kw):
-        """ 订阅AI信息
+        """订阅AI信息
 
         :param freq: enum:(1,5,10) 设置数据订阅数据的推送频率，单位 Hz
         :param callback: 回调函数，返回数据 明文字符串:
@@ -77,7 +77,7 @@ class AiModule(module.Module):
         return sub.add_subject_event_info(subject, callback, args, kw)
 
     def unsub_ai_event(self):
-        """ 取消AI数据订阅
+        """取消AI数据订阅
 
         :return: bool: 取消数据订阅结果
         """
@@ -102,21 +102,21 @@ class TelloAIInfoSubject(dds.Subject):
         return self._ai
 
     def decode(self, buf):
-        info_buf = buf.split(';')
+        info_buf = buf.split(";")
         ai_info = []
         if len(info_buf) == 7:
             for info in info_buf:
                 if ":" in info:
                     if "x" in info:
-                        ai_info.append(int(info.split(':')[1]) / 320)
+                        ai_info.append(int(info.split(":")[1]) / 320)
                     elif "y" in info:
-                        ai_info.append(int(info.split(':')[1]) / 240)
+                        ai_info.append(int(info.split(":")[1]) / 240)
                     elif "w" in info:
-                        ai_info.append(int(info.split(':')[1]) / 320)
+                        ai_info.append(int(info.split(":")[1]) / 320)
                     elif "h" in info:
-                        ai_info.append(int(info.split(':')[1]) / 240)
+                        ai_info.append(int(info.split(":")[1]) / 240)
                     else:
-                        ai_info.append(info.split(':')[1])
+                        ai_info.append(info.split(":")[1])
             self._ai = ai_info
 
         if dds.IS_AI_FLAG in buf:
@@ -127,14 +127,14 @@ class TelloAIInfoSubject(dds.Subject):
 
 
 class TelloAI(object):
-    """ 教育无人机 AI模块"""
+    """教育无人机 AI模块"""
 
     def __init__(self, robot):
         self._client = robot.client
         self._robot = robot
 
     def get_ai(self):
-        """ 获取AI模块信息
+        """获取AI模块信息
 
         :return: int: AI模块明文字符串
         """
@@ -157,7 +157,7 @@ class TelloAI(object):
             return None
 
     def sub_ai_info(self, freq=5, callback=None, *args, **kw):
-        """ 订阅AI信息
+        """订阅AI信息
 
         :param freq: enum:(1,5,10) 设置数据订阅数据的推送频率，单位 Hz
         :param callback: 回调函数，返回数据 明文字符串:
@@ -179,7 +179,7 @@ class TelloAI(object):
         return sub.add_subject_info(subject, callback, args, kw)
 
     def unsub_ai_info(self):
-        """ 取消订阅AI模块信息
+        """取消订阅AI模块信息
 
         :return: 返回取消订阅结果
         """

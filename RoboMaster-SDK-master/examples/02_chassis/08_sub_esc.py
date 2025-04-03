@@ -21,10 +21,14 @@ from robomaster import robot
 
 def sub_esc_info_handler(esc_info):
     speed, angle, timestamp, state = esc_info
-    print("chassis esc: speed:{0}, angle:{1}, timestamp:{2}, state:{3}".format(speed, angle, timestamp, state))
+    print(
+        "chassis esc: speed:{0}, angle:{1}, timestamp:{2}, state:{3}".format(
+            speed, angle, timestamp, state
+        )
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="sta")
 

@@ -23,7 +23,7 @@ from PIL import Image
 
 QRCODE_NAME = "qrcode.png"
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     helper = conn.ConnectionHelper()
     info = helper.build_qrcode_string(ssid="RoboMaster_SDK_WIFI", password="12341234")

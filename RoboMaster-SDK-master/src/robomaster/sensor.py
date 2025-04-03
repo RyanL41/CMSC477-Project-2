@@ -19,7 +19,7 @@ from . import protocol
 from . import dds
 from . import logger
 
-__all__ = ['DistanceSensor', 'SensorAdaptor']
+__all__ = ["DistanceSensor", "SensorAdaptor"]
 
 
 class TofSubject(dds.Subject):
@@ -33,7 +33,7 @@ class TofSubject(dds.Subject):
         self._distance = [0] * 4
 
     def tof(self):
-        """ 距离传感器数据获取
+        """距离传感器数据获取
 
         :return: 距离传感器的ID、对应的距离，单位为mm
         """
@@ -59,7 +59,7 @@ class AdapterSubject(dds.Subject):
         self._ad_value = [0] * 12
 
     def adapter(self):
-        """ 距离传感器转接板数据获取
+        """距离传感器转接板数据获取
 
         :return: i/o值、ad值
         """
@@ -77,7 +77,7 @@ class AdapterSubject(dds.Subject):
 
 
 class DistanceSensor(module.Module):
-    """ EP 距离传感器模块 """
+    """EP 距离传感器模块"""
 
     _host = protocol.host2byte(18, 1)
 
@@ -103,13 +103,13 @@ class DistanceSensor(module.Module):
         return sub.add_subject_info(subject, callback, args, kw)
 
     def unsub_distance(self):
-        """ 取消距离传感器的信息订阅。"""
+        """取消距离传感器的信息订阅。"""
         sub_dds = self._robot.dds
         return sub_dds.del_subject_info(dds.DDS_TOF)
 
 
 class SensorAdaptor(module.Module):
-    """ EP 传感器板模块 """
+    """EP 传感器板模块"""
 
     _host = protocol.host2byte(22, 0)
 
@@ -117,7 +117,7 @@ class SensorAdaptor(module.Module):
         super().__init__(robot)
 
     def get_adc(self, id=1, port=1):
-        """ 传感器板adc值获取
+        """传感器板adc值获取
 
         :param id: int[1,8]，传感器板编号
         :param port: int:[1,2]，传感器板端口号
@@ -135,11 +135,13 @@ class SensorAdaptor(module.Module):
             else:
                 return None
         except Exception as e:
-            logger.warning("SensorAdaptor: get_adc, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "SensorAdaptor: get_adc, send_sync_msg exception {0}".format(str(e))
+            )
             return None
 
     def get_io(self, id=1, port=1):
-        """ 传感器板io电平值获取
+        """传感器板io电平值获取
 
         :param id: int[1,8], 传感器板编号
         :param port: int:[1,2], 传感器板端口号
@@ -157,11 +159,13 @@ class SensorAdaptor(module.Module):
             else:
                 return None
         except Exception as e:
-            logger.warning("SensorAdaptor: get_io, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "SensorAdaptor: get_io, send_sync_msg exception {0}".format(str(e))
+            )
             return None
 
     def get_pulse_period(self, id=1, port=1):
-        """ 传感器板电平持续时间获取
+        """传感器板电平持续时间获取
 
         :param id: int[1,8], 传感器板编号
         :param port: int:[1,2], 传感器板端口号
@@ -179,7 +183,11 @@ class SensorAdaptor(module.Module):
             else:
                 return None
         except Exception as e:
-            logger.warning("SensorAdaptor: get_pulse_period, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "SensorAdaptor: get_pulse_period, send_sync_msg exception {0}".format(
+                    str(e)
+                )
+            )
             return None
 
     def sub_adapter(self, freq=5, callback=None, *args, **kw):
@@ -200,20 +208,20 @@ class SensorAdaptor(module.Module):
         return sub.add_subject_info(subject, callback, args, kw)
 
     def unsub_adapter(self):
-        """ 取消传感器转接板的信息订阅。"""
+        """取消传感器转接板的信息订阅。"""
         sub_dds = self._robot.dds
         return sub_dds.del_subject_info(dds.DDS_PINBOARD)
 
 
 class TelloDistanceSensor(object):
-    """ 教育无人机 距离传感器模块 """
+    """教育无人机 距离传感器模块"""
 
     def __init__(self, robot):
         self._client = robot.client
         self._robot = robot
 
     def get_ext_tof(self):
-        """ 获取扩展模块tof传感器的数值
+        """获取扩展模块tof传感器的数值
 
         :return: float: 扩展模块tof传感器的值
         """
@@ -230,5 +238,7 @@ class TelloDistanceSensor(object):
             logger.warning("Drone: get ext tof failed.")
             return None
         except Exception as e:
-            logger.warning("Drone: get ext tof, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: get ext tof, send_sync_msg exception {0}".format(str(e))
+            )
             return None

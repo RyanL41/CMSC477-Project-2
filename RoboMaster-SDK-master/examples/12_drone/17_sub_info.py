@@ -25,10 +25,12 @@ def sub_tof_info_handler(tof_info):
 
 def sub_drone_info_handler(drone_info):
     high, baro, motor_time = drone_info
-    print("drone info: high:{0}, baro:{1}, motor_time:{2}".format(high, baro, motor_time))
+    print(
+        "drone info: high:{0}, baro:{1}, motor_time:{2}".format(high, baro, motor_time)
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     tl_drone = robot.Drone()
     tl_drone.initialize()
 
@@ -45,4 +47,3 @@ if __name__ == '__main__':
     tl_drone.unsub_drone_info()
 
     tl_drone.close()
-

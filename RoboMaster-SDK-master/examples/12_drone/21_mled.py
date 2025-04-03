@@ -19,9 +19,9 @@ import robomaster
 from robomaster import robot
 
 
-if __name__ == '__main__':
-    mled_smile1 = '000000000r0000r0r0r00r0r000000000000000000r00r00000rr00000000000'
-    mled_smile2 = '00rrrr000r0000r0r0r00r0rr000000rr0r00r0rr00rr00r0r0000r000rrrr00'
+if __name__ == "__main__":
+    mled_smile1 = "000000000r0000r0r0r00r0r000000000000000000r00r00000rr00000000000"
+    mled_smile2 = "00rrrr000r0000r0r0r00r0rr000000rr0r00r0rr00rr00r0r0000r000rrrr00"
 
     tl_drone = robot.Drone()
     tl_drone.initialize()
@@ -34,22 +34,18 @@ if __name__ == '__main__':
 
     # 显示数字
     for num in range(10):
-        tl_drone.led.set_mled_char('r', num)
+        tl_drone.led.set_mled_char("r", num)
         time.sleep(0.5)
 
     # 显示字符A, B, C
-    tl_drone.led.set_mled_char(color='b', display_char='A')
+    tl_drone.led.set_mled_char(color="b", display_char="A")
     time.sleep(3)
-    tl_drone.led.set_mled_char(color='b', display_char='B')
+    tl_drone.led.set_mled_char(color="b", display_char="B")
     time.sleep(3)
-    tl_drone.led.set_mled_char(color='b', display_char='C')
+    tl_drone.led.set_mled_char(color="b", display_char="C")
     time.sleep(3)
 
     # 清屏
-    tl_drone.led.set_mled_char('0')
+    tl_drone.led.set_mled_char("0")
 
     tl_drone.close()
-
-
-
-

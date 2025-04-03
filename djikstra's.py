@@ -9,9 +9,10 @@ Original file is located at
 
 import pandas as pd
 
-df = pd.read_csv('Map1.csv')
+df = pd.read_csv("Map1.csv")
 
 import numpy as np
+
 starter_grid = np.array(df)
 
 starting_position = np.where(starter_grid == 2)
@@ -25,14 +26,14 @@ ending_position
 padded_grid = np.copy(starter_grid)
 obstacles = np.where(starter_grid == 1)
 radius = 3
-for (i, j) in zip(obstacles[0], obstacles[1]):
+for i, j in zip(obstacles[0], obstacles[1]):
 
-  # calculate all cells in the radius
-  for x in range(max(0, i-radius), min(len(starter_grid), i+radius+1)):
-    for y in range(max(0, j-radius), min(len(starter_grid[i]), j+radius+1)):
-      padded_grid[x][y] = 1
+    # calculate all cells in the radius
+    for x in range(max(0, i - radius), min(len(starter_grid), i + radius + 1)):
+        for y in range(max(0, j - radius), min(len(starter_grid[i]), j + radius + 1)):
+            padded_grid[x][y] = 1
 
-plt.imshow(padded_grid, cmap='hot', interpolation='nearest')
+plt.imshow(padded_grid, cmap="hot", interpolation="nearest")
 plt.show()
 
 import heapq
@@ -40,98 +41,101 @@ import heapq
 distances = {}
 previous_elements = {}
 
+
 def get_neighbors(position, grid):
-  neighbors = []
-  i, j = position
-  if i > 0 and grid[i-1][j] != 1:
-    neighbors.append((i-1, j))
-  if i < len(grid)-1 and grid[i+1][j] != 1:
-    neighbors.append((i+1, j))
-  if j > 0 and grid[i][j-1] != 1:
-    neighbors.append((i, j-1))
-  if j < len(grid[i])-1 and grid[i][j+1] != 1:
-    neighbors.append((i, j+1))
-  return neighbors
+    neighbors = []
+    i, j = position
+    if i > 0 and grid[i - 1][j] != 1:
+        neighbors.append((i - 1, j))
+    if i < len(grid) - 1 and grid[i + 1][j] != 1:
+        neighbors.append((i + 1, j))
+    if j > 0 and grid[i][j - 1] != 1:
+        neighbors.append((i, j - 1))
+    if j < len(grid[i]) - 1 and grid[i][j + 1] != 1:
+        neighbors.append((i, j + 1))
+    return neighbors
+
 
 def get_diagonal_neighbors(position, grid):
-  neighbors = []
-  i, j = position
-  if i > 0 and j > 0 and grid[i-1][j-1] != 1:
-    neighbors.append((i-1, j-1))
-  if i < len(grid)-1 and j < len(grid[i])-1 and grid[i+1][j+1] != 1:
-    neighbors.append((i+1, j+1))
-  if i > 0 and j < len(grid[i])-1 and grid[i-1][j+1] != 1:
-    neighbors.append((i-1, j+1))
-  if i < len(grid)-1 and j > 0 and grid[i+1][j-1] != 1:
-    neighbors.append((i+1, j-1))
-  return neighbors
+    neighbors = []
+    i, j = position
+    if i > 0 and j > 0 and grid[i - 1][j - 1] != 1:
+        neighbors.append((i - 1, j - 1))
+    if i < len(grid) - 1 and j < len(grid[i]) - 1 and grid[i + 1][j + 1] != 1:
+        neighbors.append((i + 1, j + 1))
+    if i > 0 and j < len(grid[i]) - 1 and grid[i - 1][j + 1] != 1:
+        neighbors.append((i - 1, j + 1))
+    if i < len(grid) - 1 and j > 0 and grid[i + 1][j - 1] != 1:
+        neighbors.append((i + 1, j - 1))
+    return neighbors
 
 
 def djikstra(grid, starting_position, ending_position):
-  heap_queue = []
+    heap_queue = []
 
-  for i in range(len(grid)):
-    for j in range(len(grid[i])):
-      if grid[i][j] == 0 or grid[i][j] == 3:
-        heap_queue.append((np.inf, (i, j)))
-        distances[(i, j)] = np.inf
-        previous_elements[(i, j)] = None
-      elif grid[i][j] == 2:
-        heap_queue.append((0, (i, j)))
-        distances[(i, j)] = 0
-        previous_elements[(i, j)] = starting_position
+    for i in range(len(grid)):
+        for j in range(len(grid[i])):
+            if grid[i][j] == 0 or grid[i][j] == 3:
+                heap_queue.append((np.inf, (i, j)))
+                distances[(i, j)] = np.inf
+                previous_elements[(i, j)] = None
+            elif grid[i][j] == 2:
+                heap_queue.append((0, (i, j)))
+                distances[(i, j)] = 0
+                previous_elements[(i, j)] = starting_position
 
-  while heap_queue:
-    current_distance, current_position = heap_queue.pop(0)
-    if current_position == ending_position:
-      path = []
-      while current_position != starting_position:
-        path.append(current_position)
-        current_position = previous_elements[current_position]
-      path.append(starting_position)
-      path.reverse()
-      return path
+    while heap_queue:
+        current_distance, current_position = heap_queue.pop(0)
+        if current_position == ending_position:
+            path = []
+            while current_position != starting_position:
+                path.append(current_position)
+                current_position = previous_elements[current_position]
+            path.append(starting_position)
+            path.reverse()
+            return path
 
-    neighbors = get_neighbors(current_position, grid)
-    diagonal_neighbors = get_diagonal_neighbors(current_position, grid)
+        neighbors = get_neighbors(current_position, grid)
+        diagonal_neighbors = get_diagonal_neighbors(current_position, grid)
 
-    for neighbor in neighbors:
-      distance = current_distance + 1
-      if distance < distances[neighbor]:
-        distances[neighbor] = distance
-        previous_elements[neighbor] = current_position
+        for neighbor in neighbors:
+            distance = current_distance + 1
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+                previous_elements[neighbor] = current_position
 
-        # delete element from heap_queue
-        for i in range(len(heap_queue)):
-          if heap_queue[i][1] == neighbor:
-            del heap_queue[i]
-            break
+                # delete element from heap_queue
+                for i in range(len(heap_queue)):
+                    if heap_queue[i][1] == neighbor:
+                        del heap_queue[i]
+                        break
 
-        heap_queue.append((distance, neighbor))
-        heap_queue.sort()
+                heap_queue.append((distance, neighbor))
+                heap_queue.sort()
 
-    for neighbor in diagonal_neighbors:
-      distance = current_distance + np.sqrt(2)
-      if distance < distances[neighbor]:
-        distances[neighbor] = distance
-        previous_elements[neighbor] = current_position
+        for neighbor in diagonal_neighbors:
+            distance = current_distance + np.sqrt(2)
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+                previous_elements[neighbor] = current_position
 
-        # delete element from heap_queue
-        for i in range(len(heap_queue)):
-          if heap_queue[i][1] == neighbor:
-            del heap_queue[i]
-            break
+                # delete element from heap_queue
+                for i in range(len(heap_queue)):
+                    if heap_queue[i][1] == neighbor:
+                        del heap_queue[i]
+                        break
 
-        heap_queue.append((distance, neighbor))
-        heap_queue.sort()
+                heap_queue.append((distance, neighbor))
+                heap_queue.sort()
+
 
 path = djikstra(padded_grid, starting_position, ending_position)
 
 import matplotlib.pyplot as plt
 
 grid_copy = np.copy(starter_grid)
-for (p1, p2) in path:
-  grid_copy[p1][p2] = 4
+for p1, p2 in path:
+    grid_copy[p1][p2] = 4
 
-plt.imshow(grid_copy, cmap='hot', interpolation='nearest')
+plt.imshow(grid_copy, cmap="hot", interpolation="nearest")
 plt.show()

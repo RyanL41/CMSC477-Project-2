@@ -42,7 +42,7 @@ p       char[]          string
 P       void*           long
 """
 
-__all__ = ['Msg', 'TextMsg']
+__all__ = ["Msg", "TextMsg"]
 
 # 默认的 ID 取值范围
 RM_SDK_FIRST_SEQ_ID = 10000
@@ -68,7 +68,7 @@ def host2byte(host, index):
 
 
 def byte2host(b):
-    return (b & 0x1f), (b >> 5)
+    return (b & 0x1F), (b >> 5)
 
 
 def make_proto_cls_key(cmdset, cmdid):
@@ -80,16 +80,16 @@ registered_protos = {}
 
 
 class _AutoRegisterProto(type):
-    """ help to automatically register Proto Class where ever they're defined """
+    """help to automatically register Proto Class where ever they're defined"""
 
     def __new__(mcs, name, bases, attrs, **kw):
         return super().__new__(mcs, name, bases, attrs, **kw)
 
     def __init__(cls, name, bases, attrs, **kw):
         super().__init__(name, bases, attrs, **kw)
-        if name == 'ProtoData':
+        if name == "ProtoData":
             return
-        key = make_proto_cls_key(attrs['_cmdset'], attrs['_cmdid'])
+        key = make_proto_cls_key(attrs["_cmdset"], attrs["_cmdid"])
         if key in registered_protos.keys():
             raise ValueError("Duplicate proto class %s" % (name))
         registered_protos[key] = cls
@@ -107,7 +107,9 @@ class ProtoData(metaclass=_AutoRegisterProto):
         self._len = None
 
     def __repr__(self):
-        return "<{0} cmset:0x{1:2x}, cmdid:0x{2:02x}>".format(self.__class__.__name__, self._cmdset, self._cmdid)
+        return "<{0} cmset:0x{1:2x}, cmdid:0x{2:02x}>".format(
+            self.__class__.__name__, self._cmdset, self._cmdid
+        )
 
     @property
     def cmdset(self):
@@ -134,15 +136,15 @@ class ProtoData(metaclass=_AutoRegisterProto):
 
     @abstractmethod
     def pack_req(self):
-        """ 协议对象打包发送数据为字节流
+        """协议对象打包发送数据为字节流
 
         :return: 字节流数据
         """
-        return b''
+        return b""
 
     # @abstractmethod
     def unpack_req(self, buf, offset=0):
-        """ 从字节流解包
+        """从字节流解包
 
         :param buf：字节流数据
         :param offset：字节流数据偏移量
@@ -152,7 +154,7 @@ class ProtoData(metaclass=_AutoRegisterProto):
 
     # @abstractmethod
     def pack_resp(self):
-        """ 协议对象打包
+        """协议对象打包
 
         :return：字节流数据
         """
@@ -162,7 +164,7 @@ class ProtoData(metaclass=_AutoRegisterProto):
     # return False when restcode is not zero
     # raise exceptions when internal error occur.
     def unpack_resp(self, buf, offset=0):
-        """ 从字节流解包为返回值和相关属性
+        """从字节流解包为返回值和相关属性
 
         :param buf：字节流数据
         :param offset：字节流数据偏移量
@@ -209,8 +211,16 @@ class Msg(MsgBase):
 
     def __repr__(self):
         return "<Msg sender:0x{0:02x}, receiver:0x{1:02x}, cmdset:0x{2:02x}, cmdid:0x{3:02x}, len:{4:d}, \
-seq_id:{5:d}, is_ack:{6:d}, need_ack:{7:d}>".format(self._sender, self._receiver, self._cmdset, self._cmdid,
-                                                    self._len, self._seq_id, self._is_ack, self._need_ack)
+seq_id:{5:d}, is_ack:{6:d}, need_ack:{7:d}>".format(
+            self._sender,
+            self._receiver,
+            self._cmdset,
+            self._cmdid,
+            self._len,
+            self._seq_id,
+            self._is_ack,
+            self._need_ack,
+        )
 
     @property
     def cmdset(self):
@@ -235,7 +245,7 @@ seq_id:{5:d}, is_ack:{6:d}, need_ack:{7:d}>".format(self._sender, self._receiver
         return "{0:02d}{1:02d}".format(host, index)
 
     def pack(self, is_ack=False):
-        """ Msg 消息打包
+        """Msg 消息打包
 
         :param is_ack: bool: 是否是ack消息
         :return: bytearray，消息字节流
@@ -243,21 +253,25 @@ seq_id:{5:d}, is_ack:{6:d}, need_ack:{7:d}>".format(self._sender, self._receiver
         self._len = 13
         try:
             if self._proto:
-                data_buf = b''
+                data_buf = b""
                 if is_ack:
                     self._neek_ack = False
                     data_buf = self._proto.pack_resp()
                 else:
-                    self._neek_ack = (self._proto._cmdtype == DUSS_MB_TYPE_REQ)
+                    self._neek_ack = self._proto._cmdtype == DUSS_MB_TYPE_REQ
                     data_buf = self._proto.pack_req()
                 self._len += len(data_buf)
         except Exception as e:
-            logger.warning("Msg: pack, cmset:0x{0:02x}, cmdid:0x{1:02x}, proto: {2}, "
-                           "exception {3}".format(self.cmdset, self.cmdid, self._proto.__class__.__name__, e))
+            logger.warning(
+                "Msg: pack, cmset:0x{0:02x}, cmdid:0x{1:02x}, proto: {2}, "
+                "exception {3}".format(
+                    self.cmdset, self.cmdid, self._proto.__class__.__name__, e
+                )
+            )
 
         self._buf = bytearray(self._len)
         self._buf[0] = 0x55
-        self._buf[1] = self._len & 0xff
+        self._buf[1] = self._len & 0xFF
         self._buf[2] = (self._len >> 8) & 0x3 | 4
         crc_h = algo.crc8_calc(self._buf[0:3])
 
@@ -267,29 +281,31 @@ seq_id:{5:d}, is_ack:{6:d}, need_ack:{7:d}>".format(self._sender, self._receiver
         self._buf[3] = crc_h
         self._buf[4] = self._sender
         self._buf[5] = self._receiver
-        self._buf[6] = self._seq_id & 0xff
-        self._buf[7] = (self._seq_id >> 8) & 0xff
+        self._buf[6] = self._seq_id & 0xFF
+        self._buf[7] = (self._seq_id >> 8) & 0xFF
         self._buf[8] = self._attri
 
         if self._proto:
             self._buf[9] = self._proto.cmdset
             self._buf[10] = self._proto.cmdid
-            self._buf[11:11 + len(data_buf)] = data_buf
+            self._buf[11 : 11 + len(data_buf)] = data_buf
         else:
             raise Exception("Msg: pack Error.")
 
         # calc whole msg crc16
-        crc_m = algo.crc16_calc(self._buf[0:self._len - 2])
-        struct.pack_into('<H', self._buf, self._len - 2, crc_m)
+        crc_m = algo.crc16_calc(self._buf[0 : self._len - 2])
+        struct.pack_into("<H", self._buf, self._len - 2, crc_m)
 
-        logger.debug("Msg: pack, len:{0}, seq_id:{1}, buf:{2}".format(
-            self._len, self._seq_id, binascii.hexlify(self._buf)))
+        logger.debug(
+            "Msg: pack, len:{0}, seq_id:{1}, buf:{2}".format(
+                self._len, self._seq_id, binascii.hexlify(self._buf)
+            )
+        )
         return self._buf
 
     # unpack proto after recv msg, raise excpetion when error occur.
     def unpack_protocol(self):
-        """ 从自身的buf数据解码协议及协议内容。
-        """
+        """从自身的buf数据解码协议及协议内容。"""
         key = make_proto_cls_key(self._cmdset, self._cmdid)
         if key in registered_protos.keys():
             self._proto = registered_protos[key]()
@@ -304,14 +320,25 @@ seq_id:{5:d}, is_ack:{6:d}, need_ack:{7:d}>".format(self._sender, self._receiver
                         return False
                 return True
             except Exception as e:
-                logger.warning("Msg: unpack_protocol, {0} failed e {1}".format(self._proto.__class__.__name__, e))
+                logger.warning(
+                    "Msg: unpack_protocol, {0} failed e {1}".format(
+                        self._proto.__class__.__name__, e
+                    )
+                )
                 raise
         else:
-            logger.info("Msg: unpack_protocol, cmdset:0x{0:02x}, cmdid:0x{1:02x}, class is not registerin registered_\
-protos".format(self._cmdset, self._cmdid))
+            logger.info(
+                "Msg: unpack_protocol, cmdset:0x{0:02x}, cmdid:0x{1:02x}, class is not registerin registered_\
+protos".format(
+                    self._cmdset, self._cmdid
+                )
+            )
             pass
-        logger.warning("Msg: unpack_protocol, not registered_protocol, cmdset:0x{0:02x}, cmdid:0x{1:02x}".format(
-            self._cmdset, self._cmdid))
+        logger.warning(
+            "Msg: unpack_protocol, not registered_protocol, cmdset:0x{0:02x}, cmdid:0x{1:02x}".format(
+                self._cmdset, self._cmdid
+            )
+        )
         return False
 
     def get_proto(self):
@@ -372,7 +399,11 @@ def decode_msg(buff, protocol="v1"):
 
         msg_len = (buff[2] & 0x3) * 256 + buff[1]
         if len(buff) < msg_len:
-            logger.warning("decode_msg, msg data is not enough, msg_len:{0}, buf_len:{1}".format(msg_len, len(buff)))
+            logger.warning(
+                "decode_msg, msg data is not enough, msg_len:{0}, buf_len:{1}".format(
+                    msg_len, len(buff)
+                )
+            )
             return None, buff
 
         # unpack from byte array.
@@ -386,7 +417,7 @@ def decode_msg(buff, protocol="v1"):
         msg._cmdid = int(buff[10])
         msg._is_ack = msg._attri & 0x80 != 0
         msg._need_ack = (msg._attri & 0x60) >> 5
-        msg._buf = buff[11:msg._len - 2]
+        msg._buf = buff[11 : msg._len - 2]
         left_buf = buff[msg_len:]
         return msg, left_buf
 
@@ -398,7 +429,7 @@ def decode_msg(buff, protocol="v1"):
             logger.warning("decode_msg: recv invalid data, buff {0}".format(buff))
             return None, bytearray()
         else:
-            msg._buf = buff.decode(encoding='utf-8')
+            msg._buf = buff.decode(encoding="utf-8")
             msg._len = len(msg._buf)
             return msg, bytearray()
 
@@ -423,7 +454,7 @@ class ProtoGetVersion(ProtoData):
         self._retcode = 0
 
     def pack_req(self):
-        return b''
+        return b""
 
     def unpack_resp(self, buf, offset=0):
         if len(buf) < self._resp_size:
@@ -441,7 +472,7 @@ class ProtoGetVersion(ProtoData):
 
 class ProtoGetProductVersion(ProtoData):
     _cmdset = 0
-    _cmdid = 0x4f
+    _cmdid = 0x4F
     _resp_size = 9
 
     def __init__(self):
@@ -451,10 +482,10 @@ class ProtoGetProductVersion(ProtoData):
     def pack_req(self):
         buf = bytearray(self._resp_size)
         buf[0] = self._file_type
-        buf[5] = 0xff
-        buf[6] = 0xff
-        buf[7] = 0xff
-        buf[8] = 0xff
+        buf[5] = 0xFF
+        buf[6] = 0xFF
+        buf[7] = 0xFF
+        buf[8] = 0xFF
         return buf
 
     def unpack_resp(self, buf, offset=0):
@@ -465,7 +496,9 @@ class ProtoGetProductVersion(ProtoData):
             return True
         else:
             self._version = None
-            logger.warning("ProtoGetProductVersion, unpack_resp, retcode {0}".format(self._retcode))
+            logger.warning(
+                "ProtoGetProductVersion, unpack_resp, retcode {0}".format(self._retcode)
+            )
             return False
 
 
@@ -486,7 +519,9 @@ class ProtoGetSn(ProtoData):
         self._retcode = buf[offset]
         if self._retcode == 0:
             self._length = buf[offset + 1]
-            self._sn = buf[offset + 3:self._length + offset + 3].decode('utf-8', 'ignore')
+            self._sn = buf[offset + 3 : self._length + offset + 3].decode(
+                "utf-8", "ignore"
+            )
             return True
         else:
             return False
@@ -546,7 +581,7 @@ class ProtoGetZoom(ProtoData):
         pass
 
     def pack_req(self):
-        return b''
+        return b""
 
     def unpack_resp(self, buf, offset=0):
         return True
@@ -554,7 +589,7 @@ class ProtoGetZoom(ProtoData):
 
 class ProtoSetWhiteBalance(ProtoData):
     _cmdset = 0x2
-    _cmdid = 0x2c
+    _cmdid = 0x2C
     _req_size = 5
 
     def __init__(self):
@@ -599,7 +634,9 @@ class ProtoFcSubInfoReq(ProtoData):
         buf[4] = self._data_num
         for i, uuid in enumerate(self._uuid_list):
             struct.pack_into("<I", buf, 5 + i * 4, uuid)
-        logger.debug("ProtoFcSubInfoReq, pack_req buf {0}".format(binascii.hexlify(buf)))
+        logger.debug(
+            "ProtoFcSubInfoReq, pack_req buf {0}".format(binascii.hexlify(buf))
+        )
         return buf
 
     def unpack_resp(self, buf, offset=0):
@@ -607,12 +644,14 @@ class ProtoFcSubInfoReq(ProtoData):
         if self._retcode == 0:
             return True
         else:
-            logger.warning("ProtoFcSubInfoReq: unpack_resp, retcode:{0}".format(self._retcode))
+            logger.warning(
+                "ProtoFcSubInfoReq: unpack_resp, retcode:{0}".format(self._retcode)
+            )
             return False
 
 
 class ProtoChassisStickOverlay(ProtoData):
-    _cmdset = 0x3f
+    _cmdset = 0x3F
     _cmdid = 0x28
     _req_size = 1
 
@@ -629,13 +668,17 @@ class ProtoChassisStickOverlay(ProtoData):
         if self._retcode == 0:
             return True
         else:
-            logger.warning("ProtoChassisStickOverlay: unpack_resp, retcode:{0}".format(self._retcode))
+            logger.warning(
+                "ProtoChassisStickOverlay: unpack_resp, retcode:{0}".format(
+                    self._retcode
+                )
+            )
             return False
 
 
 class ProtoGimbalCtrlSpeed(ProtoData):
     _cmdset = 0x4
-    _cmdid = 0xc
+    _cmdid = 0xC
     _req_size = 8
     _cmdtype = DUSS_MB_TYPE_PUSH
 
@@ -643,7 +686,7 @@ class ProtoGimbalCtrlSpeed(ProtoData):
         self._yaw_speed = 0
         self._roll_speed = 0
         self._pitch_speed = 0
-        self._ctrl_byte = 0xdc
+        self._ctrl_byte = 0xDC
         self._ctrl_byte_extend = 0
         self._err_yaw_limit = 0
         self._err_roll_limit = 0
@@ -653,7 +696,9 @@ class ProtoGimbalCtrlSpeed(ProtoData):
 
     def pack_req(self):
         buf = bytearray(self._req_size)
-        struct.pack_into("<hhh", buf, 0, self._yaw_speed, self._roll_speed, self._pitch_speed)
+        struct.pack_into(
+            "<hhh", buf, 0, self._yaw_speed, self._roll_speed, self._pitch_speed
+        )
         buf[6] = self._ctrl_byte
         return buf
 
@@ -662,12 +707,14 @@ class ProtoGimbalCtrlSpeed(ProtoData):
         if self._retcode == 0:
             return True
         else:
-            logger.warning("ProtoGimbalCtrlSpeed: unpack_resp, retcode:{0}".format(self._retcode))
+            logger.warning(
+                "ProtoGimbalCtrlSpeed: unpack_resp, retcode:{0}".format(self._retcode)
+            )
             return False
 
 
 class ProtoArmorHitEvent(ProtoData):
-    _cmdset = 0x3f
+    _cmdset = 0x3F
     _cmdid = 0x2
     _resp_size = 0
 
@@ -679,18 +726,18 @@ class ProtoArmorHitEvent(ProtoData):
         self._data_buf = None
 
     def pack_req(self):
-        return b''
+        return b""
 
     def unpack_req(self, buf, offset=0):
         self._index = buf[0] >> 4
-        self._type = buf[0] & 0xf
-        self._mic_value, self._mic_len = struct.unpack('<HH', buf[1:])
+        self._type = buf[0] & 0xF
+        self._mic_value, self._mic_len = struct.unpack("<HH", buf[1:])
         self._data_buf = [self._index, self._type, self._mic_value]
         return True
 
 
 class ProtoIrHitEvent(ProtoData):
-    _cmdset = 0x3f
+    _cmdset = 0x3F
     _cmdid = 0x10
     _resp_size = 0
 
@@ -702,19 +749,24 @@ class ProtoIrHitEvent(ProtoData):
         self._data_buf = None
 
     def pack_req(self):
-        return b''
+        return b""
 
     def unpack_req(self, buf, offset=0):
         self._role_id = buf[0] >> 4
-        self._skill_id = buf[0] & 0xf
-        self._recv_dev, self._recv_ir_pin = struct.unpack('<BB', buf[1:])
-        self._data_buf = [self._skill_id, self._role_id, self._recv_dev, self._recv_ir_pin]
+        self._skill_id = buf[0] & 0xF
+        self._recv_dev, self._recv_ir_pin = struct.unpack("<BB", buf[1:])
+        self._data_buf = [
+            self._skill_id,
+            self._role_id,
+            self._recv_dev,
+            self._recv_ir_pin,
+        ]
         return True
 
 
 class ProtoGameMsgEvent(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xd6
+    _cmdset = 0x3F
+    _cmdid = 0xD6
     _resp_size = 0
 
     def __init__(self):
@@ -723,7 +775,7 @@ class ProtoGameMsgEvent(ProtoData):
         self._data_buf = None
 
     def pack_req(self):
-        return b''
+        return b""
 
     def unpack_req(self, buf, offset=0):
         self._len = buf[1]
@@ -733,7 +785,7 @@ class ProtoGameMsgEvent(ProtoData):
 
 
 class ProtoSetArmorParam(ProtoData):
-    _cmdset = 0x3f
+    _cmdset = 0x3F
     _cmdid = 0x7
     _resp_size = 19
 
@@ -751,10 +803,21 @@ class ProtoSetArmorParam(ProtoData):
 
     def pack_req(self):
         buf = bytearray(self._resp_size)
-        struct.pack_into('<BHHHHHHHHH', buf, 0, self._armor_mask, self._voice_energy_en,
-                         self._voice_energy_ex, self._voice_len_max, self._voice_len_min,
-                         self._voice_len_silence, self._voice_peak_count, self._voice_peak_min,
-                         self._voice_peak_ave, self._voice_peak_final)
+        struct.pack_into(
+            "<BHHHHHHHHH",
+            buf,
+            0,
+            self._armor_mask,
+            self._voice_energy_en,
+            self._voice_energy_ex,
+            self._voice_len_max,
+            self._voice_len_min,
+            self._voice_len_silence,
+            self._voice_peak_count,
+            self._voice_peak_min,
+            self._voice_peak_ave,
+            self._voice_peak_final,
+        )
         return buf
 
     def unpack_resp(self, buf, offset=0):
@@ -766,7 +829,7 @@ class ProtoSetArmorParam(ProtoData):
 
 
 class ProtoChassisWheelSpeed(ProtoData):
-    _cmdset = 0x3f
+    _cmdset = 0x3F
     _cmdid = 0x26
     _req_size = 4
 
@@ -793,18 +856,18 @@ class ProtoChassisWheelSpeed(ProtoData):
 
 
 class ProtoSetSystemLed(ProtoData):
-    _cmdset = 0x3f
+    _cmdset = 0x3F
     _cmdid = 0x33
     _req_size = 15
 
     def __init__(self):
-        self._comp_mask = 0x3f
-        self._led_mask = 0xff
+        self._comp_mask = 0x3F
+        self._led_mask = 0xFF
         self._ctrl_mode = 0
         self._effect_mode = 0
-        self._r = 0xff
-        self._g = 0xff
-        self._b = 0xff
+        self._r = 0xFF
+        self._g = 0xFF
+        self._b = 0xFF
         self._loop = 0
         self._t1 = 100
         self._t2 = 100
@@ -830,7 +893,7 @@ class ProtoSetSystemLed(ProtoData):
 
 
 class ProtoSetRobotMode(ProtoData):
-    _cmdset = 0x3f
+    _cmdset = 0x3F
     _cmdid = 0x46
     _req_size = 1
 
@@ -851,14 +914,14 @@ class ProtoSetRobotMode(ProtoData):
 
 
 class ProtoGetRobotMode(ProtoData):
-    _cmdset = 0x3f
+    _cmdset = 0x3F
     _cmdid = 0x47
 
     def __init__(self):
         self._mode = 0
 
     def pack_req(self):
-        return b''
+        return b""
 
     def unpack_resp(self, buf, offset=0):
         self._retcode = buf[offset]
@@ -870,7 +933,7 @@ class ProtoGetRobotMode(ProtoData):
 
 
 class ProtoBlasterFire(ProtoData):
-    _cmdset = 0x3f
+    _cmdset = 0x3F
     _cmdid = 0x51
     _req_size = 1
 
@@ -892,7 +955,7 @@ class ProtoBlasterFire(ProtoData):
 
 
 class ProtoBlasterSetLed(ProtoData):
-    _cmdset = 0x3f
+    _cmdset = 0x3F
     _cmdid = 0x55
     _req_size = 9
     _cmdtype = DUSS_MB_TYPE_PUSH
@@ -900,9 +963,9 @@ class ProtoBlasterSetLed(ProtoData):
     def __init__(self):
         self._mode = 7
         self._effect = 0
-        self._r = 0xff
-        self._g = 0xff
-        self._b = 0xff
+        self._r = 0xFF
+        self._g = 0xFF
+        self._b = 0xFF
         self._times = 1
         self._t1 = 100
         self._t2 = 100
@@ -926,8 +989,8 @@ class ProtoBlasterSetLed(ProtoData):
 
 
 class ProtoSetSdkMode(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xd1
+    _cmdset = 0x3F
+    _cmdid = 0xD1
     _req_size = 1
 
     def __init__(self):
@@ -947,8 +1010,8 @@ class ProtoSetSdkMode(ProtoData):
 
 
 class ProtoStreamCtrl(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xd2
+    _cmdset = 0x3F
+    _cmdid = 0xD2
     _req_size = 3
 
     def __init__(self):
@@ -973,8 +1036,8 @@ class ProtoStreamCtrl(ProtoData):
 
 
 class ProtoSetSdkConnection(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xd4
+    _cmdset = 0x3F
+    _cmdid = 0xD4
     _req_size = 10
 
     def __init__(self):
@@ -982,7 +1045,7 @@ class ProtoSetSdkConnection(ProtoData):
         self._host = 0
         self._connection = 0
         self._protocol = 0
-        self._ip = '0.0.0.0'
+        self._ip = "0.0.0.0"
         self._port = 10010
 
     def pack_req(self):
@@ -991,7 +1054,7 @@ class ProtoSetSdkConnection(ProtoData):
         buf[1] = self._host
         buf[2] = self._connection
         buf[3] = self._protocol
-        ip_bytes = bytes(map(int, self._ip.split('.')))
+        ip_bytes = bytes(map(int, self._ip.split(".")))
         buf[4:8] = ip_bytes
         struct.pack_into("<H", buf, 8, self._port)
         return buf
@@ -1001,22 +1064,24 @@ class ProtoSetSdkConnection(ProtoData):
         if self._retcode == 0:
             self._state = buf[1]
             if self._state == 2:
-                self._config_ip = "{0:d}.{1:d}.{2:d}.{3:d}".format(buf[2], buf[3], buf[4], buf[5])
+                self._config_ip = "{0:d}.{1:d}.{2:d}.{3:d}".format(
+                    buf[2], buf[3], buf[4], buf[5]
+                )
             return True
         else:
             return False
 
 
 class ProtoSdkHeartBeat(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xd5
+    _cmdset = 0x3F
+    _cmdid = 0xD5
     _req_size = 0
 
     def __init__(self):
         pass
 
     def pack_req(self):
-        return b''
+        return b""
 
     def unpack_resp(self, buf, offset=0):
         self._retcode = buf[0]
@@ -1027,8 +1092,8 @@ class ProtoSdkHeartBeat(ProtoData):
 
 
 class ProtoAiModuleEvent(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xea
+    _cmdset = 0x3F
+    _cmdid = 0xEA
     _resp_size = 0
 
     def __init__(self):
@@ -1043,21 +1108,23 @@ class ProtoAiModuleEvent(ProtoData):
         self._data_buf = None
 
     def pack_req(self):
-        return b''
+        return b""
 
     def unpack_req(self, buf, offset=0):
-        self._len = len(buf)-15
-        self._num = round(self._len/8)
+        self._len = len(buf) - 15
+        self._num = round(self._len / 8)
         for i in range(0, self._num):
-            self._id, self._x, self._y, self._w, self._h, self._c = struct.unpack('<BHBHBB', buf[13+i*8:21+i*8])
+            self._id, self._x, self._y, self._w, self._h, self._c = struct.unpack(
+                "<BHBHBB", buf[13 + i * 8 : 21 + i * 8]
+            )
             self._info.append([self._id, self._x, self._y, self._w, self._h, self._c])
         self._data_buf = self._num, self._info
         return True
 
 
 class ProtoUwbModuleEvent(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xdb
+    _cmdset = 0x3F
+    _cmdid = 0xDB
     _resp_size = 0
 
     def __init__(self):
@@ -1074,19 +1141,39 @@ class ProtoUwbModuleEvent(ProtoData):
         self._data_buf = None
 
     def pack_req(self):
-        return b''
+        return b""
 
     def unpack_req(self, buf, offset=0):
-        self._id, self._pox_x, self._pox_y, self._pox_z, self._vel_x, self._vel_y,\
-            self._vel_z, self._eop_x, self._eop_y, self._eop_z = struct.unpack('<BffffffBBB', buf)
-        self._data_buf = [self._id, self._pox_x, self._pox_y, self._pox_z, self._vel_x, self._vel_y,
-                          self._vel_z, self._eop_x, self._eop_y, self._eop_z]
+        (
+            self._id,
+            self._pox_x,
+            self._pox_y,
+            self._pox_z,
+            self._vel_x,
+            self._vel_y,
+            self._vel_z,
+            self._eop_x,
+            self._eop_y,
+            self._eop_z,
+        ) = struct.unpack("<BffffffBBB", buf)
+        self._data_buf = [
+            self._id,
+            self._pox_x,
+            self._pox_y,
+            self._pox_z,
+            self._vel_x,
+            self._vel_y,
+            self._vel_z,
+            self._eop_x,
+            self._eop_y,
+            self._eop_z,
+        ]
         return True
 
 
 class ProtoGimbalSetWorkMode(ProtoData):
     _cmdset = 0x4
-    _cmdid = 0x4c
+    _cmdid = 0x4C
     _req_size = 2
 
     def __init__(self):
@@ -1109,11 +1196,11 @@ class ProtoGimbalSetWorkMode(ProtoData):
 
 class ProtoGimbalCtrl(ProtoData):
     _cmdset = 0x4
-    _cmdid = 0xd
+    _cmdid = 0xD
     _req_size = 2
 
     def __init__(self):
-        self._order_code = 0x2ab5
+        self._order_code = 0x2AB5
 
     def pack_req(self):
         buf = bytearray(self._req_size)
@@ -1129,8 +1216,8 @@ class ProtoGimbalCtrl(ProtoData):
 
 
 class ProtoPlaySound(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xb3
+    _cmdset = 0x3F
+    _cmdid = 0xB3
     _req_size = 10
 
     def __init__(self):
@@ -1149,9 +1236,9 @@ class ProtoPlaySound(ProtoData):
         buf = bytearray(self._req_size)
         buf[0] = self._action_id
         buf[1] = self._task_ctrl | self._push_freq << 2
-        struct.pack_into('<I', buf, 2, self._sound_id)
+        struct.pack_into("<I", buf, 2, self._sound_id)
         buf[6] = self._play_ctrl
-        struct.pack_into('<H', buf, 7, self._interval)
+        struct.pack_into("<H", buf, 7, self._interval)
         buf[9] = self._play_times
         logger.debug("ProtoPlaySound: pack_req, buf: {0}".format(binascii.hexlify(buf)))
         return buf
@@ -1159,7 +1246,10 @@ class ProtoPlaySound(ProtoData):
     def unpack_resp(self, buf, offset=0):
         self._retcode = buf[offset]
         logger.debug(
-            "ProtoPlaySound unpack_resp, buf : {0}, self._retcode: {1}".format(binascii.hexlify(buf), self._retcode))
+            "ProtoPlaySound unpack_resp, buf : {0}, self._retcode: {1}".format(
+                binascii.hexlify(buf), self._retcode
+            )
+        )
         if self._retcode == 0:
             self._accept = buf[offset + 1]
             return True
@@ -1184,8 +1274,8 @@ class ProtoPlaySound(ProtoData):
 
 
 class ProtoSoundPush(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xb4
+    _cmdset = 0x3F
+    _cmdid = 0xB4
 
     def __init__(self):
         self._action_id = 0
@@ -1196,7 +1286,7 @@ class ProtoSoundPush(ProtoData):
         self._sound_id = 0
 
     def pack_req(self):
-        return b''
+        return b""
 
     # ack push
     def unpack_req(self, buf, offset=0):
@@ -1204,7 +1294,7 @@ class ProtoSoundPush(ProtoData):
         self._percent = buf[1]
         self._error_reason = buf[2] >> 2 & 0x03
         self._action_state = buf[2] & 0x03
-        self._sound_id = struct.unpack_from('<I', buf, 3)
+        self._sound_id = struct.unpack_from("<I", buf, 3)
         logger.debug("ProtoSoundPush unpack_req, buf {0}".format(binascii.hexlify(buf)))
         return True
 
@@ -1213,8 +1303,10 @@ class ProtoSoundPush(ProtoData):
         self._percent = buf[offset + 1]
         self._error_reason = buf[offset + 2] >> 2 & 0x03
         self._action_state = buf[offset + 2] & 0x03
-        self._sound_id = struct.unpack_from('<I', buf, offset + 3)
-        logger.debug("ProtoSoundPush unpack_resp, buf {0}".format(binascii.hexlify(buf)))
+        self._sound_id = struct.unpack_from("<I", buf, offset + 3)
+        logger.debug(
+            "ProtoSoundPush unpack_resp, buf {0}".format(binascii.hexlify(buf))
+        )
         return True
 
     @property
@@ -1235,8 +1327,8 @@ class ProtoSoundPush(ProtoData):
 
 
 class ProtoGimbalRotate(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xb0
+    _cmdset = 0x3F
+    _cmdid = 0xB0
     _req_size = 17
 
     def __init__(self):
@@ -1259,9 +1351,22 @@ class ProtoGimbalRotate(ProtoData):
         buf = bytearray(self._req_size)
         buf[0] = self._action_id
         buf[1] = self._action_ctrl | (self._push_freq << 2)
-        buf[2] = self._yaw_valid | (self._roll_valid << 1) | (self._pitch_valid << 2) | (self._coordinate << 3)
-        struct.pack_into('<hhh', buf, 3, self._yaw, self._roll, self._pitch)
-        struct.pack_into('<HHHH', buf, 9, self._error, self._yaw_speed, self._roll_speed, self._pitch_speed)
+        buf[2] = (
+            self._yaw_valid
+            | (self._roll_valid << 1)
+            | (self._pitch_valid << 2)
+            | (self._coordinate << 3)
+        )
+        struct.pack_into("<hhh", buf, 3, self._yaw, self._roll, self._pitch)
+        struct.pack_into(
+            "<HHHH",
+            buf,
+            9,
+            self._error,
+            self._yaw_speed,
+            self._roll_speed,
+            self._pitch_speed,
+        )
         return buf
 
     def unpack_resp(self, buf, offset=0):
@@ -1274,8 +1379,8 @@ class ProtoGimbalRotate(ProtoData):
 
 
 class ProtoGimbalActionPush(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xb1
+    _cmdset = 0x3F
+    _cmdid = 0xB1
     _cmdtype = DUSS_MB_TYPE_PUSH
 
     def __init__(self):
@@ -1287,26 +1392,26 @@ class ProtoGimbalActionPush(ProtoData):
         self._pitch = 0
 
     def pack_req(self):
-        return b''
+        return b""
 
     def unpack_req(self, buf, offset=0):
         self._action_id = buf[offset]
         self._percent = buf[offset + 1]
         self._action_state = buf[offset + 2] & 0x3
-        self._yaw, self._roll, self._pitch = struct.unpack_from('<hhh', buf, offset + 3)
+        self._yaw, self._roll, self._pitch = struct.unpack_from("<hhh", buf, offset + 3)
         return True
 
     def unpack_resp(self, buf, offset=0):
         self._action_id = buf[offset]
         self._percent = buf[offset + 1]
         self._action_state = buf[offset + 2] & 0x3
-        self._yaw, self._roll, self._pitch = struct.unpack_from('<hhh', buf, offset + 3)
+        self._yaw, self._roll, self._pitch = struct.unpack_from("<hhh", buf, offset + 3)
         return True
 
 
 class ProtoGimbalRecenter(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xb2
+    _cmdset = 0x3F
+    _cmdid = 0xB2
     _req_size = 9
 
     def __init__(self):
@@ -1325,7 +1430,9 @@ class ProtoGimbalRecenter(ProtoData):
         buf[0] = self._action_id
         buf[1] = self._action_ctrl | (self._push_freq << 2)
         buf[2] = self._yaw_valid | (self._roll_valid << 1) | (self._pitch_valid << 2)
-        struct.pack_into("<HHH", buf, 3, self._yaw_speed, self._roll_speed, self._pitch_speed)
+        struct.pack_into(
+            "<HHH", buf, 3, self._yaw_speed, self._roll_speed, self._pitch_speed
+        )
         return buf
 
     def unpack_resp(self, buf, offset=0):
@@ -1338,14 +1445,14 @@ class ProtoGimbalRecenter(ProtoData):
 
 
 class ProtoVisionDetectStatus(ProtoData):
-    _cmdset = 0x0a
-    _cmdid = 0xa5
+    _cmdset = 0x0A
+    _cmdid = 0xA5
 
     def __init__(self):
         self._vision_type = 0
 
     def pack_req(self):
-        return b''
+        return b""
 
     def unpack_resp(self, buf, offset=0):
         self._retcode = buf[0]
@@ -1358,8 +1465,8 @@ class ProtoVisionDetectStatus(ProtoData):
 
 
 class ProtoVisionSetColor(ProtoData):
-    _cmdset = 0x0a
-    _cmdid = 0xab
+    _cmdset = 0x0A
+    _cmdid = 0xAB
     _req_size = 2
 
     def __init__(self):
@@ -1377,12 +1484,14 @@ class ProtoVisionSetColor(ProtoData):
         if self._retcode == 0:
             return True
         else:
-            logger.warning("ProtoVisionSetColor: unpack_resp, retcode {0}".format(self._retcode))
+            logger.warning(
+                "ProtoVisionSetColor: unpack_resp, retcode {0}".format(self._retcode)
+            )
             return False
 
 
 class ProtoPositionMove(ProtoData):
-    _cmdset = 0x3f
+    _cmdset = 0x3F
     _cmdid = 0x25
     _req_size = 13
 
@@ -1404,9 +1513,9 @@ class ProtoPositionMove(ProtoData):
         buf[1] = self._action_ctrl | self._freq << 2
         buf[2] = self._ctrl_mode
         buf[3] = self._axis_mode
-        struct.pack_into('<hhh', buf, 4, self._pos_x, self._pos_y, self._pos_z)
+        struct.pack_into("<hhh", buf, 4, self._pos_x, self._pos_y, self._pos_z)
         buf[10] = self._vel_xy_max
-        struct.pack_into('<h', buf, 11, self._agl_omg_max)
+        struct.pack_into("<h", buf, 11, self._agl_omg_max)
         return buf
 
     def unpack_resp(self, buf, offset=0):
@@ -1415,13 +1524,15 @@ class ProtoPositionMove(ProtoData):
             self._accept = buf[offset + 1]
             return True
         else:
-            logger.warning("ProtoPositionMove: unpack_resp, retcode:{0}".format(self._retcode))
+            logger.warning(
+                "ProtoPositionMove: unpack_resp, retcode:{0}".format(self._retcode)
+            )
             return False
 
 
 class ProtoPositionPush(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0x2a
+    _cmdset = 0x3F
+    _cmdid = 0x2A
 
     def __init__(self):
         self._action_id = 0
@@ -1432,26 +1543,28 @@ class ProtoPositionPush(ProtoData):
         self._pos_z = 0
 
     def pack_req(self):
-        return b''
+        return b""
 
     # ack push.
     def unpack_req(self, buf, offset=0):
         self._action_id = buf[0]
         self._percent = buf[1]
         self._action_state = buf[2]
-        self._pos_x, self._pos_y, self._pos_z = struct.unpack_from('<hhh', buf, 3)
+        self._pos_x, self._pos_y, self._pos_z = struct.unpack_from("<hhh", buf, 3)
         return True
 
     def unpack_resp(self, buf, offset=0):
         self._action_id = buf[offset]
         self._percent = buf[offset + 1]
         self._action_state = buf[offset + 2]
-        self._pos_x, self._pos_y, self._pos_z = struct.unpack_from('<hhh', buf, offset + 3)
+        self._pos_x, self._pos_y, self._pos_z = struct.unpack_from(
+            "<hhh", buf, offset + 3
+        )
         return True
 
 
 class ProtoSetWheelSpeed(ProtoData):
-    _cmdset = 0x3f
+    _cmdset = 0x3F
     _cmdid = 0x20
     _req_size = 8
 
@@ -1463,7 +1576,9 @@ class ProtoSetWheelSpeed(ProtoData):
 
     def pack_req(self):
         buf = bytearray(self._req_size)
-        struct.pack_into("<hhhh", buf, 0, self._w1_spd, self._w2_spd, self._w3_spd, self._w4_spd)
+        struct.pack_into(
+            "<hhhh", buf, 0, self._w1_spd, self._w2_spd, self._w3_spd, self._w4_spd
+        )
         return buf
 
     def unpack_resp(self, buf, offset=0):
@@ -1471,12 +1586,14 @@ class ProtoSetWheelSpeed(ProtoData):
         if self._retcode == 0:
             return True
         else:
-            logger.warning("ProtoSetWheelSpeed: unpack_resp, retcode:{0}".format(self._retcode))
+            logger.warning(
+                "ProtoSetWheelSpeed: unpack_resp, retcode:{0}".format(self._retcode)
+            )
             return False
 
 
 class ProtoChassisSetWorkMode(ProtoData):
-    _cmdset = 0x3f
+    _cmdset = 0x3F
     _cmdid = 0x19
     _req_size = 1
 
@@ -1497,7 +1614,7 @@ class ProtoChassisSetWorkMode(ProtoData):
 
 
 class ProtoChassisSpeedMode(ProtoData):
-    _cmdset = 0x3f
+    _cmdset = 0x3F
     _cmdid = 0x21
     _req_size = 12
     _cmdtype = DUSS_MB_TYPE_PUSH
@@ -1521,8 +1638,8 @@ class ProtoChassisSpeedMode(ProtoData):
 
 
 class ProtoChassisPwmPercent(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0x3c
+    _cmdset = 0x3F
+    _cmdid = 0x3C
     _req_size = 13
     _cmdtype = DUSS_MB_TYPE_REQ
 
@@ -1538,7 +1655,17 @@ class ProtoChassisPwmPercent(ProtoData):
     def pack_req(self):
         buf = bytearray(self._req_size)
         buf[0] = self._mask
-        struct.pack_into('<HHHHHH', buf, 1, self._pwm1, self._pwm2, self._pwm3, self._pwm4, self._pwm5, self._pwm6)
+        struct.pack_into(
+            "<HHHHHH",
+            buf,
+            1,
+            self._pwm1,
+            self._pwm2,
+            self._pwm3,
+            self._pwm4,
+            self._pwm5,
+            self._pwm6,
+        )
         return buf
 
     def unpack_resp(self, buf, offset=0):
@@ -1550,8 +1677,8 @@ class ProtoChassisPwmPercent(ProtoData):
 
 
 class ProtoChassisPwmFreq(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0x2b
+    _cmdset = 0x3F
+    _cmdid = 0x2B
     _req_size = 13
     _cmdtype = DUSS_MB_TYPE_REQ
 
@@ -1567,7 +1694,17 @@ class ProtoChassisPwmFreq(ProtoData):
     def pack_req(self):
         buf = bytearray(self._req_size)
         buf[0] = self._mask
-        struct.pack_into('<HHHHHH', buf, 1, self._pwm1, self._pwm2, self._pwm3, self._pwm4, self._pwm5, self._pwm6)
+        struct.pack_into(
+            "<HHHHHH",
+            buf,
+            1,
+            self._pwm1,
+            self._pwm2,
+            self._pwm3,
+            self._pwm4,
+            self._pwm5,
+            self._pwm6,
+        )
         return buf
 
     def unpack_resp(self, buf, offset=0):
@@ -1579,8 +1716,8 @@ class ProtoChassisPwmFreq(ProtoData):
 
 
 class ProtoChassisSerialSet(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xc0
+    _cmdset = 0x3F
+    _cmdid = 0xC0
     _req_size = 6
 
     def __init__(self):
@@ -1597,13 +1734,17 @@ class ProtoChassisSerialSet(ProtoData):
 
     def pack_req(self):
         buf = bytearray(self._req_size)
-        self._config = (self._stop_bit & 0x1) << 7 | \
-                       (self._odd_even & 0x3) << 5 | \
-                       (self._data_bit & 0x3) << 3 | \
-                       (self._baud_rate & 0x7)
+        self._config = (
+            (self._stop_bit & 0x1) << 7
+            | (self._odd_even & 0x3) << 5
+            | (self._data_bit & 0x3) << 3
+            | (self._baud_rate & 0x7)
+        )
 
         self._fun_en = ((self._tx_en & 0x1) << 1) | (self._rx_en & 0x1)
-        struct.pack_into('<BBHH', buf, 0, self._config, 0xff, self._rx_size, self._tx_size)
+        struct.pack_into(
+            "<BBHH", buf, 0, self._config, 0xFF, self._rx_size, self._tx_size
+        )
         return buf
 
     def unpack_resp(self, buf, offset=0):
@@ -1615,8 +1756,8 @@ class ProtoChassisSerialSet(ProtoData):
 
 
 class ProtoChassisSerialMsgSend(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xc1
+    _cmdset = 0x3F
+    _cmdid = 0xC1
     _req_size = 3
 
     def __init__(self):
@@ -1626,8 +1767,8 @@ class ProtoChassisSerialMsgSend(ProtoData):
 
     def pack_req(self):
         buf = bytearray(self._msg_len + self._req_size + 1)
-        struct.pack_into('<BH', buf, 0, self._msg_type, self._msg_len)
-        buf[3:len(buf) - 1] = self._msg_buf
+        struct.pack_into("<BH", buf, 0, self._msg_type, self._msg_len)
+        buf[3 : len(buf) - 1] = self._msg_buf
         return buf[0:-1]
 
     def unpack_resp(self, buf, offset=0):
@@ -1639,8 +1780,8 @@ class ProtoChassisSerialMsgSend(ProtoData):
 
 
 class ProtoVisionDetectEnable(ProtoData):
-    _cmdset = 0x0a
-    _cmdid = 0xa3
+    _cmdset = 0x0A
+    _cmdid = 0xA3
     _req_size = 2
 
     def __init__(self):
@@ -1657,13 +1798,15 @@ class ProtoVisionDetectEnable(ProtoData):
             return True
         else:
             self._error = struct.unpack_from("<H", buf, 1)
-            logger.warning("ProtoVisionDetectEnable: unpack_resp, error:{0}".format(self._error))
+            logger.warning(
+                "ProtoVisionDetectEnable: unpack_resp, error:{0}".format(self._error)
+            )
             return False
 
 
 class ProtoVisionDetectInfo(ProtoData):
-    _cmdset = 0x0a
-    _cmdid = 0xa4
+    _cmdset = 0x0A
+    _cmdid = 0xA4
 
     def __init__(self):
         self._type = 0
@@ -1673,7 +1816,7 @@ class ProtoVisionDetectInfo(ProtoData):
         self._data_buf = None
 
     def pack_req(self):
-        return b''
+        return b""
 
     def unpack_req(self, buf, offset=0):
         self._type = buf[0]
@@ -1682,19 +1825,25 @@ class ProtoVisionDetectInfo(ProtoData):
         count = buf[8]
         if self._type == 0:  # shoulder
             for i in range(0, count):
-                x, y, w, h, info = struct.unpack_from('<ffffI', buf, 9 + 20 * i)
+                x, y, w, h, info = struct.unpack_from("<ffffI", buf, 9 + 20 * i)
                 t = 5
-                self._rect_info.append([round(x, t), round(y, t), round(w, t), round(h, t)])
+                self._rect_info.append(
+                    [round(x, t), round(y, t), round(w, t), round(h, t)]
+                )
         elif self._type == 1:  # person
             for i in range(0, count):
-                x, y, w, h, _ = struct.unpack_from('<ffffI', buf, 9 + 20 * i)
+                x, y, w, h, _ = struct.unpack_from("<ffffI", buf, 9 + 20 * i)
                 t = 5
-                self._rect_info.append([round(x, t), round(y, t), round(w, t), round(h, t)])
+                self._rect_info.append(
+                    [round(x, t), round(y, t), round(w, t), round(h, t)]
+                )
         elif self._type == 2:  # gesture
             for i in range(0, count):
-                x, y, w, h, info = struct.unpack_from('<ffffI', buf, 9 + 20 * i)
+                x, y, w, h, info = struct.unpack_from("<ffffI", buf, 9 + 20 * i)
                 t = 5
-                self._rect_info.append([round(x, t), round(y, t), round(w, t), round(h, t), info])
+                self._rect_info.append(
+                    [round(x, t), round(y, t), round(w, t), round(h, t), info]
+                )
         elif self._type == 4:  # line
             if count > 0:
                 x, y, theta, C, info = struct.unpack_from("<ffffI", buf, 9)
@@ -1704,17 +1853,25 @@ class ProtoVisionDetectInfo(ProtoData):
             for i in range(0, count):
                 x, y, theta, C, info = struct.unpack_from("<ffffI", buf, 9 + 20 * i)
                 t = 7
-                self._rect_info.append([round(x, t), round(y, t), round(theta, t), round(C, t)])
+                self._rect_info.append(
+                    [round(x, t), round(y, t), round(theta, t), round(C, t)]
+                )
         elif self._type == 5:  # marker
             for i in range(0, count):
-                x, y, w, h, info, distance = struct.unpack_from('<ffffHH', buf, 9 + 20 * i)
+                x, y, w, h, info, distance = struct.unpack_from(
+                    "<ffffHH", buf, 9 + 20 * i
+                )
                 t = 5
-                self._rect_info.append([round(x, t), round(y, t), round(w, t), round(h, t), info])
+                self._rect_info.append(
+                    [round(x, t), round(y, t), round(w, t), round(h, t), info]
+                )
         elif self._type == 7:  # robot
             for i in range(0, count):
-                x, y, w, h, _ = struct.unpack_from('<ffffI', buf, 9 + 20 * i)
+                x, y, w, h, _ = struct.unpack_from("<ffffI", buf, 9 + 20 * i)
                 t = 5
-                self._rect_info.append([round(x, t), round(y, t), round(w, t), round(h, t)])
+                self._rect_info.append(
+                    [round(x, t), round(y, t), round(w, t), round(h, t)]
+                )
         else:
             logger.warning("unsupported type: {0}".format(self._type))
         self._data_buf = (self._type, self._errcode, self._rect_info)
@@ -1742,7 +1899,9 @@ class ProtoSubscribeAddNode(ProtoData):
             self._pub_node_id = buf[1]
             return True
         else:
-            logger.warning("ProtoSubscribeAddNode: unpack_resp, retcode:{0}".format(self._retcode))
+            logger.warning(
+                "ProtoSubscribeAddNode: unpack_resp, retcode:{0}".format(self._retcode)
+            )
             return False
 
 
@@ -1822,7 +1981,11 @@ class ProtoAddSubMsg(ProtoData):
             logger.info("ProtoSubMsg: UID:{0}".format(hex(self._sub_uid_list[i])))
             struct.pack_into("<Q", buf, 5 + 8 * i, self._sub_uid_list[i])
         struct.pack_into("<H", buf, 5 + 8 * self._sub_data_num, self._sub_freq)
-        logger.info("ProtoSubMsg: pack_req, num:{0}, buf {1}".format(self._sub_data_num, binascii.hexlify(buf)))
+        logger.info(
+            "ProtoSubMsg: pack_req, num:{0}, buf {1}".format(
+                self._sub_data_num, binascii.hexlify(buf)
+            )
+        )
         return buf
 
     def unpack_resp(self, buf, offset=0):
@@ -1848,7 +2011,7 @@ class ProtoPushPeriodMsg(ProtoData):
         self._data_buf = None
 
     def pack_req(self):
-        return b''
+        return b""
 
     def unpack_req(self, buf, offset=0):
         self._sub_mode = buf[0]
@@ -1901,7 +2064,7 @@ class ProtoRoboticArmMove(ProtoData):
         buf[0] = self._id
         buf[1] = self._type
         buf[2] = self._mask
-        struct.pack_into('<iii', buf, 3, self._x, self._y, self._z)
+        struct.pack_into("<iii", buf, 3, self._x, self._y, self._z)
         return buf
 
     def unpack_resp(self, buf, offset=0):
@@ -1918,7 +2081,7 @@ class ProtoRoboticArmGetPostion(ProtoData):
     _req_size = 1
 
     def __init__(self):
-        self._id = 0x5b
+        self._id = 0x5B
         self._retcode = 0
         self._x = 0
         self._y = 0
@@ -1931,13 +2094,13 @@ class ProtoRoboticArmGetPostion(ProtoData):
 
     def unpack_resp(self, buf, offset=0):
         self._retcode = buf[0]
-        self._x, self._y, self._z = struct.unpack_from('<iii', buf, 1)
+        self._x, self._y, self._z = struct.unpack_from("<iii", buf, 1)
         return True
 
 
 class ProtoSensorGetData(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xf0
+    _cmdset = 0x3F
+    _cmdid = 0xF0
     _req_size = 1
 
     def __init__(self):
@@ -1951,7 +2114,7 @@ class ProtoSensorGetData(ProtoData):
     def unpack_resp(self, buf, offset=0):
         self._retcode = buf[0]
         self._port = buf[1]
-        self._adc, self._io, self._time = struct.unpack_from('<HBI', buf, 2)
+        self._adc, self._io, self._time = struct.unpack_from("<HBI", buf, 2)
         if self._retcode == 0:
             return True
         else:
@@ -1988,7 +2151,7 @@ class ProtoServoControl(ProtoData):
         buf = bytearray(self._req_size)
         buf[0] = self._id
         buf[1] = self._enable
-        struct.pack_into('<H', buf, 2, self._value)
+        struct.pack_into("<H", buf, 2, self._value)
         return buf
 
 
@@ -2016,8 +2179,8 @@ class ProtoServoGetAngle(ProtoData):
 
 
 class ProtoServoCtrlSet(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xb7
+    _cmdset = 0x3F
+    _cmdid = 0xB7
     _req_size = 7
 
     def __init__(self):
@@ -2032,7 +2195,7 @@ class ProtoServoCtrlSet(ProtoData):
         buf[0] = self._action_id
         buf[1] = self._action_ctrl | self._freq << 2
         buf[2] = host2byte(25, self._id)
-        struct.pack_into('<i', buf, 3, self._value)
+        struct.pack_into("<i", buf, 3, self._value)
         return buf
 
     def unpack_resp(self, buf, offset=0):
@@ -2041,13 +2204,15 @@ class ProtoServoCtrlSet(ProtoData):
             self._accept = buf[offset + 1]
             return True
         else:
-            logger.warning("ProtoServoCtrlSet: unpack_resp, retcode:{0}".format(self._retcode))
+            logger.warning(
+                "ProtoServoCtrlSet: unpack_resp, retcode:{0}".format(self._retcode)
+            )
             return False
 
 
 class ProtoServoCtrlPush(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xb8
+    _cmdset = 0x3F
+    _cmdid = 0xB8
 
     def __init__(self):
         self._action_id = 0
@@ -2056,19 +2221,19 @@ class ProtoServoCtrlPush(ProtoData):
         self._value = 0
 
     def pack_req(self):
-        return b''
+        return b""
 
     def unpack_req(self, buf, offset=0):
         self._action_id = buf[0 + offset]
         self._percent = buf[1 + offset]
         self._action_state = buf[2 + offset] & 0x3
-        self._value = struct.unpack_from('<i', buf, 3 + offset)
+        self._value = struct.unpack_from("<i", buf, 3 + offset)
         return True
 
 
 class ProtoRoboticArmMoveCtrl(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xb5
+    _cmdset = 0x3F
+    _cmdid = 0xB5
     _req_size = 17
 
     def __init__(self):
@@ -2098,13 +2263,17 @@ class ProtoRoboticArmMoveCtrl(ProtoData):
             self._accept = buf[offset + 1]
             return True
         else:
-            logger.warning("ProtoRoboticArmMoveCtrl: unpack_resp, retcode:{0}".format(self._retcode))
+            logger.warning(
+                "ProtoRoboticArmMoveCtrl: unpack_resp, retcode:{0}".format(
+                    self._retcode
+                )
+            )
             return False
 
 
 class ProtoRoboticArmMovePush(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xb6
+    _cmdset = 0x3F
+    _cmdid = 0xB6
 
     def __init__(self):
         self._action_id = 0
@@ -2115,19 +2284,19 @@ class ProtoRoboticArmMovePush(ProtoData):
         self._z = 0
 
     def pack_req(self):
-        return b''
+        return b""
 
     def unpack_req(self, buf, offset=0):
         self._action_id = buf[0 + offset]
         self._percent = buf[1 + offset]
         self._action_state = buf[2 + offset] & 0x3
-        self._x, self._y = struct.unpack_from('<ii', buf, 3 + offset)
+        self._x, self._y = struct.unpack_from("<ii", buf, 3 + offset)
         return True
 
 
 class ProtoRoboticAiInit(ProtoData):
-    _cmdset = 0x3f
-    _cmdid = 0xe9
+    _cmdset = 0x3F
+    _cmdid = 0xE9
     _req_size = 17
 
     def __init__(self):
@@ -2135,30 +2304,30 @@ class ProtoRoboticAiInit(ProtoData):
         self._sender = 0x0103
         self._reciver = 0x0301
         self._seq_num = random.randint(0, 1000)
-        self._cmd = 0x020d
+        self._cmd = 0x020D
         self._attr = 0
 
     def pack_req(self):
         self._buf = bytearray(self._req_size)
         self._len = 2
         self._buf[0] = 0xAA
-        self._buf[1] = self._len & 0xff
-        self._buf[2] = (self._len >> 8)
+        self._buf[1] = self._len & 0xFF
+        self._buf[2] = self._len >> 8
         crc_h = algo.crc8_calc(self._buf[0:3], 0x11)
         self._buf[3] = crc_h
-        self._buf[4] = self._sender & 0xff
-        self._buf[5] = (self._sender >> 8)
-        self._buf[6] = self._reciver & 0xff
-        self._buf[7] = (self._reciver >> 8)
+        self._buf[4] = self._sender & 0xFF
+        self._buf[5] = self._sender >> 8
+        self._buf[6] = self._reciver & 0xFF
+        self._buf[7] = self._reciver >> 8
         self._buf[8] = self._attr
-        self._buf[9] = self._seq_num & 0xff
-        self._buf[10] = (self._seq_num >> 8)
-        self._buf[11] = self._cmd & 0xff
-        self._buf[12] = (self._cmd >> 8)
-        self._buf[13] = self._addr & 0xff
-        self._buf[14] = (self._addr >> 8)
-        crc_H = algo.crc16_calc(self._buf[0:self._req_size - 2], 0x4F19)
-        self._buf[15] = crc_H & 0xff
+        self._buf[9] = self._seq_num & 0xFF
+        self._buf[10] = self._seq_num >> 8
+        self._buf[11] = self._cmd & 0xFF
+        self._buf[12] = self._cmd >> 8
+        self._buf[13] = self._addr & 0xFF
+        self._buf[14] = self._addr >> 8
+        crc_H = algo.crc16_calc(self._buf[0 : self._req_size - 2], 0x4F19)
+        self._buf[15] = crc_H & 0xFF
         self._buf[16] = crc_H >> 8
         return self._buf
 
@@ -2167,7 +2336,7 @@ class ProtoRoboticAiInit(ProtoData):
 
 
 class TextProtoData(object):
-    SUCCESSFUL_RESP_FLAG = 'ok'
+    SUCCESSFUL_RESP_FLAG = "ok"
 
     def __init__(self):
         self._buf = None
@@ -2189,16 +2358,20 @@ class TextProtoData(object):
         self._text_cmd = cmd
 
     def pack_req(self):
-        """ 协议对象打包发送数据为字节流。
+        """协议对象打包发送数据为字节流。
 
         :return: 字节流数据。
         """
-        logger.debug("TextProtoData: pack_req test_cmd {0}, type {1}".format(self.text_cmd, type(self.text_cmd)))
+        logger.debug(
+            "TextProtoData: pack_req test_cmd {0}, type {1}".format(
+                self.text_cmd, type(self.text_cmd)
+            )
+        )
         self._buf = self.text_cmd
         return self._buf
 
     def unpack_req(self, buf, offset=0):
-        """ 从字节流解包。
+        """从字节流解包。
 
         :param buf：字节流数据。
         :param offset：字节流数据偏移量。
@@ -2209,14 +2382,14 @@ class TextProtoData(object):
         return True
 
     def pack_resp(self):
-        """ 协议对象打包。
+        """协议对象打包。
 
         :return：字节流数据。
         """
         pass
 
     def unpack_resp(self, buf, offset=0):
-        """ 从字节流解包为返回值和相关属性。
+        """从字节流解包为返回值和相关属性。
 
         :param buf：字节流数据。
         :param offset：字节流数据偏移量。
@@ -2228,9 +2401,9 @@ class TextProtoData(object):
 
     def get_status(self):
         if self._resp:
-            if self._resp == 'error':
+            if self._resp == "error":
                 return False
-            elif self._resp == 'ok':
+            elif self._resp == "ok":
                 return True
             else:
                 return False
@@ -2246,7 +2419,7 @@ class TextProtoData(object):
 
     @property
     def proresp(self):
-        """ 针对acceleration?、attitude?、temp?命令的回复进行预处理。
+        """针对acceleration?、attitude?、temp?命令的回复进行预处理。
 
         :return: dict.
         """
@@ -2339,20 +2512,32 @@ class STAConnInfo:
         buf[1] = (pwd_len >> 2) | (self._has_bssid << 3)
         buf[2:10] = self._appid.encode(encoding="utf-8")
         buf[10:12] = self._cc.encode(encoding="utf-8")
-        buf[12:12 + ssid_len] = self._ssid.encode(encoding="utf-8")
-        buf[12 + ssid_len:12 + ssid_len + pwd_len] = self._password.encode(encoding="utf-8")
+        buf[12 : 12 + ssid_len] = self._ssid.encode(encoding="utf-8")
+        buf[12 + ssid_len : 12 + ssid_len + pwd_len] = self._password.encode(
+            encoding="utf-8"
+        )
         if self._has_bssid == 1:
-            buf[12 + ssid_len + pwd_len:] = self._bssid.encode(encoding="utf-8")
+            buf[12 + ssid_len + pwd_len :] = self._bssid.encode(encoding="utf-8")
         return buf
 
     def unpack(self, buf):
         blank_byte = bytearray(1)
         sof, is_pairing = struct.unpack_from(">HI", buf)
-        if sof != 0x5a5b:
+        if sof != 0x5A5B:
             return False
         self._is_pairing = is_pairing & 0x1
-        self._ip = "{0}.{1}.{2}.{3}".format(int(buf[6]), int(buf[7]), int(buf[8]), int(buf[9]))
+        self._ip = "{0}.{1}.{2}.{3}".format(
+            int(buf[6]), int(buf[7]), int(buf[8]), int(buf[9])
+        )
         self._mac = "{0:2x}:{1:2x}:{2:2x}:{3:2x}:{4:2x}:{5:2x}".format(
-            int(buf[10]), int(buf[11]), int(buf[12]), int(buf[13]), int(buf[14]), int(buf[15]))
-        self._recv_appid = str(buf[16:23], encoding='utf-8').replace(str(blank_byte, encoding='utf-8'), "")
+            int(buf[10]),
+            int(buf[11]),
+            int(buf[12]),
+            int(buf[13]),
+            int(buf[14]),
+            int(buf[15]),
+        )
+        self._recv_appid = str(buf[16:23], encoding="utf-8").replace(
+            str(blank_byte, encoding="utf-8"), ""
+        )
         return True

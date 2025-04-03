@@ -48,7 +48,10 @@ class MsgHandler:
         return cmd_set * 256 + cmd_id
 
     def dict_key(self):
-        logger.debug('MsgHandler: dict_key, isinstance:', isinstance(self._proto_data, protocol.ProtoData))
+        logger.debug(
+            "MsgHandler: dict_key, isinstance:",
+            isinstance(self._proto_data, protocol.ProtoData),
+        )
         if self._proto_data:
             return self.make_dict_key(self.proto_data._cmdset, self.proto_data._cmdid)
         return None
@@ -63,11 +66,15 @@ class Client(object):
         self._conn = connect
         if connect is None:
             try:
-                self._conn = conn.Connection(config.ROBOT_DEFAULT_LOCAL_WIFI_ADDR,
-                                             config.ROBOT_DEFAULT_WIFI_ADDR,
-                                             protocol=config.DEFAULT_CONN_PROTO)
+                self._conn = conn.Connection(
+                    config.ROBOT_DEFAULT_LOCAL_WIFI_ADDR,
+                    config.ROBOT_DEFAULT_WIFI_ADDR,
+                    protocol=config.DEFAULT_CONN_PROTO,
+                )
             except Exception as e:
-                logger.error('Client: __init__, create Connection, exception: {0}'.format(e))
+                logger.error(
+                    "Client: __init__, create Connection, exception: {0}".format(e)
+                )
                 self._conn = None
 
         self._has_sent = 0
@@ -92,7 +99,7 @@ class Client(object):
         try:
             return self._conn.target_addr
         except Exception:
-            raise print('Robot: Can not connect to robot, check connection please.')
+            raise print("Robot: Can not connect to robot, check connection please.")
 
     def add_handler(self, obj, name, f):
         self._dispatcher.add_handler(obj, name, f)
@@ -102,7 +109,9 @@ class Client(object):
 
     def initialize(self):
         if not self._conn:
-            logger.warning("Client: initialize, no connections, init connections first.")
+            logger.warning(
+                "Client: initialize, no connections, init connections first."
+            )
             return False
         for i in range(0, CLIENT_MAX_EVENT_NUM):
             ident = EventIdentify()
@@ -142,8 +151,11 @@ class Client(object):
         data = msg.pack()
         logger.debug("Client: send_msg, msg {0} {1}".format(self._has_sent, msg))
 
-        logger.debug("Client: send_msg, cmset:{0:2x}, cmdid:{1:2x}, {2}".format(msg.cmdset, msg.cmdid,
-                                                                                binascii.hexlify(data)))
+        logger.debug(
+            "Client: send_msg, cmset:{0:2x}, cmdid:{1:2x}, {2}".format(
+                msg.cmdset, msg.cmdid, binascii.hexlify(data)
+            )
+        )
 
         self._has_sent += 1
         self.send(data)
@@ -160,8 +172,12 @@ class Client(object):
             self.send_msg(msg)
             evt._event.wait(timeout)
             if not evt._event.isSet():
-                logger.error("Client: send_sync_msg wait msg receiver:{0}, cmdset:0x{1:02x}, cmdid:0x{2:02x} \
-timeout!".format(msg.receiver, msg.cmdset, msg.cmdid))
+                logger.error(
+                    "Client: send_sync_msg wait msg receiver:{0}, cmdset:0x{1:02x}, cmdid:0x{2:02x} \
+timeout!".format(
+                        msg.receiver, msg.cmdset, msg.cmdid
+                    )
+                )
                 evt._valid = False
                 return None
             resp_msg = self._ack_unregister_identify(evt._ident)
@@ -176,12 +192,22 @@ timeout!".format(msg.receiver, msg.cmdset, msg.cmdid))
                             callback(resp_msg)
                     except Exception as e:
                         self._unpack_failed += 1
-                        logger.warning("Client: send_sync_msg, resp_msg {0:d} cmdset:0x{1:02x}, cmdid:0x{2:02x}, "
-                                       "e {3}".format(self._has_sent, resp_msg.cmdset, resp_msg.cmdid, format(e)))
+                        logger.warning(
+                            "Client: send_sync_msg, resp_msg {0:d} cmdset:0x{1:02x}, cmdid:0x{2:02x}, "
+                            "e {3}".format(
+                                self._has_sent,
+                                resp_msg.cmdset,
+                                resp_msg.cmdid,
+                                format(e),
+                            )
+                        )
                         return None
                 else:
-                    logger.warning("Client: send_sync_msg, has_sent:{0} resp_msg:{1}.".format(
-                        self._has_sent, resp_msg))
+                    logger.warning(
+                        "Client: send_sync_msg, has_sent:{0} resp_msg:{1}.".format(
+                            self._has_sent, resp_msg
+                        )
+                    )
                     return None
 
             return resp_msg
@@ -232,8 +258,11 @@ timeout!".format(msg.receiver, msg.cmdset, msg.cmdid))
 
     def _dispatch_to_send_sync(self, msg):
         if msg.is_ack:
-            logger.debug("Client: dispatch_to_send_sync, {0} cmdset:{1} cmdid:{2}".format(
-                self._has_recv, hex(msg._cmdset), hex(msg._cmdid)))
+            logger.debug(
+                "Client: dispatch_to_send_sync, {0} cmdset:{1} cmdid:{2}".format(
+                    self._has_recv, hex(msg._cmdset), hex(msg._cmdid)
+                )
+            )
             ident = self._make_ack_identify(msg)
             self._wait_ack_mutex.acquire()
             if ident in self._wait_ack_list.keys():
@@ -242,8 +271,11 @@ timeout!".format(msg.receiver, msg.cmdset, msg.cmdid))
                         self._wait_ack_list[ident] = msg
                         evt._event.set()
             else:
-                logger.debug("Client: dispatch_to_send_sync, ident:{0} is not in wait_ack_list {1}".format(
-                    ident, self._wait_ack_list))
+                logger.debug(
+                    "Client: dispatch_to_send_sync, ident:{0} is not in wait_ack_list {1}".format(
+                        ident, self._wait_ack_list
+                    )
+                )
             self._wait_ack_mutex.release()
 
     def _dispatch_to_callback(self, msg):
@@ -252,22 +284,39 @@ timeout!".format(msg.receiver, msg.cmdset, msg.cmdid))
             if key in self._handler_dict.keys():
                 self._handler_dict[key]._ack_cb(self, msg)
             else:
-                logger.debug("Client: dispatch_to_callback, msg cmdset:{0:2x}, cmdid:{1:2x} is not define ack \
-handler".format(msg.cmdset, msg.cmdid))
+                logger.debug(
+                    "Client: dispatch_to_callback, msg cmdset:{0:2x}, cmdid:{1:2x} is not define ack \
+handler".format(
+                        msg.cmdset, msg.cmdid
+                    )
+                )
         else:
             key = MsgHandler.make_dict_key(msg.cmdset, msg.cmdid)
             if key in self._handler_dict.keys():
                 self._handler_dict[key]._req_cb(self, msg)
             else:
-                logger.debug("Client: _dispatch_to_callback, cmdset:{0}, cmdid:{1} is not define req handler".format(
-                    hex(msg.cmdset), hex(msg.cmdid)))
+                logger.debug(
+                    "Client: _dispatch_to_callback, cmdset:{0}, cmdid:{1} is not define req handler".format(
+                        hex(msg.cmdset), hex(msg.cmdid)
+                    )
+                )
 
     @staticmethod
     def _make_ack_identify(msg):
         if msg.is_ack:
-            return str(msg._sender) + str(hex(msg.cmdset)) + str(hex(msg.cmdid)) + str(msg._seq_id)
+            return (
+                str(msg._sender)
+                + str(hex(msg.cmdset))
+                + str(hex(msg.cmdid))
+                + str(msg._seq_id)
+            )
         else:
-            return str(msg._receiver) + str(hex(msg.cmdset)) + str(hex(msg.cmdid)) + str(msg._seq_id)
+            return (
+                str(msg._receiver)
+                + str(hex(msg.cmdset))
+                + str(hex(msg.cmdid))
+                + str(msg._seq_id)
+            )
 
     def _ack_register_identify(self, msg):
         self._wait_ack_mutex.acquire()
@@ -294,7 +343,9 @@ handler".format(msg.cmdset, msg.cmdid))
             if identify in self._wait_ack_list.keys():
                 return self._wait_ack_list.pop(identify)
             else:
-                logger.warning("can not find ident:{0} in wait_ack_list.".format(identify))
+                logger.warning(
+                    "can not find ident:{0} in wait_ack_list.".format(identify)
+                )
                 return None
         finally:
             self._wait_ack_mutex.release()
@@ -308,7 +359,9 @@ handler".format(msg.cmdset, msg.cmdid))
 class TextClient(object):
 
     def __init__(self, conf):
-        self._conn = conn.Connection(conf.default_sdk_addr, conf.default_robot_addr, conf.cmd_proto)
+        self._conn = conn.Connection(
+            conf.default_sdk_addr, conf.default_robot_addr, conf.cmd_proto
+        )
         self._thread = threading.Thread(target=self._recv_task)
         self._running = False
         self._event = threading.Event()
@@ -365,7 +418,7 @@ class TextClient(object):
         logger.debug("Client: time delay test, send time")
         logger.info("TextClient: send_msg: {0}".format(text))
         try:
-            self._conn.send(text.encode('utf-8'))
+            self._conn.send(text.encode("utf-8"))
         except Exception as e:
             logger.warning("TexClient: send_async_text, exception {0}".format(str(e)))
             return False

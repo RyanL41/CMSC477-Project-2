@@ -44,13 +44,13 @@ def on_detect_line(line_info):
     number = len(line_info)
     line.clear()
     line_type = line_info[0]
-    print('line_type', line_type)
+    print("line_type", line_type)
     for i in range(1, number):
         x, y, ceta, c = line_info[i]
         line.append(PointInfo(x, y, ceta, c))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="sta")
 
@@ -58,7 +58,9 @@ if __name__ == '__main__':
     ep_camera = ep_robot.camera
 
     ep_camera.start_video_stream(display=False)
-    result = ep_vision.sub_detect_info(name="line", color="blue", callback=on_detect_line)
+    result = ep_vision.sub_detect_info(
+        name="line", color="blue", callback=on_detect_line
+    )
 
     for i in range(0, 500):
         img = ep_camera.read_cv2_image(strategy="newest", timeout=0.5)

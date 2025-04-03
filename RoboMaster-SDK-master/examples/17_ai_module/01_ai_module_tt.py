@@ -20,10 +20,14 @@ from robomaster import robot
 
 def sub_ia_info_handler(ai_info):
     id, x, y, w, h, C = ai_info
-    print("ai target id:{0}, x:{1:.3f}, y:{2:.3f}, w:{3:.3f}, h:{4:.3f}, C:{5}".format(id, x, y, w, h, C))
+    print(
+        "ai target id:{0}, x:{1:.3f}, y:{2:.3f}, w:{3:.3f}, h:{4:.3f}, C:{5}".format(
+            id, x, y, w, h, C
+        )
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     tl_drone = robot.Drone()
     tl_drone.initialize()
 

@@ -25,7 +25,14 @@ from . import logger
 from . import media
 
 
-__all__ = ['Camera', 'EPCamera', 'TelloCamera', 'STREAM_360P', 'STREAM_540P', 'STREAM_720P']
+__all__ = [
+    "Camera",
+    "EPCamera",
+    "TelloCamera",
+    "STREAM_360P",
+    "STREAM_540P",
+    "STREAM_720P",
+]
 
 STREAM_360P = "360p"
 STREAM_540P = "540p"
@@ -74,7 +81,7 @@ class Camera(object):
 
 
 class TelloCamera(Camera):
-    """ 教育无人机 摄像机模块 """
+    """教育无人机 摄像机模块"""
 
     def __init__(self, robot):
         super().__init__(robot)
@@ -87,7 +94,7 @@ class TelloCamera(Camera):
         return self._robot.conf
 
     def start_video_stream(self, display=True):
-        """ 开启视频流
+        """开启视频流
 
         :param display: bool, 是否显示视频流
         :return: bool: 调用结果
@@ -96,9 +103,9 @@ class TelloCamera(Camera):
         self._video_enable = True
         vs_addr = self.conf.video_stream_addr
         vs_proto = self.conf.video_stream_proto
-        return self._liveview.start_video_stream(display,
-                                                 addr=vs_addr,
-                                                 ip_proto=vs_proto)
+        return self._liveview.start_video_stream(
+            display, addr=vs_addr, ip_proto=vs_proto
+        )
 
     def stop_video_stream(self):
         flag = self._liveview.stop_video_stream()
@@ -129,7 +136,9 @@ class TelloCamera(Camera):
             else:
                 logger.warning("TelloEduCamera: get_wifi failed.")
         except Exception as e:
-            logger.warning("TelloEduCamera: get_wifi, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "TelloEduCamera: get_wifi, send_sync_msg exception {0}".format(str(e))
+            )
             return False
 
     def stop(self):
@@ -139,7 +148,7 @@ class TelloCamera(Camera):
             self._liveview.stop()
 
     def set_fps(self, fps):
-        """ 设置飞机视频帧率
+        """设置飞机视频帧率
 
         :param fps: 需要设置的帧率，[high, middle, low]
         :return: bool: 设置结果
@@ -153,7 +162,9 @@ class TelloCamera(Camera):
             if resp_msg:
                 proto = resp_msg.get_proto()
                 if proto:
-                    if proto.resp.lower().startswith(protocol.TextProtoData.SUCCESSFUL_RESP_FLAG):
+                    if proto.resp.lower().startswith(
+                        protocol.TextProtoData.SUCCESSFUL_RESP_FLAG
+                    ):
                         return True
                     else:
                         logger.warning("Drone: resp {0}".format(proto.resp))
@@ -164,7 +175,7 @@ class TelloCamera(Camera):
             return False
 
     def set_bitrate(self, bitrate):
-        """ 设置飞机传输码率
+        """设置飞机传输码率
 
         :param bitrate: 需要设置的传输码率，[0, 6]
         :return: bool: 设置结果
@@ -178,18 +189,22 @@ class TelloCamera(Camera):
             if resp_msg:
                 proto = resp_msg.get_proto()
                 if proto:
-                    if proto.resp.lower().startswith(protocol.TextProtoData.SUCCESSFUL_RESP_FLAG):
+                    if proto.resp.lower().startswith(
+                        protocol.TextProtoData.SUCCESSFUL_RESP_FLAG
+                    ):
                         return True
                     else:
                         logger.warning("Drone: resp {0}".format(proto.resp))
                 logger.warning("Drone: set_bitrate failed")
             return False
         except Exception as e:
-            logger.warning("Drone: set_bitrate, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: set_bitrate, send_sync_msg exception {0}".format(str(e))
+            )
             return False
 
     def set_resolution(self, resolution):
-        """ 设置飞机视频分辨率
+        """设置飞机视频分辨率
 
         :param resolution: 需要设置的视频分辨率，[high, low]
         :return: bool: 设置结果
@@ -203,14 +218,18 @@ class TelloCamera(Camera):
             if resp_msg:
                 proto = resp_msg.get_proto()
                 if proto:
-                    if proto.resp.lower().startswith(protocol.TextProtoData.SUCCESSFUL_RESP_FLAG):
+                    if proto.resp.lower().startswith(
+                        protocol.TextProtoData.SUCCESSFUL_RESP_FLAG
+                    ):
                         return True
                     else:
                         logger.warning("Drone: resp {0}".format(proto.resp))
                 logger.warning("Drone: set_resilution failed")
             return False
         except Exception as e:
-            logger.warning("Drone: set_resilution, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: set_resilution, send_sync_msg exception {0}".format(str(e))
+            )
             return False
 
     def set_down_vision(self, setting):
@@ -229,19 +248,23 @@ class TelloCamera(Camera):
             if resp_msg:
                 proto = resp_msg.get_proto()
                 if proto:
-                    if proto.resp.lower().startswith(protocol.TextProtoData.SUCCESSFUL_RESP_FLAG):
+                    if proto.resp.lower().startswith(
+                        protocol.TextProtoData.SUCCESSFUL_RESP_FLAG
+                    ):
                         return True
                     else:
                         logger.warning("Drone: resp {0}".format(proto.resp))
                 logger.error("Drone: set_down_vision failed")
             return False
         except Exception as e:
-            logger.error("Drone: set_down_vision, send_sync_msg exception {0}".format(str(e)))
+            logger.error(
+                "Drone: set_down_vision, send_sync_msg exception {0}".format(str(e))
+            )
             return False
 
 
 class EPCamera(module.Module, Camera):
-    """ EP 摄像机模块 """
+    """EP 摄像机模块"""
 
     _host = protocol.host2byte(1, 0)
 
@@ -255,12 +278,12 @@ class EPCamera(module.Module, Camera):
 
     @property
     def conf(self):
-        """ 相机参数配置 """
+        """相机参数配置"""
         return self._conf
 
     @property
     def audio_stream_addr(self):
-        """ 机器人音频流地址
+        """机器人音频流地址
 
         :return: tuple:(ip, port)，机器人音频流地址
         """
@@ -268,13 +291,13 @@ class EPCamera(module.Module, Camera):
 
     @property
     def video_stream_addr(self):
-        """ 机器人视频流地址
+        """机器人视频流地址
 
-        :return: tuple:(ip, port)：机器人视频流地址 """
+        :return: tuple:(ip, port)：机器人视频流地址"""
         return self._robot.ip, self.conf.video_stream_port
 
     def start_video_stream(self, display=True, resolution="720p"):
-        """ 开启视频流
+        """开启视频流
 
         :param display: bool，是否显示视频流
         :param resolution: enum: ("360p", "540p", "720p")，设置图传分辨率尺寸
@@ -289,12 +312,12 @@ class EPCamera(module.Module, Camera):
             logger.error("Camera: start_video_stream, video_stream(1) failed!")
             return False
         self._video_enable = True
-        return self._liveview.start_video_stream(display,
-                                                 self.video_stream_addr,
-                                                 self.conf.video_stream_proto)
+        return self._liveview.start_video_stream(
+            display, self.video_stream_addr, self.conf.video_stream_proto
+        )
 
     def stop_video_stream(self):
-        """ 停止视频流
+        """停止视频流
 
         :return: bool: 调用结果
         """
@@ -308,9 +331,7 @@ class EPCamera(module.Module, Camera):
         return self._liveview.stop_video_stream()
 
     def start_audio_stream(self):
-        """ 开启音频流
-
-        """
+        """开启音频流"""
         result = self._stream_sdk(1)
         if not result:
             logger.error("Camera: start_audio_stream, _stream_sdk(1) failed!")
@@ -324,11 +345,12 @@ class EPCamera(module.Module, Camera):
         if not self._video_enable and not self._audio_enable:
             self._stream_sdk(0)
 
-        return self._liveview.start_audio_stream(self.audio_stream_addr,
-                                                 self.conf.audio_stream_proto)
+        return self._liveview.start_audio_stream(
+            self.audio_stream_addr, self.conf.audio_stream_proto
+        )
 
     def stop_audio_stream(self):
-        """ 停止音频流
+        """停止音频流
 
         :return：bool: 调用结果
         """
@@ -341,7 +363,7 @@ class EPCamera(module.Module, Camera):
         return self._liveview.stop_audio_stream()
 
     def read_audio_frame(self, timeout=1):
-        """ 读取一段音频流信息
+        """读取一段音频流信息
 
         :param timeout: float: (0, inf)，超时时间，超过指定timeout时间后函数返回
         :return: data, 已解码的音频流帧字节流
@@ -349,7 +371,7 @@ class EPCamera(module.Module, Camera):
         return self._liveview.read_audio_frame(timeout)
 
     def record_audio(self, save_file="output.wav", seconds=5, sample_rate=48000):
-        """ 录制音频，保存到本地，支持wav格式，单通道
+        """录制音频，保存到本地，支持wav格式，单通道
 
         :param save_file: 本地文件路径，目前仅支持wav格式
         :param seconds: 录制时间
@@ -359,8 +381,8 @@ class EPCamera(module.Module, Camera):
         self.start_audio_stream()
         start = time.time()
         try:
-            wf = wave.open(save_file, 'wb')
-            wf.setparams((1, 2, sample_rate, 0, 'NONE', 'Uncompressed'))
+            wf = wave.open(save_file, "wb")
+            wf.setparams((1, 2, sample_rate, 0, "NONE", "Uncompressed"))
             frames = []
             while True:
                 if time.time() - start >= seconds:
@@ -372,7 +394,7 @@ class EPCamera(module.Module, Camera):
                     frames.append(audio_frame)
 
             if sample_rate != 48000:
-                data = b''.join(frames)
+                data = b"".join(frames)
                 converted = audioop.ratecv(data, 2, 1, 48000, sample_rate, None)
                 wf.writeframes(converted[0])
             wf.close()
@@ -384,7 +406,7 @@ class EPCamera(module.Module, Camera):
         return True
 
     def _stream_sdk(self, on_off=1, resolution="720p"):
-        """ 控制媒体流sdk模式
+        """控制媒体流sdk模式
 
         :param on_off: 1 表示进入SDK模式，0 表示退出SDK模式
         """
@@ -394,13 +416,18 @@ class EPCamera(module.Module, Camera):
         # 1 表示SDK控制模式
         proto._ctrl = 1
         # 0 表示WiFi， 1 表示RNDIS
-        if conn_type is conn.CONNECTION_WIFI_AP or conn_type is conn.CONNECTION_WIFI_STA:
+        if (
+            conn_type is conn.CONNECTION_WIFI_AP
+            or conn_type is conn.CONNECTION_WIFI_STA
+        ):
             proto._conn_type = 0
         elif conn_type is conn.CONNECTION_USB_RNDIS:
             proto._conn_type = 1
         else:
-            logger.error("Camera: _stream_sdk, conn_type:{0} is not "
-                         "supported.".format(conn_type))
+            logger.error(
+                "Camera: _stream_sdk, conn_type:{0} is not "
+                "supported.".format(conn_type)
+            )
         proto._state = on_off
         if resolution == "720p":
             proto._resolution = 0
@@ -410,7 +437,9 @@ class EPCamera(module.Module, Camera):
             proto._resolution = 2
         else:
             proto._resolution = 0
-            logger.warning("Camera, _video_stream, unsupported resolution {0}".format(resolution))
+            logger.warning(
+                "Camera, _video_stream, unsupported resolution {0}".format(resolution)
+            )
         return self._send_sync_proto(proto)
 
     def _video_stream(self, on_off=1, resolution="720p"):
@@ -425,15 +454,24 @@ class EPCamera(module.Module, Camera):
             proto._resolution = 2
         else:
             proto._resolution = 0
-            logger.warning("Camera, _video_stream, unsupported resolution {0}".format(resolution))
+            logger.warning(
+                "Camera, _video_stream, unsupported resolution {0}".format(resolution)
+            )
 
         conn_type = self._robot.conn_type
-        if conn_type is conn.CONNECTION_WIFI_AP or conn_type is conn.CONNECTION_WIFI_STA:
+        if (
+            conn_type is conn.CONNECTION_WIFI_AP
+            or conn_type is conn.CONNECTION_WIFI_STA
+        ):
             proto._conn_type = 0
         elif conn_type is conn.CONNECTION_USB_RNDIS:
             proto._conn_type = 1
         else:
-            logger.error("Camera: _video_stream, conn_type:{0} is not supported.".format(conn_type))
+            logger.error(
+                "Camera: _video_stream, conn_type:{0} is not supported.".format(
+                    conn_type
+                )
+            )
         proto._state = on_off
         return self._send_sync_proto(proto)
 
@@ -442,17 +480,24 @@ class EPCamera(module.Module, Camera):
         # 3 表示视音频流控制模式
         proto._ctrl = 3
         conn_type = self._robot.conn_type
-        if conn_type is conn.CONNECTION_WIFI_AP or conn_type is conn.CONNECTION_WIFI_STA:
+        if (
+            conn_type is conn.CONNECTION_WIFI_AP
+            or conn_type is conn.CONNECTION_WIFI_STA
+        ):
             proto._conn_type = 0
         elif conn_type is conn.CONNECTION_USB_RNDIS:
             proto._conn_type = 1
         else:
-            logger.error("Camera: _audio_stream, conn_type:{0} is not supported.".format(conn_type))
+            logger.error(
+                "Camera: _audio_stream, conn_type:{0} is not supported.".format(
+                    conn_type
+                )
+            )
         proto._state = on_off
         return self._send_sync_proto(proto)
 
     def stop(self):
-        """ 停止 """
+        """停止"""
         if self._video_enable:
             self.stop_video_stream()
         if self._audio_enable:
@@ -461,7 +506,7 @@ class EPCamera(module.Module, Camera):
             self._liveview.stop()
 
     def take_photo(self):
-        """ 拍照
+        """拍照
 
         :return: bool: 调用结果
         """
@@ -470,7 +515,7 @@ class EPCamera(module.Module, Camera):
         return self._send_sync_proto(proto)
 
     def _set_zoom(self, zoom=1.0):
-        """ 设置变焦参数
+        """设置变焦参数
 
         :param zoom: 变焦值
         :return: bool: 调用结果

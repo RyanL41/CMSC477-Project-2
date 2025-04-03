@@ -20,7 +20,7 @@ from robomaster import robot
 from robomaster import led
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="sta")
 
@@ -33,8 +33,14 @@ if __name__ == '__main__':
         led2 = (it + 1) % 8
         led3 = (it + 2) % 8
         it += 1
-        ep_led.set_gimbal_led(comp=led.COMP_TOP_ALL, r=255, g=25, b=25,
-                              led_list=[led1, led2, led3], effect=led.EFFECT_ON)
+        ep_led.set_gimbal_led(
+            comp=led.COMP_TOP_ALL,
+            r=255,
+            g=25,
+            b=25,
+            led_list=[led1, led2, led3],
+            effect=led.EFFECT_ON,
+        )
         print("Gimbal Led: {0} {1} {2} is on!".format(led1, led2, led3))
         time.sleep(0.5)
 

@@ -58,14 +58,19 @@ class LiveView(object):
 
     def start_video_stream(self, display=True, addr=None, ip_proto="tcp"):
         try:
-            logger.info("Liveview: try to connect addr {0}, proto={1}".format(
-                addr, ip_proto))
+            logger.info(
+                "Liveview: try to connect addr {0}, proto={1}".format(addr, ip_proto)
+            )
             self._video_stream_conn.connect(addr, ip_proto)
             self._video_streaming = True
-            self._video_decoder_thread = threading.Thread(target=self._video_decoder_task)
+            self._video_decoder_thread = threading.Thread(
+                target=self._video_decoder_task
+            )
             self._video_decoder_thread.start()
             if display:
-                self._video_display_thread = threading.Thread(target=self._video_display_task)
+                self._video_display_thread = threading.Thread(
+                    target=self._video_display_task
+                )
                 self._video_display_thread.start()
         except Exception as e:
             logger.error("Liveview: start_video_stream, exception {0}".format(e))
@@ -99,7 +104,9 @@ class LiveView(object):
                 self._video_frame_queue.get(timeout=timeout)
             return self._video_frame_queue.get(timeout=timeout)
         else:
-            logger.warning("LiveView: read_video_frame, unsupported strategy:{0}".format(strategy))
+            logger.warning(
+                "LiveView: read_video_frame, unsupported strategy:{0}".format(strategy)
+            )
             return None
 
     def _h264_decode(self, data):
@@ -108,8 +115,10 @@ class LiveView(object):
         for frame_data in frames:
             (frame, width, height, ls) = frame_data
             if frame:
-                frame = numpy.fromstring(frame, dtype=numpy.ubyte, count=len(frame), sep='')
-                frame = (frame.reshape((height, width, 3)))
+                frame = numpy.fromstring(
+                    frame, dtype=numpy.ubyte, count=len(frame), sep=""
+                )
+                frame = frame.reshape((height, width, 3))
                 res_frame_list.append(frame)
         return res_frame_list
 
@@ -117,7 +126,7 @@ class LiveView(object):
         self._video_streaming = True
         logger.info("Liveview: _video_decoder_task, started!")
         while self._video_streaming:
-            data = b''
+            data = b""
             # 获取一帧h264 数据
             buf = self._video_stream_conn.read_buf()
             if not self._video_streaming:
@@ -129,10 +138,18 @@ class LiveView(object):
                     try:
                         self._video_frame_count += 1
                         if self._video_frame_count % 30 == 1:
-                            logger.info("LiveView: video_decoder_task, get frame {0}.".format(self._video_frame_count))
+                            logger.info(
+                                "LiveView: video_decoder_task, get frame {0}.".format(
+                                    self._video_frame_count
+                                )
+                            )
                         self._video_frame_queue.put(frame, timeout=2)
                     except Exception as e:
-                        logger.warning("LiveView: _video_decoder_task, decoder queue is full, e {}.".format(e))
+                        logger.warning(
+                            "LiveView: _video_decoder_task, decoder queue is full, e {}.".format(
+                                e
+                            )
+                        )
                         continue
         logger.info("LiveView: _video_decoder_task, quit.")
 
@@ -147,7 +164,11 @@ class LiveView(object):
                     if not self._displaying:
                         break
             except Exception as e:
-                logger.warning("LiveView: display_task, video_frame_queue is empty, e {0}".format(e))
+                logger.warning(
+                    "LiveView: display_task, video_frame_queue is empty, e {0}".format(
+                        e
+                    )
+                )
                 continue
             img = numpy.array(frame)
             cv2.imshow(name, img)
@@ -159,11 +180,13 @@ class LiveView(object):
 
     def start_audio_stream(self, addr=None, ip_proto="tcp"):
         try:
-            logger.info("LiveView: try to connect addr:{0}, ip_proto:{1}".format(
-                addr, ip_proto))
+            logger.info(
+                "LiveView: try to connect addr:{0}, ip_proto:{1}".format(addr, ip_proto)
+            )
             self._audio_stream_conn.connect(addr, ip_proto)
             self._audio_decoder_thread = threading.Thread(
-                target=self._audio_decoder_task)
+                target=self._audio_decoder_task
+            )
             self._audio_decoder_thread.start()
         except Exception as e:
             logger.error("LiveView: start_audio_stream, exception {0}".format(e))
@@ -189,7 +212,7 @@ class LiveView(object):
     def _audio_decoder_task(self):
         self._audio_streaming = True
         while self._audio_streaming:
-            data = b''
+            data = b""
 
             buf = self._audio_stream_conn.read_buf()
             if buf:
@@ -200,11 +223,19 @@ class LiveView(object):
                     if frame:
                         try:
                             self._audio_frame_count += 1
-                            logger.info("LiveView: audio_decoder_task, get frame {0}.".format(self._audio_frame_count))
+                            logger.info(
+                                "LiveView: audio_decoder_task, get frame {0}.".format(
+                                    self._audio_frame_count
+                                )
+                            )
                             self._audio_frame_queue.put(frame, timeout=1)
                         except Exception as e:
                             if not self._audio_streaming:
                                 break
-                            logger.warning("LiveView: _audio_decoder_task, audio_frame_queue full, e {0}!".format(e))
+                            logger.warning(
+                                "LiveView: _audio_decoder_task, audio_frame_queue full, e {0}!".format(
+                                    e
+                                )
+                            )
                             continue
         logger.info("LiveView: _audio_decoder_task, quit.")

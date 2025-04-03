@@ -26,10 +26,14 @@ def sub_atti_info_handler(attitute_info):
 
 def sub_imu_info_handler(imu_info):
     vgx, vgy, vgz, agx, agy, agz = imu_info
-    print("Drone imu: vgx {0}, vgy {1}, vgz {2}, agx {3}, agy {4}, agz {5}".format(vgx, vgy, vgz, agx, agy, agz))
+    print(
+        "Drone imu: vgx {0}, vgy {1}, vgz {2}, agx {3}, agy {4}, agz {5}".format(
+            vgx, vgy, vgz, agx, agy, agz
+        )
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     tl_drone = robot.Drone()
     tl_drone.initialize()
 
@@ -48,4 +52,3 @@ if __name__ == '__main__':
     time.sleep(5)
 
     tl_drone.close()
-

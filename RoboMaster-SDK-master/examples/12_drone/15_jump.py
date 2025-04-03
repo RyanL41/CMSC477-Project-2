@@ -19,7 +19,7 @@ import robomaster
 from robomaster import robot
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     tl_drone = robot.Drone()
     tl_drone.initialize()
 
@@ -30,8 +30,12 @@ if __name__ == '__main__':
 
     # 飞行
     tl_flight.go(x=30, y=30, z=100, speed=30, mid="m1").wait_for_completed()
-    tl_flight.jump(x=0, y=0, z=100, speed=20, yaw=90, mid1="m1", mid2="m2").wait_for_completed()
-    tl_flight.jump(x=0, y=0, z=100, speed=20, yaw=-90, mid1="m1", mid2="m2").wait_for_completed()
+    tl_flight.jump(
+        x=0, y=0, z=100, speed=20, yaw=90, mid1="m1", mid2="m2"
+    ).wait_for_completed()
+    tl_flight.jump(
+        x=0, y=0, z=100, speed=20, yaw=-90, mid1="m1", mid2="m2"
+    ).wait_for_completed()
 
     tl_flight.land().wait_for_completed()
     tl_flight.mission_pad_off()

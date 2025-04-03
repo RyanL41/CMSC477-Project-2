@@ -19,7 +19,7 @@ from robomaster import robot
 from robomaster import flight
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     tl_drone = robot.Drone()
     tl_drone.initialize()
 
@@ -29,8 +29,12 @@ if __name__ == '__main__':
     tl_flight.takeoff().wait_for_completed()
 
     # 曲线飞行
-    tl_flight.curve(x1=60, y1=60, z1=0, x2=120, y2=0, z2=30, speed=30).wait_for_completed()
-    tl_flight.curve(x1=-60, y1=60, z1=0, x2=-120, y2=0, z2=-30, speed=30).wait_for_completed()
+    tl_flight.curve(
+        x1=60, y1=60, z1=0, x2=120, y2=0, z2=30, speed=30
+    ).wait_for_completed()
+    tl_flight.curve(
+        x1=-60, y1=60, z1=0, x2=-120, y2=0, z2=-30, speed=30
+    ).wait_for_completed()
 
     # 降落
     tl_flight.land().wait_for_completed()

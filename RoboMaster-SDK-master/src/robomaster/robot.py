@@ -44,23 +44,34 @@ from . import flight
 from . import uart
 from . import ai_module
 
-__all__ = ['Robot', 'RobotPlaySoundAction', 'Drone', 'FREE', 'GIMBAL_LEAD', 'CHASSIS_LEAD',
-           'SOUND_ID_ATTACK', 'SOUND_ID_SHOOT', 'SOUND_ID_SCANNING', 'SOUND_ID_RECOGNIZED',
-           'SOUND_ID_GIMBAL_MOVE', 'SOUND_ID_COUNT_DOWN']
+__all__ = [
+    "Robot",
+    "RobotPlaySoundAction",
+    "Drone",
+    "FREE",
+    "GIMBAL_LEAD",
+    "CHASSIS_LEAD",
+    "SOUND_ID_ATTACK",
+    "SOUND_ID_SHOOT",
+    "SOUND_ID_SCANNING",
+    "SOUND_ID_RECOGNIZED",
+    "SOUND_ID_GIMBAL_MOVE",
+    "SOUND_ID_COUNT_DOWN",
+]
 
 
-MODULE_CHASSIS = 'chassis'
-MODULE_GIMBAL = 'gimbal'
-MODULE_LED = 'led'
-MODULE_CAMERA = 'camera'
-MODULE_BATTERY = 'battery'
-MODULE_GRIPPER = 'gripper'
-MODULE_VISION = 'vision'
-MODULE_BLASTER = 'blaster'
-MODULE_DDS = 'dds'
-MODULE_DISTANCE_SENSOR = 'dis_sensor'
-MODULE_ROBOTIC_ARM = 'robotic_arm'
-MODULE_AI_MODULE = 'ai_module'
+MODULE_CHASSIS = "chassis"
+MODULE_GIMBAL = "gimbal"
+MODULE_LED = "led"
+MODULE_CAMERA = "camera"
+MODULE_BATTERY = "battery"
+MODULE_GRIPPER = "gripper"
+MODULE_VISION = "vision"
+MODULE_BLASTER = "blaster"
+MODULE_DDS = "dds"
+MODULE_DISTANCE_SENSOR = "dis_sensor"
+MODULE_ROBOTIC_ARM = "robotic_arm"
+MODULE_AI_MODULE = "ai_module"
 
 FREE = "free"
 GIMBAL_LEAD = "gimbal_lead"
@@ -80,7 +91,7 @@ SOUND_ID_1D_SHARP = 0x10A
 SOUND_ID_1E = 0x10B
 SOUND_ID_1F = 0x10C
 SOUND_ID_1F_SHARP = 0x10D
-SOUND_ID_1G = 0x10e
+SOUND_ID_1G = 0x10E
 SOUND_ID_1A = 0x110
 SOUND_ID_1A_SHARP = 0x111
 SOUND_ID_1B = 0x112
@@ -124,7 +135,8 @@ class RobotPlaySoundAction(action.Action):
 
     def __repr__(self):
         return "action_id:{0}, state:{1}, percent:{2}, sound_id:{3}".format(
-            self._action_id, self._state, self._percent, self._sound_id)
+            self._action_id, self._state, self._percent, self._sound_id
+        )
 
     def encode(self):
         proto = self._action_proto_cls()
@@ -158,22 +170,25 @@ class TelloTempInfoSubject(dds.Subject):
         return self._temp_l, self._temp_h
 
     def decode(self, buf):
-        push_info = buf.split(';')
+        push_info = buf.split(";")
         found_info_num = 0
         for info in push_info:
             if protocol.TelloDdsProto.DDS_TEMP_L_FLAG in info:
-                temp_l_str = info.split(':')[1]
+                temp_l_str = info.split(":")[1]
                 self._temp_l = int(temp_l_str)
                 found_info_num += 1
             elif protocol.TelloDdsProto.DDS_TEMP_H_FLAG in info:
-                temp_h_str = info.split(':')[1]
+                temp_h_str = info.split(":")[1]
                 self._temp_h = int(temp_h_str)
                 found_info_num += 1
         if found_info_num == self._info_num:
             return True
         else:
-            logger.debug("TelloTempInfoSubject: decode, found_info_num {0} is not match self._info_num {1}".format(
-                found_info_num, self._info_num))
+            logger.debug(
+                "TelloTempInfoSubject: decode, found_info_num {0} is not match self._info_num {1}".format(
+                    found_info_num, self._info_num
+                )
+            )
             return False
 
 
@@ -192,18 +207,21 @@ class TelloTofInfoSubject(dds.Subject):
         return self._tof
 
     def decode(self, buf):
-        push_info = buf.split(';')
+        push_info = buf.split(";")
         found_info_num = 0
         for info in push_info:
             if protocol.TelloDdsProto.DDS_TOF_FLAG in info:
-                tof_str = info.split(':')[1]
+                tof_str = info.split(":")[1]
                 self._tof = int(tof_str)
                 found_info_num += 1
         if found_info_num == self._info_num:
             return True
         else:
-            logger.debug("TelloTofInfoSubject: decode, found_info_num {0} is not match self._info_num {1}".format(
-                found_info_num, self._info_num))
+            logger.debug(
+                "TelloTofInfoSubject: decode, found_info_num {0} is not match self._info_num {1}".format(
+                    found_info_num, self._info_num
+                )
+            )
             return False
 
 
@@ -224,32 +242,36 @@ class TelloDroneInfoSubject(dds.Subject):
         return self._high, self._baro, self._time
 
     def decode(self, buf):
-        push_info = buf.split(';')
+        push_info = buf.split(";")
         found_info_num = 0
         for info in push_info:
             if info.startswith(protocol.TelloDdsProto.DDS_HIGH_FLAG):
-                high_str = info.split(':')[1]
+                high_str = info.split(":")[1]
                 self._high = int(high_str)
                 found_info_num += 1
             elif protocol.TelloDdsProto.DDS_BARO_FLAG in info:
-                baro_str = info.split(':')[1]
+                baro_str = info.split(":")[1]
                 self._baro = float(baro_str)
                 found_info_num += 1
             elif protocol.TelloDdsProto.DDS_MOTOR_TIME_FLAG in info:
                 logger.debug("TelloDroneInfoSubject: time_info {0}".format(info))
-                time_str = info.split(':')[1]
+                time_str = info.split(":")[1]
                 self._time = int(time_str)
                 found_info_num += 1
         if found_info_num == self._info_num:
             return True
         else:
-            logger.warning("TelloDroneInfoSubject: decode, found_info_num {0} is not match self._info_num {1}".format(
-                found_info_num, self._info_num))
+            logger.warning(
+                "TelloDroneInfoSubject: decode, found_info_num {0} is not match self._info_num {1}".format(
+                    found_info_num, self._info_num
+                )
+            )
             return False
 
 
 class TelloStatusSubject(dds.Subject):
-    """ Tello 飞机的所有状态数据 """
+    """Tello 飞机的所有状态数据"""
+
     name = dds.DDS_TELLO_ALL
 
     def __init__(self):
@@ -277,39 +299,40 @@ class TelloStatusSubject(dds.Subject):
         self._agy = 0
         self._agz = 0
         self._dds_proto = protocol.TelloDdsProto
-        self._status_dict = {self._dds_proto.DDS_PAD_MID_FLAG: self._pad_mid,
-                             self._dds_proto.DDS_PAD_X_FLAG: self._pad_x,
-                             self._dds_proto.DDS_PAD_Y_FLAG: self._pad_y,
-                             self._dds_proto.DDS_PAD_Z_FLAG: self._pad_z,
-                             self._dds_proto.DDS_PAD_MPRY_FLAG: self._pad_mpry,
-                             self._dds_proto.DDS_PITCH_FLAG: self._pitch,
-                             self._dds_proto.DDS_ROLL_FLAG: self._roll,
-                             self._dds_proto.DDS_YAW_FLAG: self._yaw,
-                             self._dds_proto.DDS_VGX_FLAG: self._vgx,
-                             self._dds_proto.DDS_VGY_FLAG: self._vgy,
-                             self._dds_proto.DDS_VGZ_FLAG: self._vgz,
-                             self._dds_proto.DDS_TEMP_L_FLAG: self._templ,
-                             self._dds_proto.DDS_TEMP_H_FLAG: self._temph,
-                             self._dds_proto.DDS_TOF_FLAG: self._tof,
-                             self._dds_proto.DDS_HIGH_FLAG: self._high,
-                             self._dds_proto.DDS_BATTERY_FLAG: self._bat,
-                             self._dds_proto.DDS_BARO_FLAG: self._baro,
-                             self._dds_proto.DDS_MOTOR_TIME_FLAG: self._motor_time,
-                             self._dds_proto.DDS_AGX_FLAG: self._agx,
-                             self._dds_proto.DDS_AGY_FLAG: self._agy,
-                             self._dds_proto.DDS_AGZ_FLAG: self._agz}
+        self._status_dict = {
+            self._dds_proto.DDS_PAD_MID_FLAG: self._pad_mid,
+            self._dds_proto.DDS_PAD_X_FLAG: self._pad_x,
+            self._dds_proto.DDS_PAD_Y_FLAG: self._pad_y,
+            self._dds_proto.DDS_PAD_Z_FLAG: self._pad_z,
+            self._dds_proto.DDS_PAD_MPRY_FLAG: self._pad_mpry,
+            self._dds_proto.DDS_PITCH_FLAG: self._pitch,
+            self._dds_proto.DDS_ROLL_FLAG: self._roll,
+            self._dds_proto.DDS_YAW_FLAG: self._yaw,
+            self._dds_proto.DDS_VGX_FLAG: self._vgx,
+            self._dds_proto.DDS_VGY_FLAG: self._vgy,
+            self._dds_proto.DDS_VGZ_FLAG: self._vgz,
+            self._dds_proto.DDS_TEMP_L_FLAG: self._templ,
+            self._dds_proto.DDS_TEMP_H_FLAG: self._temph,
+            self._dds_proto.DDS_TOF_FLAG: self._tof,
+            self._dds_proto.DDS_HIGH_FLAG: self._high,
+            self._dds_proto.DDS_BATTERY_FLAG: self._bat,
+            self._dds_proto.DDS_BARO_FLAG: self._baro,
+            self._dds_proto.DDS_MOTOR_TIME_FLAG: self._motor_time,
+            self._dds_proto.DDS_AGX_FLAG: self._agx,
+            self._dds_proto.DDS_AGY_FLAG: self._agy,
+            self._dds_proto.DDS_AGZ_FLAG: self._agz,
+        }
 
     def decode(self, buf):
-        """ 根据数据推送更新 drone 的状态数据
-        """
+        """根据数据推送更新 drone 的状态数据"""
         if dds.IS_AI_FLAG not in buf:
-            push_data_list = buf.split(';')
+            push_data_list = buf.split(";")
             for info in push_data_list:
-                if ':' not in info:
+                if ":" not in info:
                     continue
-                name, data = info.split(':')
+                name, data = info.split(":")
                 if name == self._dds_proto.DDS_PAD_MPRY_FLAG:
-                    pad_mpry_info = data.split(',')
+                    pad_mpry_info = data.split(",")
                     self._status_dict[name].clear()
                     for i in range(self._pad_mpry_num):
                         self._status_dict[name].append(float(pad_mpry_info[i]))
@@ -326,9 +349,11 @@ class TelloStatusSubject(dds.Subject):
             self._freq = in_freq
 
     def pad_position(self):
-        return self._status_dict[self._dds_proto.DDS_PAD_X_FLAG], \
-               self._status_dict[self._dds_proto.DDS_PAD_Y_FLAG], \
-               self._status_dict[self._dds_proto.DDS_PAD_Z_FLAG]
+        return (
+            self._status_dict[self._dds_proto.DDS_PAD_X_FLAG],
+            self._status_dict[self._dds_proto.DDS_PAD_Y_FLAG],
+            self._status_dict[self._dds_proto.DDS_PAD_Z_FLAG],
+        )
 
     def get_status(self, name):
         return self._status_dict[name]
@@ -351,7 +376,7 @@ class RobotBase(object):
 
 
 class Drone(RobotBase):
-    """ 教育系列无人机 """
+    """教育系列无人机"""
 
     def __init__(self, cli=None):
         self._robot_host_list = []
@@ -440,15 +465,15 @@ class Drone(RobotBase):
                 continue
             # Get ipv4 stuff
             ipinfo = addrs[socket.AF_INET][0]
-            address = ipinfo['addr']
-            netmask = ipinfo['netmask']
+            address = ipinfo["addr"]
+            netmask = ipinfo["netmask"]
 
             # limit range of search. This will work for router subnets
-            if netmask != '255.255.255.0':
+            if netmask != "255.255.255.0":
                 continue
 
             # Create ip object and get
-            cidr = netaddr.IPNetwork('%s/%s' % (address, netmask))
+            cidr = netaddr.IPNetwork("%s/%s" % (address, netmask))
             network = cidr.network
             subnets.append((network, netmask))
             addr_list.append(address)
@@ -460,15 +485,15 @@ class Drone(RobotBase):
         :param num: Number of Tello this method is expected to find
         :return: None
         """
-        logger.info('[Start_Searching]Searching for available Tello...\n')
+        logger.info("[Start_Searching]Searching for available Tello...\n")
 
         subnets, address = self.get_subnets()
         possible_addr = []
 
         for subnet, netmask in subnets:
-            for ip in IPNetwork('%s/%s' % (subnet, netmask)):
+            for ip in IPNetwork("%s/%s" % (subnet, netmask)):
                 # skip local and broadcast
-                if str(ip).split('.')[3] == '0' or str(ip).split('.')[3] == '255':
+                if str(ip).split(".")[3] == "0" or str(ip).split(".")[3] == "255":
                     continue
                 possible_addr.append(str(ip))
         last_time = time.time()
@@ -481,7 +506,7 @@ class Drone(RobotBase):
             for ip in possible_addr:
                 if ip in address:
                     continue
-                self._sock.sendto(b'command', (ip, 8889))
+                self._sock.sendto(b"command", (ip, 8889))
             if len(self._robot_host_list) >= 1:
                 break
             if timeout < time.time() - last_time:
@@ -489,7 +514,7 @@ class Drone(RobotBase):
         return self._robot_host_list
 
     def scan_drone_robot(self):
-        """ Automatic scanning of robots in the network
+        """Automatic scanning of robots in the network
 
         :param num:
         :return:
@@ -508,13 +533,19 @@ class Drone(RobotBase):
         while len(self._robot_host_list) < 1:
             try:
                 resp, ip = self._sock.recvfrom(1024)
-                logger.info("FoundTello: from ip {1}_receive_task, recv msg: {0}".format(resp, ip))
-                ip = ''.join(str(ip[0]))
-                if resp.upper() == b'OK' and ip not in self._robot_host_list:
+                logger.info(
+                    "FoundTello: from ip {1}_receive_task, recv msg: {0}".format(
+                        resp, ip
+                    )
+                )
+                ip = "".join(str(ip[0]))
+                if resp.upper() == b"OK" and ip not in self._robot_host_list:
                     self._robot_host_list.append((ip, self.local_port))
-                    logger.info('FoundTello: Found Tello.The Tello ip is:%s\n' % ip)
+                    logger.info("FoundTello: Found Tello.The Tello ip is:%s\n" % ip)
             except socket.error as exc:
-                logger.error("[Exception_Error]Caught exception socket.error : {0}\n".format(exc))
+                logger.error(
+                    "[Exception_Error]Caught exception socket.error : {0}\n".format(exc)
+                )
         self.client_recieve_thread_flag = True
         logger.info("FoundTello: has finished, _scan_receive_task quit!")
 
@@ -525,10 +556,16 @@ class Drone(RobotBase):
             else:
                 self.local_ip = conn.get_local_ip()
             local_addr = (self.local_ip, self.local_port)
-            self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # socket for sending cmd
+            self._sock = socket.socket(
+                socket.AF_INET, socket.SOCK_DGRAM
+            )  # socket for sending cmd
             self._sock.bind(local_addr)
         except Exception as e:
-            logger.warning("udpConnection: create, host_addr:{0}, exception:{1}".format(self.local_ip, e))
+            logger.warning(
+                "udpConnection: create, host_addr:{0}, exception:{1}".format(
+                    self.local_ip, e
+                )
+            )
             raise
 
     def search_stop(self):
@@ -538,36 +575,64 @@ class Drone(RobotBase):
         if not self._client:
             default_sdk_addr = self._conf.default_sdk_addr
             video_stream_addr = self._conf.video_stream_addr
-            if conn_type == 'ap':
+            if conn_type == "ap":
                 if config.LOCAL_IP_STR:
-                    self._conf.default_sdk_addr = (config.LOCAL_IP_STR, default_sdk_addr[1])
-                    self._conf.video_stream_addr = (config.LOCAL_IP_STR, video_stream_addr[1])
+                    self._conf.default_sdk_addr = (
+                        config.LOCAL_IP_STR,
+                        default_sdk_addr[1],
+                    )
+                    self._conf.video_stream_addr = (
+                        config.LOCAL_IP_STR,
+                        video_stream_addr[1],
+                    )
                 else:
                     local_ip = conn.get_local_ip()
                     self._conf.default_sdk_addr = (local_ip, default_sdk_addr[1])
                     self._conf.video_stream_addr = (local_ip, video_stream_addr[1])
-                logger.info("Drone: initialize, the connection uses local addr {0}".format(self._conf.default_sdk_addr))
+                logger.info(
+                    "Drone: initialize, the connection uses local addr {0}".format(
+                        self._conf.default_sdk_addr
+                    )
+                )
                 self._client = client.TextClient(self._conf)
-            elif conn_type == 'sta':
+            elif conn_type == "sta":
                 if config.LOCAL_IP_STR:
-                    self._conf.default_sdk_addr = (config.LOCAL_IP_STR, default_sdk_addr[1])
-                    self._conf.video_stream_addr = (config.LOCAL_IP_STR, video_stream_addr[1])
+                    self._conf.default_sdk_addr = (
+                        config.LOCAL_IP_STR,
+                        default_sdk_addr[1],
+                    )
+                    self._conf.video_stream_addr = (
+                        config.LOCAL_IP_STR,
+                        video_stream_addr[1],
+                    )
                 else:
                     local_ip = conn.get_local_ip()
                     self._conf.default_sdk_addr = (local_ip, default_sdk_addr[1])
                     self._conf.video_stream_addr = (local_ip, video_stream_addr[1])
                 if config.ROBOT_IP_STR:
-                    self._conf.default_robot_addr = (config.ROBOT_IP_STR, self._conf.default_cmd_addr[1])
+                    self._conf.default_robot_addr = (
+                        config.ROBOT_IP_STR,
+                        self._conf.default_cmd_addr[1],
+                    )
                     logger.info(
-                        "Drone: initialize, the connection uses local addr {0}".format(self._conf.default_sdk_addr))
+                        "Drone: initialize, the connection uses local addr {0}".format(
+                            self._conf.default_sdk_addr
+                        )
+                    )
                     self._client = client.TextClient(self._conf)
                 else:
                     self.start()
                     robot_addr = self.scan_drone_robot()
                     self.search_stop()
-                    self._conf.default_robot_addr = (str(robot_addr[0][0]), self._conf.default_cmd_addr[1])
+                    self._conf.default_robot_addr = (
+                        str(robot_addr[0][0]),
+                        self._conf.default_cmd_addr[1],
+                    )
                     logger.info(
-                        "Drone: initialize, the  connection uses local addr {0}".format(self._conf.default_sdk_addr))
+                        "Drone: initialize, the  connection uses local addr {0}".format(
+                            self._conf.default_sdk_addr
+                        )
+                    )
                     self._client = client.TextClient(self._conf)
             else:
                 logger.error("Drone: unknown connect type {0}".format(conn_type))
@@ -611,7 +676,7 @@ class Drone(RobotBase):
             return False
 
     def close(self):
-        """ 停止drone对象 """
+        """停止drone对象"""
         self._enable_sdk(0)
         self._client.stop()
         self.dds.stop()
@@ -621,7 +686,7 @@ class Drone(RobotBase):
         return self._enable_sdk(1)
 
     def get_sdk_version(self):
-        """ 获取SDK版本号
+        """获取SDK版本号
 
         :return: string: 版本号
         """
@@ -640,11 +705,13 @@ class Drone(RobotBase):
             else:
                 logger.warning("Drone: get_sdk_version failed.")
         except Exception as e:
-            logger.warning("Drone: get_sdk_version, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: get_sdk_version, send_sync_msg exception {0}".format(str(e))
+            )
             return None
 
     def get_wifi_version(self):
-        """ 获取WIFI版本号
+        """获取WIFI版本号
 
         :return: string: 版本号
         """
@@ -663,11 +730,13 @@ class Drone(RobotBase):
             else:
                 logger.warning("Drone: get_wifi_version failed.")
         except Exception as e:
-            logger.warning("Drone: get_wifi_version, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: get_wifi_version, send_sync_msg exception {0}".format(str(e))
+            )
             return None
 
     def get_ssid(self):
-        """ 获取SSID名称
+        """获取SSID名称
 
         :return: string: ssid名称
         """
@@ -686,11 +755,13 @@ class Drone(RobotBase):
             else:
                 logger.warning("Drone: get_ssid failed.")
         except Exception as e:
-            logger.warning("Drone: get_ssid, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: get_ssid, send_sync_msg exception {0}".format(str(e))
+            )
             return None
 
     def get_drone_version(self):
-        """ 获取飞机固件版本号
+        """获取飞机固件版本号
 
         :return: string: 版本号
         """
@@ -709,11 +780,13 @@ class Drone(RobotBase):
             else:
                 logger.warning("Drone: get_drone_version failed.")
         except Exception as e:
-            logger.warning("Drone: get_drone_version, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: get_drone_version, send_sync_msg exception {0}".format(str(e))
+            )
             return None
 
     def get_esp32_version(self):
-        """ 获取esp32版本号
+        """获取esp32版本号
 
         :return: string: 版本号
         """
@@ -732,11 +805,13 @@ class Drone(RobotBase):
             else:
                 logger.warning("Drone: get_esp32_version failed.")
         except Exception as e:
-            logger.warning("Drone: get_esp32_version, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: get_esp32_version, send_sync_msg exception {0}".format(str(e))
+            )
             return None
 
     def get_hardware(self):
-        """ 获取飞机硬件信息
+        """获取飞机硬件信息
         本命令仅支持SDK版本号>=30
         可通过hardware?指令查询是否有接WIFI拓展模块，没接拓展模块返回TELLO，接了拓展模块返回RMTT。
 
@@ -757,11 +832,13 @@ class Drone(RobotBase):
             else:
                 logger.warning("Drone: get_hardware failed.")
         except Exception as e:
-            logger.warning("Drone: get_hardware, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: get_hardware, send_sync_msg exception {0}".format(str(e))
+            )
             return None
 
     def get_sn(self):
-        """ 获取飞机sn号
+        """获取飞机sn号
 
         :return: string: 飞机的SN号
         """
@@ -784,11 +861,11 @@ class Drone(RobotBase):
             return None
 
     def get_wifi(self):
-        """ 获取wifi信噪比
+        """获取wifi信噪比
 
         :return: float: wifi的信噪比数值
         """
-        cmd = 'wifi?'
+        cmd = "wifi?"
         proto = protocol.TextProtoDrone()
         proto.text_cmd = cmd
         msg = protocol.TextMsg(proto)
@@ -803,11 +880,13 @@ class Drone(RobotBase):
             else:
                 logger.warning("Drone: get_wifi failed.")
         except Exception as e:
-            logger.warning("Drone: get_wifi, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: get_wifi, send_sync_msg exception {0}".format(str(e))
+            )
             return None
 
     def get_motor_time(self):
-        """ 获取电机运行时间
+        """获取电机运行时间
 
         :return: string: 电机的运行时间
         """
@@ -826,11 +905,13 @@ class Drone(RobotBase):
             else:
                 logger.warning("Drone: get motor time failed.")
         except Exception as e:
-            logger.warning("Drone: get_motor_time, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: get_motor_time, send_sync_msg exception {0}".format(str(e))
+            )
             return None
 
     def get_height(self):
-        """ 获取飞机相对高度
+        """获取飞机相对高度
 
         :return: string: 飞机相对高度
         """
@@ -849,11 +930,13 @@ class Drone(RobotBase):
             else:
                 logger.warning("Drone: get_height failed.")
         except Exception as e:
-            logger.warning("Drone: get_height, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: get_height, send_sync_msg exception {0}".format(str(e))
+            )
             return None
 
     def get_temp(self):
-        """ 获取飞机机身温度
+        """获取飞机机身温度
 
         :return: dict: 飞机机身温度
         """
@@ -872,11 +955,13 @@ class Drone(RobotBase):
             else:
                 logger.warning("Drone: get_temp failed.")
         except Exception as e:
-            logger.warning("Drone: get_temp, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: get_temp, send_sync_msg exception {0}".format(str(e))
+            )
             return None
 
     def get_attitude(self):
-        """ 获取飞机三轴姿态信息
+        """获取飞机三轴姿态信息
 
         :return: dict: 飞机三轴姿态信息
         """
@@ -895,11 +980,13 @@ class Drone(RobotBase):
             else:
                 logger.warning("Drone: get_attitude failed.")
         except Exception as e:
-            logger.warning("Drone: get_attitude, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: get_attitude, send_sync_msg exception {0}".format(str(e))
+            )
             return None
 
     def get_baro(self):
-        """ 获取电机气压计高度
+        """获取电机气压计高度
 
         :return: float: 电机气压计高度
         """
@@ -918,11 +1005,13 @@ class Drone(RobotBase):
             else:
                 logger.warning("Drone: get_baro failed.")
         except Exception as e:
-            logger.warning("Drone: get_baro, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: get_baro, send_sync_msg exception {0}".format(str(e))
+            )
             return None
 
     def get_acceleration(self):
-        """ 获取飞机三轴加速度值
+        """获取飞机三轴加速度值
 
         :return: dict: 飞机三轴加速度值
         """
@@ -941,11 +1030,13 @@ class Drone(RobotBase):
             else:
                 logger.warning("Drone: get_acceleration failed.")
         except Exception as e:
-            logger.warning("Drone: get_acceleration, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: get_acceleration, send_sync_msg exception {0}".format(str(e))
+            )
             return None
 
     def set_wifichannel(self, channel):
-        """ 设置飞机WIFI信道
+        """设置飞机WIFI信道
 
         :param channel: 需要设置的信道
         :return: bool: 设置结果
@@ -959,18 +1050,22 @@ class Drone(RobotBase):
             if resp_msg:
                 proto = resp_msg.get_proto()
                 if proto:
-                    if proto.resp.lower().startswith(protocol.TextProtoData.SUCCESSFUL_RESP_FLAG):
+                    if proto.resp.lower().startswith(
+                        protocol.TextProtoData.SUCCESSFUL_RESP_FLAG
+                    ):
                         return True
                     else:
                         logger.warning("Drone: resp {0}".format(proto.resp))
                 logger.warning("Drone: set_wifichannel failed")
             return False
         except Exception as e:
-            logger.warning("Drone: set_wifichannel, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: set_wifichannel, send_sync_msg exception {0}".format(str(e))
+            )
             return False
 
     def config_sta(self, ssid, password):
-        """ 设置飞机的连接模式为组网模式
+        """设置飞机的连接模式为组网模式
 
         :param ssid: 路由器的账号
         :param password: 路由器的密码
@@ -985,7 +1080,9 @@ class Drone(RobotBase):
             if resp_msg:
                 proto = resp_msg.get_proto()
                 if proto:
-                    if proto.resp.lower().startswith(protocol.TextProtoData.SUCCESSFUL_RESP_FLAG):
+                    if proto.resp.lower().startswith(
+                        protocol.TextProtoData.SUCCESSFUL_RESP_FLAG
+                    ):
                         return True
                     else:
                         logger.warning("Drone: resp {0}".format(proto.resp))
@@ -993,11 +1090,13 @@ class Drone(RobotBase):
             return False
 
         except Exception as e:
-            logger.warning("Drone: config_sta, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Drone: config_sta, send_sync_msg exception {0}".format(str(e))
+            )
             return False
 
     def sub_temp(self, freq=5, callback=None, *args, **kw):
-        """ 订阅飞机温度信息
+        """订阅飞机温度信息
 
         :param freq: 订阅数据的频率, 1HZ, 5HZ, 10HZ
         :param callback: 传入数据处理的回掉函数
@@ -1011,7 +1110,7 @@ class Drone(RobotBase):
         return sub.add_subject_info(subject, callback, args, kw)
 
     def unsub_temp(self):
-        """ 取消订阅温度信息。
+        """取消订阅温度信息。
 
         :return: 返回取消订阅结果。
         """
@@ -1019,7 +1118,7 @@ class Drone(RobotBase):
         return sub_dds.del_subject_info(dds.DDS_TELLO_TEMP)
 
     def sub_tof(self, freq=5, callback=None, *args, **kw):
-        """ 订阅飞机tof信息
+        """订阅飞机tof信息
 
         :param freq: 订阅数据的频率, 1HZ, 5HZ, 10HZ
         :param callback: 传入数据处理的回掉函数
@@ -1033,7 +1132,7 @@ class Drone(RobotBase):
         return sub.add_subject_info(subject, callback, args, kw)
 
     def unsub_tof(self):
-        """ 取消订阅tof信息
+        """取消订阅tof信息
 
         :return: 返回取消订阅结果
         """
@@ -1041,7 +1140,7 @@ class Drone(RobotBase):
         return sub_dds.del_subject_info(dds.DDS_TELLO_TOF)
 
     def sub_drone_info(self, freq=5, callback=None, *args, **kw):
-        """ 订阅飞机高度、气压计、电机运行时间信息
+        """订阅飞机高度、气压计、电机运行时间信息
 
         :param freq: 订阅数据的频率, 1HZ, 5HZ, 10HZ
         :param callback: 传入数据处理的回掉函数
@@ -1055,7 +1154,7 @@ class Drone(RobotBase):
         return sub.add_subject_info(subject, callback, args, kw)
 
     def unsub_drone_info(self):
-        """ 取消订阅飞机高度、气压计、电机运行时间信息
+        """取消订阅飞机高度、气压计、电机运行时间信息
 
         :return: 返回取消订阅结果
         """
@@ -1063,7 +1162,7 @@ class Drone(RobotBase):
         return sub_dds.del_subject_info(dds.DDS_TELLO_DRONE)
 
     def _sub_drone_all_status(self, freq=10, callback=None, *args, **kw):
-        """ 订阅飞机所有状态数据
+        """订阅飞机所有状态数据
 
         :param freq: 订阅数据的频率, 1HZ, 5HZ, 10HZ
         :param callback: function:传入数据处理的回掉函数
@@ -1077,7 +1176,7 @@ class Drone(RobotBase):
         return sub.add_subject_info(subject, callback, args, kw)
 
     def _unsub_drone_all_status(self):
-        """ 取消订阅飞机所有状态
+        """取消订阅飞机所有状态
 
         :return: 取消状态订阅结果
         """
@@ -1085,7 +1184,7 @@ class Drone(RobotBase):
         return sub_dds.del_subject_info(dds.DDS_TELLO_ALL)
 
     def get_status(self, name):
-        """ 获取飞机指定的状态
+        """获取飞机指定的状态
 
         :param name: string:需要获取的状态名，可列表["MID", "x", "y", "z", "mpry", "pitch", "roll", "yaw", "vgx", "vgy",
                             "vgz", "templ", "temph", "tof", "h", "bat", "baro", "time", "agx", "agy", "agz"]，详细介绍
@@ -1097,7 +1196,8 @@ class Drone(RobotBase):
 
 
 class Robot(RobotBase):
-    """ RoboMaster EP 机甲大师 机器人 """
+    """RoboMaster EP 机甲大师 机器人"""
+
     _product = "EP"
     _sdk_host = ROBOT_DEFAULT_HOST
 
@@ -1166,42 +1266,42 @@ class Robot(RobotBase):
 
     @property
     def chassis(self):
-        """ 获取底盘模块对象 """
+        """获取底盘模块对象"""
         return self.get_module("Chassis")
 
     @property
     def gimbal(self):
-        """ 获取云台模块对象 """
+        """获取云台模块对象"""
         return self.get_module("Gimbal")
 
     @property
     def blaster(self):
-        """ 获取水弹枪模块对象 """
+        """获取水弹枪模块对象"""
         return self.get_module("Blaster")
 
     @property
     def led(self):
-        """ 获取灯效控制模块对象 """
+        """获取灯效控制模块对象"""
         return self.get_module("Led")
 
     @property
     def vision(self):
-        """ 获取智能识别模块对象 """
+        """获取智能识别模块对象"""
         return self.get_module("Vision")
 
     @property
     def battery(self):
-        """ 获取电池模块对象 """
+        """获取电池模块对象"""
         return self.get_module("Battery")
 
     @property
     def camera(self):
-        """ 获取相机模块对象 """
+        """获取相机模块对象"""
         return self.get_module("EPCamera")
 
     @property
     def robotic_arm(self):
-        """ 获取机械臂模块对象 """
+        """获取机械臂模块对象"""
         return self.get_module("RoboticArm")
 
     @property
@@ -1278,15 +1378,20 @@ class Robot(RobotBase):
         self._modules[_ai_module.__class__.__name__] = _ai_module
 
     def get_module(self, name):
-        """ 获取模块对象
+        """获取模块对象
 
         :param name: 模块名称，字符串，如：chassis, gimbal, led, blaster, camera, battery, vision, etc.
         :return: 模块对象
         """
         return self._modules[name]
 
-    def initialize(self, conn_type=config.DEFAULT_CONN_TYPE, proto_type=config.DEFAULT_PROTO_TYPE, sn=None):
-        """ 初始化机器人
+    def initialize(
+        self,
+        conn_type=config.DEFAULT_CONN_TYPE,
+        proto_type=config.DEFAULT_PROTO_TYPE,
+        sn=None,
+    ):
+        """初始化机器人
 
         :param conn_type: 连接建立类型: ap表示使用热点直连；sta表示使用组网连接，rndis表示使用USB连接
         :param proto_type: 通讯方式: tcp, udp
@@ -1306,7 +1411,11 @@ class Robot(RobotBase):
                 try:
                     self._client = client.Client(9, 6)
                 except Exception as e:
-                    logger.error("Robot: initialized, can not create client, return, exception {0}".format(e))
+                    logger.error(
+                        "Robot: initialized, can not create client, return, exception {0}".format(
+                            e
+                        )
+                    )
                     return False
 
         try:
@@ -1348,15 +1457,21 @@ class Robot(RobotBase):
         logger.info("Robot close")
 
     def _wait_for_connection(self, conn_type, proto_type, sn=None):
-        result, local_addr, remote_addr = self._sdk_conn.request_connection(self._sdk_host, conn_type, proto_type, sn)
+        result, local_addr, remote_addr = self._sdk_conn.request_connection(
+            self._sdk_host, conn_type, proto_type, sn
+        )
         if not result:
-            logger.error("Robot: Connection Failed, Please Check Hareware Connections!!! "
-                         "conn_type {0}, host {1}, target {2}.".format(conn_type, local_addr, remote_addr))
+            logger.error(
+                "Robot: Connection Failed, Please Check Hareware Connections!!! "
+                "conn_type {0}, host {1}, target {2}.".format(
+                    conn_type, local_addr, remote_addr
+                )
+            )
             return None
         return conn.Connection(local_addr, remote_addr, protocol=proto_type)
 
     def reset(self):
-        """ 重置机器人到初始默认状态 """
+        """重置机器人到初始默认状态"""
         #  dds reset
         self._sub_node_reset()
         self._sub_add_node()
@@ -1374,11 +1489,13 @@ class Robot(RobotBase):
                 return True
             return False
         except Exception as e:
-            logger.warning("Robot: set_robot_mode, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Robot: set_robot_mode, send_sync_msg exception {0}".format(str(e))
+            )
             return False
 
     def set_robot_mode(self, mode=GIMBAL_LEAD):
-        """ 设置机器人工作模式
+        """设置机器人工作模式
 
         :param mode: 机器人工作模式: free表示自由模式；chassis_lead表示云台跟随底盘模式；gimbal_lead表示底盘跟随云台模式
         :return: bool: 调用结果
@@ -1402,16 +1519,22 @@ class Robot(RobotBase):
                 return True
             return False
         except Exception as e:
-            logger.warning("Robot: set_robot_mode, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Robot: set_robot_mode, send_sync_msg exception {0}".format(str(e))
+            )
             return False
 
     def get_robot_mode(self):
-        """ 获取机器人工作模式
+        """获取机器人工作模式
 
         :return: 自由模式返回free; 底盘跟随云台模式返回gimbal_lead；云台跟随底盘模式返回chassis_lead
         """
         mode = None
-        msg = protocol.Msg(self._client.hostbyte, protocol.host2byte(9, 0), protocol.ProtoGetRobotMode())
+        msg = protocol.Msg(
+            self._client.hostbyte,
+            protocol.host2byte(9, 0),
+            protocol.ProtoGetRobotMode(),
+        )
         try:
             resp_msg = self._client.send_sync_msg(msg)
             if resp_msg:
@@ -1426,16 +1549,20 @@ class Robot(RobotBase):
                 elif proto._mode == 2:
                     mode = CHASSIS_LEAD
                 else:
-                    logger.info("Robot: get_robot_mode, unsupported mode:{0}".format(proto._mode))
+                    logger.info(
+                        "Robot: get_robot_mode, unsupported mode:{0}".format(
+                            proto._mode
+                        )
+                    )
                 return mode
             else:
-                raise Exception('get_robot_mode failed, resp is None.')
+                raise Exception("get_robot_mode failed, resp is None.")
         except Exception as e:
             logger.warning("Robot: get_robot_mode, send_sync_msg e {0}".format(e))
             return None
 
     def _enable_sdk(self, enable=1):
-        """ 进入和退出SDK模式
+        """进入和退出SDK模式
 
         :param enable: 进入或退出SDK模式，1 为进入SDK模式，0 为退出SDK模式
         """
@@ -1453,11 +1580,13 @@ class Robot(RobotBase):
                 logger.warning("Robot: enable_sdk error.")
                 return False
         except Exception as e:
-            logger.warning("Robot: enable_sdk, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Robot: enable_sdk, send_sync_msg exception {0}".format(str(e))
+            )
             return False
 
     def get_version(self):
-        """ 获取机器人固件版本号信息
+        """获取机器人固件版本号信息
 
         :return: 版本字符串，如："01.01.0305"
         """
@@ -1472,11 +1601,13 @@ class Robot(RobotBase):
                 logger.warning("Robot: get_version failed.")
                 return None
         except Exception as e:
-            logger.warning("Robot: get_version, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Robot: get_version, send_sync_msg exception {0}".format(str(e))
+            )
             return None
 
     def get_sn(self):
-        """ 获取机器人硬件SN信息
+        """获取机器人硬件SN信息
 
         :return: 硬件SN字符串，如："3JKDH2T0011000"
         """
@@ -1508,7 +1639,9 @@ class Robot(RobotBase):
             else:
                 logger.warning("Robot: enable_dds err.")
         except Exception as e:
-            logger.warning("Robot: enable_dds, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Robot: enable_dds, send_sync_msg exception {0}".format(str(e))
+            )
             return False
 
     def _sub_node_reset(self):
@@ -1523,11 +1656,13 @@ class Robot(RobotBase):
                 logger.warning("Robot: reset dds node fail!")
                 return False
         except Exception as e:
-            logger.warning("Robot: reset_dds, send_sync_msg exception {0}".format(str(e)))
+            logger.warning(
+                "Robot: reset_dds, send_sync_msg exception {0}".format(str(e))
+            )
             return False
 
     def play_audio(self, filename):
-        """ 播放本地音频文件
+        """播放本地音频文件
 
         :param filename: 播放音效的文件名，目前仅支持单通道，48KHz采样的wav格式文件
         :return: action对象
@@ -1545,7 +1680,7 @@ class Robot(RobotBase):
         return self.play_sound(sound_id, times=1)
 
     def play_sound(self, sound_id, times=1):
-        """ 播放系统音效
+        """播放系统音效
 
         :param sound_id: 系统音效ID值
         :param times: 播放次数

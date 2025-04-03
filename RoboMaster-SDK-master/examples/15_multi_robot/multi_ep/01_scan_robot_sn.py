@@ -16,8 +16,6 @@
 from robomaster import conn
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # set the time for scanning ep robot
     conn.scan_robot_ip_list(timeout=10)
-
-

@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-__all__ = ['LOCAL_IP_STR', 'ROBOT_IP_STR', 'DEFAULT_PROTO_TYPE']
+__all__ = ["LOCAL_IP_STR", "ROBOT_IP_STR", "DEFAULT_PROTO_TYPE"]
 
 
 DEFAULT_CONN_TYPE = "ap"
@@ -129,10 +129,10 @@ class Config:
 
 te_conf = Config("TelloEduConfig")
 te_conf.product = "TelloEdu"
-te_conf.default_cmd_addr = ('192.168.10.1', 8889)
+te_conf.default_cmd_addr = ("192.168.10.1", 8889)
 te_conf.cmd_proto = "text"
-te_conf.default_sdk_addr = ('0.0.0.0', 8890)
-te_conf.video_stream_addr = ('0.0.0.0', 11111)
+te_conf.default_sdk_addr = ("0.0.0.0", 8890)
+te_conf.video_stream_addr = ("0.0.0.0", 11111)
 te_conf.video_stream_proto = "udp"
 
 ep_conf = Config("RoboMasterEPConfig")
@@ -153,8 +153,8 @@ ROBOT_BROADCAST_PORT = 40927
 
 ROBOT_SN_LEN = 14
 
-ROBOT_DEFAULT_RNDIS_ADDR = ('192.168.42.2', ROBOT_DEVICE_PORT)
-ROBOT_DEFAULT_WIFI_ADDR = ('192.168.2.1', ROBOT_DEVICE_PORT)
+ROBOT_DEFAULT_RNDIS_ADDR = ("192.168.42.2", ROBOT_DEVICE_PORT)
+ROBOT_DEFAULT_WIFI_ADDR = ("192.168.2.1", ROBOT_DEVICE_PORT)
 
-ROBOT_DEFAULT_LOCAL_RNDIS_ADDR = ('192.168.42.3', ROBOT_SDK_PORT_MIN)
-ROBOT_DEFAULT_LOCAL_WIFI_ADDR = ('192.168.2.23', ROBOT_SDK_PORT_MIN)
+ROBOT_DEFAULT_LOCAL_RNDIS_ADDR = ("192.168.42.3", ROBOT_SDK_PORT_MIN)
+ROBOT_DEFAULT_LOCAL_WIFI_ADDR = ("192.168.2.23", ROBOT_SDK_PORT_MIN)

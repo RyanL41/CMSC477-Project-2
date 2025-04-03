@@ -17,7 +17,7 @@
 from robomaster import robot
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ep_robot = robot.Robot()
     ep_robot.initialize(conn_type="sta")
 
@@ -27,5 +27,3 @@ if __name__ == '__main__':
     ep_servo.moveto(index=3, angle=90).wait_for_completed()
 
     ep_robot.close()
-
-
