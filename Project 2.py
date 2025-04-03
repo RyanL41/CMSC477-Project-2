@@ -14,7 +14,7 @@ FRAME_WIDTH = 640
 FRAME_HEIGHT = 360
 FRAME_CENTER_X = FRAME_WIDTH / 2
 
-# Target bbox width in pixels to determine closeness during approach!
+# Target bbox width in pixels to determine closeness during approach
 TARGET_BBOX_WIDTH_APPROACH = 77 + 5
 TARGET_BBOX_WIDTH_APPROACH_2 = 78 + 2
 TARGET_BBOX_WIDTH_APPROACH_3 = 255 + 5
@@ -252,7 +252,7 @@ class Project2StateMachine:
             approach_detection = self.last_detection
         else:
             print(
-                f"ERROR: Lost sight of '{self.target_label}' and no valid last detection. Cannot approach."
+                f"Lost sight of '{self.target_label}' and no valid last detection. Cannot approach."
             )
             self.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
             self.current_state = Project2States.ERROR  # Transition back to search?
