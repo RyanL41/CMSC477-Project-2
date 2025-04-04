@@ -19,8 +19,9 @@ TARGET_BBOX_WIDTH_APPROACH = 77 + 5
 TARGET_BBOX_WIDTH_APPROACH_2 = 78 + 2
 TARGET_BBOX_WIDTH_APPROACH_3 = 255 + 5
 TARGET_BBOX_WIDTH_APPROACH_4 = 82 + 5
-TARGET_BBOX_HEIGHT_APPROACH = 240
-
+TARGET_BBOX_HEIGHT_APPROACH = 220
+TARGET_BBOX_HEIGHT_APPROACH_2 = 191
+TARGET_BBOX_HEIGHT_APPROACH_3 = 192
 
 class Project2States(Enum):
     INITIALIZING = "initializing"
@@ -185,19 +186,20 @@ class Project2StateMachine:
         box_center_x = (x1 + x2) / 2
         box_width = x2 - x1
 
-        is_close_enough = (
-            box_width > TARGET_BBOX_WIDTH_APPROACH
-            if target_label == "Block 1"
-            else (
-                box_width > TARGET_BBOX_WIDTH_APPROACH_2
-                if target_label == "Block 2"
-                else (
-                    box_width > TARGET_BBOX_WIDTH_APPROACH_4
-                    if self.current_state == Project2States.GRAB_BLOCK1_AGAIN
-                    else box_width > TARGET_BBOX_WIDTH_APPROACH_3
-                )
-            )
-        )
+        # is_close_enough = (
+        #     box_width > TARGET_BBOX_WIDTH_APPROACH
+        #     if target_label == "Block 1"
+        #     else (
+        #         box_width > TARGET_BBOX_WIDTH_APPROACH_2
+        #         if target_label == "Block 2"
+        #         else (
+        #             box_width > TARGET_BBOX_WIDTH_APPROACH_4
+        #             if self.current_state == Project2States.GRAB_BLOCK1_AGAIN
+        #             else box_width > TARGET_BBOX_WIDTH_APPROACH_3
+        #         )
+        #     )
+        # )
+        is_close_enough = (y1 > TARGET_BBOX_HEIGHT_APPROACH_2 if target_label == "Block 2" else (y1 > TARGET_BBOX_HEIGHT_APPROACH_3) if target_label == "Target 2" else y1 > TARGET_BBOX_HEIGHT_APPROACH)
 
         if is_close_enough:
             return 0, 0, 0
@@ -224,8 +226,10 @@ class Project2StateMachine:
 
         error_x = FRAME_CENTER_X - box_center_x
         z_vel = np.clip(-error_x * 0.1, -25, 25)
-
-        return 0.1, 0, z_vel
+        x_vel = 0.1
+        if y1 > 170:
+            x_vel = 0.05
+        return x_vel, 0, z_vel
 
     def handle_find_object(self, next_state_on_find, search_label):
 
@@ -351,7 +355,7 @@ class Project2StateMachine:
                     self.handle_release(Project2States.LOWER_ARM_AFTER_RELEASE1)
 
                 elif self.current_state == Project2States.LOWER_ARM_AFTER_RELEASE1:
-                    self.handle_move_arm(-20, Project2States.BACKUP_AND_RESET_ARM)
+                    self.handle_move_arm(-100, Project2States.BACKUP_AND_RESET_ARM)
 
                 elif self.current_state == Project2States.BACKUP_AND_RESET_ARM:
                     self.handle_backup(0.5, Project2States.SURVEY_FOR_BLOCK2)
