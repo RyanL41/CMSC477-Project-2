@@ -50,7 +50,7 @@ def draw_detections(frame, detections):
 
 
 def detect_tag_loop(ep_robot, ep_chassis, ep_camera, apriltag):
-    x = 71
+    x = 4
     while True:
         try:
             img = ep_camera.read_cv2_image(strategy="newest", timeout=0.5)
@@ -100,11 +100,24 @@ def detect_tag_loop(ep_robot, ep_chassis, ep_camera, apriltag):
         draw_detections(img, detections)
         cv2.imshow("img", img)
 
+        
+        if cv2.waitKey(1) == ord("w"):
+            ep_chassis.drive_speed(x=.5, y=0, z=0)
+        if cv2.waitKey(1) == ord("a"):
+            ep_chassis.drive_speed(x=0, y=-0.5, z=0)
+        if cv2.waitKey(1) == ord("s"):
+            ep_chassis.drive_speed(x=-0.5, y=0, z=0)
+        if cv2.waitKey(1) == ord("d"):
+            ep_chassis.drive_speed(x=0, y=0.5, z=0)
+        if cv2.waitKey(1) == ord("q"):
+            ep_chassis.drive_speed(x=0, y=0, z=-30)
+        if cv2.waitKey(1) == ord("e"):
+            ep_chassis.drive_speed(x=0, y=0, z=30)
         if cv2.waitKey(1) == ord("g"):
-            print("Photo is being taken")
+            print("Photo ",x," is being taken")
             cv2.imwrite(f"DataSet/image_{x}.png", img)
             x = x + 1
-        if cv2.waitKey(1) == ord("q"):
+        if cv2.waitKey(1) == ord("p"):
             break
 
 
