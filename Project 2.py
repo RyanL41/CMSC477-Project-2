@@ -210,17 +210,9 @@ class Project2StateMachine:
             return 0, 0, 0
 
         error_x = 320 - box_center_x
-        z_vel = np.clip(error_x * 0.005, -15, 15)
+        z_vel = np.clip(-error_x * 0.1, -25, 25)
 
-        error_y = target_y1 - y1
-
-        x_vel = np.clip(0.05 + error_y * 0.001, 0.05, 0.2)
-
-        if error_y < 30:
-            x_vel = 0.05
-            z_vel = np.clip(error_x * 0.004, -10, 10)
-
-        return x_vel, 0, z_vel
+        return 0.1, 0, z_vel
 
 
     def handle_find_object(self, next_state, search_label):
