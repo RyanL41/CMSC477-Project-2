@@ -201,6 +201,8 @@ class Project2StateMachine:
             self.approach_plot_data[current_state_key]["actual_y"].append(y1)
             self.approach_plot_data[current_state_key]["target_y"].append(target_y1)
 
+        print(y1, target_y1)
+
         is_close_enough = y1 > target_y1
 
         if is_close_enough:
