@@ -63,6 +63,16 @@ class Project2StateMachine:
         self.target_label = None
         self.last_detection = None
         self.last_vis_frame = None
+        self.approach_plot_data = {
+            state.value: {
+                "time_steps": [],
+                "actual_x": [],
+                "target_x": [],
+                "actual_y": [],
+                "target_y": [],
+            }
+            for state in Project2States
+        }
 
     def initialize_robot(self):
 
