@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 
 YOLO_MODEL_PATH = "best.pt"
 TARGET_BBOX_HEIGHT_APPROACH = 160
-TARGET_BBOX_HEIGHT_APPROACH_2 = 160
+TARGET_BBOX_HEIGHT_APPROACH_2 = 125
 TARGET_BBOX_HEIGHT_APPROACH_3 = 192
 
 
@@ -88,7 +88,7 @@ class Project2StateMachine:
 
         time.sleep(1)
         self.ep_robot.gripper.pause()
-
+        
         self.current_state = Project2States.FIND_FIRST_BLOCK
 
     def reset_robot(self):
