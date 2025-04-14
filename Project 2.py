@@ -8,10 +8,10 @@ import traceback
 
 
 YOLO_MODEL_PATH = "best.pt"
-TARGET_BBOX_WIDTH_APPROACH = 82
-TARGET_BBOX_WIDTH_APPROACH_2 = 80
-TARGET_BBOX_WIDTH_APPROACH_3 = 260
-TARGET_BBOX_WIDTH_APPROACH_4 = 87
+TARGET_BBOX_WIDTH_APPROACH = 77
+TARGET_BBOX_WIDTH_APPROACH_2 = 75
+TARGET_BBOX_WIDTH_APPROACH_3 = 255
+TARGET_BBOX_WIDTH_APPROACH_4 = 82
 TARGET_BBOX_HEIGHT_APPROACH = 220
 TARGET_BBOX_HEIGHT_APPROACH_2 = 191
 TARGET_BBOX_HEIGHT_APPROACH_3 = 192
@@ -178,24 +178,22 @@ class Project2StateMachine:
         if is_close_enough:
             return 0, 0, 0
 
-        thresh = 5
-
         if target_label == "Block 1":
-            if box_width > (TARGET_BBOX_WIDTH_APPROACH - thresh):
+            if box_width > (TARGET_BBOX_WIDTH_APPROACH):
                 TARGET_BBOX_WIDTH_APPROACH -= 0.05
 
         elif target_label == "Block 2":
-            if box_width > (TARGET_BBOX_WIDTH_APPROACH_2 - thresh):
+            if box_width > (TARGET_BBOX_WIDTH_APPROACH_2 ):
                 TARGET_BBOX_WIDTH_APPROACH_2 -= 0.1
 
         elif (
             self.current_state == Project2States.GRAB_BLOCK1_AGAIN
             or self.current_state == Project2States.APPROACH_TARGET2
         ):
-            if box_width > (TARGET_BBOX_WIDTH_APPROACH_3 - thresh):
+            if box_width > (TARGET_BBOX_WIDTH_APPROACH_3):
                 TARGET_BBOX_WIDTH_APPROACH_3 -= 0.05
         else:
-            if box_width > (TARGET_BBOX_WIDTH_APPROACH_4 - thresh):
+            if box_width > (TARGET_BBOX_WIDTH_APPROACH_4):
                 TARGET_BBOX_WIDTH_APPROACH_4 -= 0.05
 
         error_x = 320 - box_center_x
