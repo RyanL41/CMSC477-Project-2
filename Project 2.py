@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 
 YOLO_MODEL_PATH = "best.pt"
 TARGET_BBOX_HEIGHT_APPROACH = 160
-TARGET_BBOX_HEIGHT_APPROACH_2 = 123
+TARGET_BBOX_HEIGHT_APPROACH_2 = 160
 TARGET_BBOX_HEIGHT_APPROACH_3 = 192
 
 
@@ -204,6 +204,7 @@ class Project2StateMachine:
         print(y1, target_y1)
 
         is_close_enough = y1 > target_y1
+        is_kinda_close = y1 > target_y1 - 50
 
         if is_close_enough:
             print(
@@ -213,6 +214,9 @@ class Project2StateMachine:
 
         error_x = 320 - box_center_x
         z_vel = np.clip(-error_x * 0.1, -25, 25)
+
+        if is_kinda_close:
+            return 0.04, 0, z_vel
 
         return 0.1, 0, z_vel
 
