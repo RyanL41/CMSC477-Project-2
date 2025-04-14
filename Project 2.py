@@ -8,10 +8,6 @@ import traceback
 
 
 YOLO_MODEL_PATH = "best.pt"
-TARGET_BBOX_WIDTH_APPROACH = 77
-TARGET_BBOX_WIDTH_APPROACH_2 = 75
-TARGET_BBOX_WIDTH_APPROACH_3 = 255
-TARGET_BBOX_WIDTH_APPROACH_4 = 82
 TARGET_BBOX_HEIGHT_APPROACH = 220
 TARGET_BBOX_HEIGHT_APPROACH_2 = 191
 TARGET_BBOX_HEIGHT_APPROACH_3 = 192
@@ -157,15 +153,13 @@ class Project2StateMachine:
         return best_detection
 
     def approach_object_simple(self, detection, target_label):
-        global TARGET_BBOX_WIDTH_APPROACH, TARGET_BBOX_WIDTH_APPROACH_2, TARGET_BBOX_WIDTH_APPROACH_3, TARGET_BBOX_WIDTH_APPROACH_4
 
         if not detection:
             return 0, 0, 0
 
-        x1, y1, x2, y2 = detection["box"]
+        x1, y1, x2, _ = detection["box"]
 
         box_center_x = (x1 + x2) / 2
-        box_width = x2 - x1
 
         is_close_enough = (
             y1 > TARGET_BBOX_HEIGHT_APPROACH_2
@@ -177,24 +171,6 @@ class Project2StateMachine:
 
         if is_close_enough:
             return 0, 0, 0
-
-        if target_label == "Block 1":
-            if box_width > (TARGET_BBOX_WIDTH_APPROACH):
-                TARGET_BBOX_WIDTH_APPROACH -= 0.05
-
-        elif target_label == "Block 2":
-            if box_width > (TARGET_BBOX_WIDTH_APPROACH_2 ):
-                TARGET_BBOX_WIDTH_APPROACH_2 -= 0.1
-
-        elif (
-            self.current_state == Project2States.GRAB_BLOCK1_AGAIN
-            or self.current_state == Project2States.APPROACH_TARGET2
-        ):
-            if box_width > (TARGET_BBOX_WIDTH_APPROACH_3):
-                TARGET_BBOX_WIDTH_APPROACH_3 -= 0.05
-        else:
-            if box_width > (TARGET_BBOX_WIDTH_APPROACH_4):
-                TARGET_BBOX_WIDTH_APPROACH_4 -= 0.05
 
         error_x = 320 - box_center_x
         z_vel = np.clip(-error_x * 0.1, -25, 25)
