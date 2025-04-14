@@ -7,21 +7,15 @@ from enum import Enum
 import traceback
 
 
-# YOLO & Camera
 YOLO_MODEL_PATH = "best.pt"
-CONFIDENCE_THRESHOLD = 0.70
-FRAME_WIDTH = 640
-FRAME_HEIGHT = 360
-FRAME_CENTER_X = FRAME_WIDTH / 2
-
-# Target bbox width in pixels to determine closeness during approach
-TARGET_BBOX_WIDTH_APPROACH = 77 + 5
-TARGET_BBOX_WIDTH_APPROACH_2 = 78 + 2
-TARGET_BBOX_WIDTH_APPROACH_3 = 255 + 5
-TARGET_BBOX_WIDTH_APPROACH_4 = 82 + 5
+TARGET_BBOX_WIDTH_APPROACH = 82
+TARGET_BBOX_WIDTH_APPROACH_2 = 80
+TARGET_BBOX_WIDTH_APPROACH_3 = 260
+TARGET_BBOX_WIDTH_APPROACH_4 = 87
 TARGET_BBOX_HEIGHT_APPROACH = 220
 TARGET_BBOX_HEIGHT_APPROACH_2 = 191
 TARGET_BBOX_HEIGHT_APPROACH_3 = 192
+
 
 class Project2States(Enum):
     INITIALIZING = "initializing"
@@ -66,34 +60,23 @@ class Project2StateMachine:
         self.last_vis_frame = None
 
     def initialize_robot(self):
-        print("Initializing Robot...")
-
-        print(self.robot_sn)
 
         self.ep_robot.initialize(conn_type="sta", sn=self.robot_sn)
-
-        print("inited")
 
         self.ep_robot.camera.start_video_stream(
             display=False, resolution=camera.STREAM_360P
         )
 
-        print("started")
-        
         self.ep_robot.robotic_arm.move(x=0, y=-100).wait_for_completed()
 
-        print("moved")
-
         self.ep_robot.gripper.open(power=70)
-
-        print('opened')
 
         time.sleep(1)
         self.ep_robot.gripper.pause()
 
         self.current_state = Project2States.FIND_FIRST_BLOCK
 
-    def cleanup(self):
+    def reset_robot(self):
         cv2.destroyAllWindows()
         if self.ep_robot.camera:
             self.ep_robot.camera.stop_video_stream()
@@ -103,7 +86,6 @@ class Project2StateMachine:
             if self.ep_robot.gripper:
                 self.ep_robot.gripper.pause()
             self.ep_robot.close()
-        print("Cleanup complete.")
 
     def get_frame(self):
         try:
@@ -120,7 +102,7 @@ class Project2StateMachine:
             return [], None
 
         results = self.yolo_model.predict(
-            source=frame, show=False, verbose=False, conf=CONFIDENCE_THRESHOLD
+            source=frame, show=False, verbose=False, conf=0.70
         )[0]
 
         boxes = results.boxes
@@ -131,7 +113,7 @@ class Project2StateMachine:
         for box in boxes:
             xyxy = box.xyxy.cpu().numpy().flatten().astype(int)
             class_id = int(box.cls.cpu().numpy())
-            label = class_names.get(class_id, f"Unknown({class_id})")
+            label = class_names[class_id]
             confidence = float(box.conf.cpu().numpy())
 
             detections_list.append(
@@ -159,7 +141,7 @@ class Project2StateMachine:
         self.last_vis_frame = vis_frame
         return detections_list, vis_frame
 
-    def find_object_with_yolo(self, target_label, detections):
+    def get_target_label_detection(self, target_label, detections):
 
         if not detections:
             return None
@@ -181,25 +163,17 @@ class Project2StateMachine:
             return 0, 0, 0
 
         x1, y1, x2, y2 = detection["box"]
-        #print("X1:", x1, "X2:", x2)
-        print("y1:",y1,"y2:",y2)
+
         box_center_x = (x1 + x2) / 2
         box_width = x2 - x1
 
-        # is_close_enough = (
-        #     box_width > TARGET_BBOX_WIDTH_APPROACH
-        #     if target_label == "Block 1"
-        #     else (
-        #         box_width > TARGET_BBOX_WIDTH_APPROACH_2
-        #         if target_label == "Block 2"
-        #         else (
-        #             box_width > TARGET_BBOX_WIDTH_APPROACH_4
-        #             if self.current_state == Project2States.GRAB_BLOCK1_AGAIN
-        #             else box_width > TARGET_BBOX_WIDTH_APPROACH_3
-        #         )
-        #     )
-        # )
-        is_close_enough = (y1 > TARGET_BBOX_HEIGHT_APPROACH_2 if target_label == "Block 2" else (y1 > TARGET_BBOX_HEIGHT_APPROACH_3) if target_label == "Target 2" else y1 > TARGET_BBOX_HEIGHT_APPROACH)
+        is_close_enough = (
+            y1 > TARGET_BBOX_HEIGHT_APPROACH_2
+            if target_label == "Block 2"
+            else (y1 > TARGET_BBOX_HEIGHT_APPROACH_3)
+            if target_label == "Target 2"
+            else y1 > TARGET_BBOX_HEIGHT_APPROACH
+        )
 
         if is_close_enough:
             return 0, 0, 0
@@ -224,31 +198,30 @@ class Project2StateMachine:
             if box_width > (TARGET_BBOX_WIDTH_APPROACH_4 - thresh):
                 TARGET_BBOX_WIDTH_APPROACH_4 -= 0.05
 
-        error_x = FRAME_CENTER_X - box_center_x
+        error_x = 320 - box_center_x
         z_vel = np.clip(-error_x * 0.1, -25, 25)
         x_vel = 0.1
         if y1 > 170:
             x_vel = 0.05
         return x_vel, 0, z_vel
 
-    def handle_find_object(self, next_state_on_find, search_label):
+    def handle_find_object(self, next_state, search_label):
 
         self.target_label = search_label
         self.ep_robot.chassis.drive_speed(x=0, y=0, z=20)
 
         while True:
 
-            
             frame = self.get_frame()
             detections, _ = self.run_yolo_detection(frame)
-            found_object = self.find_object_with_yolo(self.target_label, detections)
-
-            print("found object:", found_object)
+            found_object = self.get_target_label_detection(
+                self.target_label, detections
+            )
 
             if found_object:
                 self.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
                 self.last_detection = found_object
-                self.current_state = next_state_on_find
+                self.current_state = next_state
                 return
 
             if self.last_vis_frame is not None:
@@ -257,29 +230,25 @@ class Project2StateMachine:
                     self.current_state = Project2States.ERROR
                     return
 
-    def handle_approach_object(self, next_state_on_approach, target_label):
+    def handle_approach_object(self, next_state, target_label):
 
         self.target_label = target_label
 
         frame = self.get_frame()
         detections, _ = self.run_yolo_detection(frame)
-        current_detection = self.find_object_with_yolo(self.target_label, detections)
+        current_detection = self.get_target_label_detection(
+            self.target_label, detections
+        )
 
         approach_detection = None
         if current_detection:
             approach_detection = current_detection
             self.last_detection = current_detection
         elif self.last_detection and self.last_detection["label"] == self.target_label:
-            print(
-                f"Lost sight of '{self.target_label}', using last known detection info."
-            )
             approach_detection = self.last_detection
         else:
-            print(
-                f"Lost sight of '{self.target_label}' and no valid last detection. Cannot approach."
-            )
             self.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
-            self.current_state = Project2States.ERROR  # Transition back to search?
+            self.current_state = Project2States.ERROR
             return
 
         x_vel, y_vel, z_vel = self.approach_object_simple(
@@ -288,7 +257,7 @@ class Project2StateMachine:
 
         if x_vel == 0 and y_vel == 0 and z_vel == 0:
             self.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
-            self.current_state = next_state_on_approach
+            self.current_state = next_state
         else:
             self.ep_robot.chassis.drive_speed(x=x_vel, y=y_vel, z=z_vel)
 
@@ -445,7 +414,7 @@ class Project2StateMachine:
                 self.current_state = Project2States.ERROR
                 break
 
-        self.cleanup()
+        self.reset_robot()
 
 
 if __name__ == "__main__":
