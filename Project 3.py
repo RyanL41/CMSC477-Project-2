@@ -74,6 +74,15 @@ class Project3StateMachine:
         marker_size_m = 0.153  # Size of the AprilTag in meters
         apriltag = AprilTagDetector(K, threads=2, marker_size_m=marker_size_m)
             
+        # Robot position tracking variables
+        self.x = 0.0
+        self.y = 0.0
+        self.theta = 0.0  # Yaw angle in degrees
+        self.pitch = 0.0
+        self.roll = 0.0
+        self.last_position_update = time.time()
+        self.last_attitude_update = time.time()
+            
         # Grid-related variables (to be initialized in initialize_robot)
         self.cube_size_meters = 0.26  # 1 cube unit = 0.26 meters
         self.grid = None
@@ -95,20 +104,34 @@ class Project3StateMachine:
             for state in Project3States
         }
 
-    def get_position(self):
-        # Get raw position from robot
-        chassis_position = self.ep_robot.chassis.sub_position()
+    def position_callback(self, position_info):
+        """Callback function to handle chassis position updates"""
+        # Extract position data from the callback
+        self.x, self.y, self.theta = position_info
+        self.last_position_update = time.time()
+        print(f"Position update: x={self.x:.2f}, y={self.y:.2f}, theta={self.theta:.2f}°")
+    
+    def attitude_callback(self, attitude_info):
+        """Callback function to handle chassis attitude updates"""
+        # Extract attitude data from the callback
+        self.pitch, self.roll, self.yaw = attitude_info
+        self.last_attitude_update = time.time()
+        print(f"Attitude update: pitch={self.pitch:.2f}°, roll={self.roll:.2f}°, yaw={self.yaw:.2f}°")
         
-        # Extract x, y, and theta values
-        x, y, theta = chassis_position
+    def get_position(self):
+        """Returns the latest position of the robot with grid-based adjustments"""
+        # Use the latest position values updated by the callbacks
+        time_since_update = time.time() - self.last_position_update
+        if time_since_update > 1.0:  # If position hasn't been updated in more than 1 second
+            print(f"Warning: Using stale position data ({time_since_update:.1f}s old)")
         
         # Adjust coordinates based on grid starting position
         # Convert grid coordinates to real-world coordinates (1 grid unit = 0.26 meters)
-        real_x = x + (self.start_grid_x * self.cube_size_meters)
-        real_y = y + (self.start_grid_y * self.cube_size_meters)
+        real_x = self.x + (self.start_grid_x * self.cube_size_meters)
+        real_y = self.y + (self.start_grid_y * self.cube_size_meters)
         
         # Return adjusted position
-        return (real_x, real_y, theta)
+        return (real_x, real_y, self.theta)
         
     def get_grid_data(self, csv_path=None):
         """
@@ -217,7 +240,11 @@ class Project3StateMachine:
 
         time.sleep(1)
         self.ep_robot.gripper.pause()
-        
+
+        # Subscribe to the position
+        self.ep_robot.chassis.sub_position(cs=0, freq=5, callback=self.position_callback)
+        self.ep_robot.chassis.sub_attitude(freq=5, callback=self.attitude_callback)
+
         # Initialize grid data after robot is initialized
         self.grid = self.get_grid_data()
         self.processed_grid = self.process_grid()
