@@ -2,6 +2,7 @@ import os
 import time
 import cv2
 import numpy as np
+import pandas as pd
 from ultralytics import YOLO
 from robomaster import robot, camera
 from enum import Enum
@@ -17,6 +18,7 @@ TARGET_BBOX_LARGE_HEIGHT_APPROACH = 192
 
 class Project3States(Enum):
     INITIALIZING = "initializing"
+    LOOKING_FOR_BLOCK_IN_CLOSET = "looking_for_block_in_closet" 
     REMOVE_FROM_CLOSET = "remove_from_closet"
     LOOKING_FOR_BLOCK = "looking_for_block"
     APPROACH_BLOCK = "approach_block"
@@ -28,19 +30,39 @@ class Project3States(Enum):
     DELIVER_BLOCK = "deliver_block"
     BULLY_MODE = "bully_mode"
     WALL_MODE = "wall_mode"
+    ERROR = "error"
 
+LEGO_BIG_LABEL = "lego_big"
+LEGO_SMALL_LABEL = "lego_small"
+LEGO_MED_LABEL = "lego_med"
 
+STARTING_POSITION_NUMBER = 2 # either 2 or 5 (see InitialMap.csv)
+SELF_CLOSET_NUMBER = 3 # either 3 or 4 (see InitialMap.csv)
+TARGET_CLOSET_NUMBER = 4 # either 3 or 4 (see InitialMap.csv)   
+
+BLOCK_LABELS = [LEGO_BIG_LABEL, LEGO_SMALL_LABEL, LEGO_MED_LABEL]
 
 class Project3StateMachine:
-    def __init__(self, robot_sn):
+    def __init__(self, robot_sn, map_file):
+        self.csv_path = map_file
         self.robot_sn = robot_sn
         self.ep_robot = robot.Robot()
         self.yolo_model = YOLO(YOLO_MODEL_PATH)
 
         self.current_state = Project3States.INITIALIZING
-        self.target_label = None
         self.last_detection = None
         self.last_vis_frame = None
+        
+        # Grid-related variables (to be initialized in initialize_robot)
+        self.cube_size_meters = 0.26  # 1 cube unit = 0.26 meters
+        self.grid = None
+        self.processed_grid = None
+        self.starting_pos_number = STARTING_POSITION_NUMBER
+        self.self_closet_number = SELF_CLOSET_NUMBER
+        self.target_closet_number = TARGET_CLOSET_NUMBER
+        self.start_grid_x = 0
+        self.start_grid_y = 0
+        
         self.approach_plot_data = {
             state.value: {
                 "time_steps": [],
@@ -52,39 +74,244 @@ class Project3StateMachine:
             for state in Project3States
         }
 
-    # FIND_FIRST_BLOCK = "find_first_block"
-    # APPROACH_FIRST_BLOCK = "approach_first_block"
-    # GRAB_FIRST_BLOCK = "grab_first_block"
-    # LIFT_ARM_AFTER_GRAB1 = "lift_arm_after_grab1"
-    # BACKUP_AFTER_GRAB1 = "backup_after_grab1"
-    # RELEASE_FIRST_BLOCK_TEMP = "release_first_block_temp"
-    # LOWER_ARM_AFTER_RELEASE1 = "lower_arm_after_release1"
-    # BACKUP_AND_RESET_ARM = "backup_and_reset_arm"
-    # SURVEY_FOR_BLOCK2 = "survey_for_block2"
-    # APPROACH_BLOCK2 = "approach_block2"
-    # GRAB_BLOCK2 = "grab_block2"
-    # LIFT_ARM_AFTER_GRAB2 = "lift_arm_after_grab2"
-    # SURVEY_FOR_TARGET1 = "survey_for_target1"
-    # APPROACH_TARGET1 = "approach_target1"
-    # RELEASE_BLOCK2_AT_TARGET1 = "release_block2_at_target1"
-    # LOWER_ARM_AFTER_RELEASE2 = "lower_arm_after_release2"
-    # BACKUP_AFTER_TARGET1 = "backup_after_target1"
-    # SURVEY_FOR_BLOCK1_AGAIN = "survey_for_block1_again"
-    # APPROACH_BLOCK1_AGAIN = "approach_block1_again"
-    # GRAB_BLOCK1_AGAIN = "grab_block1_again"
-    # LIFT_ARM_AFTER_GRAB3 = "lift_arm_after_grab3"
-    # SURVEY_FOR_TARGET2 = "survey_for_target2"
-    # APPROACH_TARGET2 = "approach_target2"
-    # RELEASE_BLOCK1_AT_TARGET2 = "release_block1_at_target2"
-    # LOWER_ARM_AFTER_RELEASE3 = "lower_arm_after_release3"
-    # COMPLETED = "completed"
-    # ERROR = "error"
-
+    def get_position(self):
+        # Get raw position from robot
+        chassis_position = self.ep_robot.chassis.get_position()
+        
+        # Extract x, y, and theta values
+        x, y, theta = chassis_position
+        
+        # Adjust coordinates based on grid starting position
+        # Convert grid coordinates to real-world coordinates (1 grid unit = 0.26 meters)
+        real_x = x + (self.start_grid_x * self.cube_size_meters)
+        real_y = y + (self.start_grid_y * self.cube_size_meters)
+        
+        # Return adjusted position
+        return (real_x, real_y, theta)
+        
+    def get_grid_data(self, csv_path=None):
+        """
+        Reads a CSV file and converts it to a numpy array.
+        
+        Args:
+            csv_path: Path to the CSV file. If None, uses self.csv_path.
+            
+        Returns:
+            A numpy array representation of the grid.
+        """
+        if csv_path is None:
+            csv_path = self.csv_path
+            
+        df = pd.read_csv(csv_path, header=None)
+        return np.array(df)
+    
+    def get_padded_grid(self, grid, radius):
+        """
+        Adds padding around obstacles in the grid.
+        
+        Args:
+            grid: The grid to pad.
+            radius: The radius around obstacles to pad.
+            
+        Returns:
+            A padded grid.
+        """
+        padded_grid = np.copy(grid)
+        obstacles = np.where(grid == 1)
+        for i, j in zip(obstacles[0], obstacles[1]):
+            # calculate all cells in the radius
+            for x in range(max(0, i - radius), min(len(grid), i + radius + 1)):
+                for y in range(max(0, j - radius), min(len(grid[i]), j + radius + 1)):
+                    padded_grid[x][y] = 1
+        
+        return padded_grid
+    
+    def upscale_grid(self, grid=None, upscaling_factor=4):
+        """
+        Upscales a grid by the given factor.
+        
+        Args:
+            grid: The grid to upscale. If None, reads from self.csv_path.
+            upscaling_factor: The factor by which to upscale the grid.
+            
+        Returns:
+            An upscaled grid.
+        """
+        if grid is None:
+            grid = self.get_grid_data()
+            
+        upscale_factor = upscaling_factor * 2 - 1  # ensure odd number
+        
+        upscaled_grid = np.zeros(
+            (len(grid) * upscale_factor, len(grid[0]) * upscale_factor)
+        )
+        
+        for x, row in enumerate(grid):
+            for y, cell in enumerate(row):
+                if cell in [2, 3]:
+                    upscaled_grid[x * upscale_factor + upscale_factor // 2, 
+                                  y * upscale_factor + upscale_factor // 2] = cell
+                else:
+                    upscaled_grid[x * upscale_factor:(x + 1) * upscale_factor,
+                                  y * upscale_factor:(y + 1) * upscale_factor] = cell
+        
+        return upscaled_grid
+    
+    def process_grid(self, csv_path=None, upscaling_factor=4):
+        """
+        Processes a grid by upscaling and padding it.
+        
+        Args:
+            csv_path: Path to the CSV file. If None, uses self.csv_path.
+            upscaling_factor: The factor by which to upscale the grid.
+            
+        Returns:
+            A processed grid.
+        """
+        if csv_path is None:
+            csv_path = self.csv_path
+            
+        starting_grid = self.get_grid_data(csv_path)
+        
+        upscale_factor = upscaling_factor * 2 - 1  # ensure odd number
+        
+        upscaled_grid = self.upscale_grid(starting_grid, upscaling_factor)
+        
+        padded_grid = self.get_padded_grid(upscaled_grid, radius=max(upscale_factor - 1, 1))
+        
+        return padded_grid
 
 
     def initialize_robot(self):
+
         self.ep_robot.initialize(conn_type="sta", sn=self.robot_sn)
 
         self.ep_robot.camera.start_video_stream(
             display=False, resolution=camera.STREAM_360P
         )
+
+        self.ep_robot.robotic_arm.move(x=0, y=-100).wait_for_completed()
+
+        self.ep_robot.gripper.open(power=70)
+
+        time.sleep(1)
+        self.ep_robot.gripper.pause()
+        
+        # Initialize grid data after robot is initialized
+        self.grid = self.get_grid_data()
+        self.processed_grid = self.process_grid()
+        
+        # Find robot starting position (marked by '2' in the grid)
+        starting_pos = np.where(self.grid == self.starting_pos_number)
+        if len(starting_pos[0]) > 0 and len(starting_pos[1]) > 0:
+            self.start_grid_x = starting_pos[0][0]
+            self.start_grid_y = starting_pos[1][0]
+            print(f"Robot starting position found at grid cell ({self.start_grid_x}, {self.start_grid_y})")
+        else:
+            # Default to (0,0) if no starting position found
+            self.start_grid_x = 0
+            self.start_grid_y = 0
+            print("Warning: No starting position (value 2) found in grid, using (0,0)")
+        
+        self.current_state = Project3States.LOOKING_FOR_BLOCK_IN_CLOSET
+
+    def get_target_closet_position(self, closet_number):
+        # Get the target x, y from closet_number
+        target_x, target_y = self.grid[self.processed_grid == closet_number][0]
+        return target_x, target_y
+
+    def handle_looking_for_block_in_closet(self):
+
+        # get the robot's current position
+        current_position = self.get_position()
+
+        # Get the current x, y, z from current_position
+        current_x, current_y, current_z = current_position
+
+        # Get the target x, y, z from self_closet_number
+        target_x, target_y = self.get_target_closet_position(self.self_closet_number)
+
+        # Calculate the angle between the robot and the target
+        angle = np.arctan2(target_y - current_y, target_x - current_x)
+        
+        # Rotate the robot to face the target
+        self.ep_robot.chassis.rotate(angle)
+
+    def run(self):
+        self.initialize_robot()
+
+        while self.current_state not in [
+            Project3States.ERROR,
+        ]:
+            current_time_str = time.strftime("%Y-%m-%d %H:%M:%S")
+            print(f"\n--- {current_time_str} | State: {self.current_state.value} ---")
+
+            try:
+                if self.current_state == Project3States.INITIALIZING:
+                    self.initialize_robot()
+                elif self.current_state == Project3States.LOOKING_FOR_BLOCK_IN_CLOSET:
+                    self.handle_looking_for_block_in_closet()
+                # elif self.current_state == Project3States.REMOVE_FROM_CLOSET:
+                #     self.handle_remove_from_closet()
+                # elif self.current_state == Project3States.LOOKING_FOR_BLOCK:
+                #     self.handle_looking_for_block()
+                # elif self.current_state == Project3States.APPROACH_BLOCK:
+                #     self.handle_approach_block()
+                # elif self.current_state == Project3States.GRAB_BLOCK:
+                #     self.handle_grab_block()
+                # elif self.current_state == Project3States.LIFT_ARM:
+                #     self.handle_lift_arm()
+                # elif self.current_state == Project3States.LOWER_ARM:
+                #     self.handle_lower_arm()
+                # elif self.current_state == Project3States.DROP_OFF:
+                #     self.handle_drop_off()
+                # elif self.current_state == Project3States.BACKUP:
+                #     self.handle_backup()
+                # elif self.current_state == Project3States.DELIVER_BLOCK:
+                #     self.handle_deliver_block()
+                # elif self.current_state == Project3States.BULLY_MODE:
+                #     self.handle_bully_mode()
+                # elif self.current_state == Project3States.WALL_MODE:
+                #     self.handle_wall_mode()
+            except Exception as e:
+                print(traceback.format_exc())
+                self.current_state = Project3States.ERROR
+                break
+
+        print(
+            f"\n=== State Machine Finished with State: {self.current_state.value} ==="
+        )
+
+        self.reset_robot()  
+
+if __name__ == "__main__":
+    # More legible printing from numpy.
+    np.set_printoptions(precision=3, suppress=True, linewidth=120)
+
+    ep_robot = robot.Robot()
+    ep_robot.initialize(
+        conn_type="sta", sn="3JKCH8800100YN"
+    )  # (conn_type="sta", sn="3JKCH7T00100J0")
+    ep_chassis = ep_robot.chassis
+    ep_camera = ep_robot.camera
+    ep_camera.start_video_stream(display=False, resolution=camera.STREAM_360P)
+
+    K = np.array(
+        [[314, 0, 320], [0, 314, 180], [0, 0, 1]]
+    )  # Camera focal length and center pixel
+    marker_size_m = 0.153  # Size of the AprilTag in meters
+    apriltag = AprilTagDetector(K, threads=2, marker_size_m=marker_size_m)
+
+    state_machine = Project3StateMachine("3JKCH8800100YN", "./InitialMap.csv")
+
+    try:
+        state_machine.run()
+    except KeyboardInterrupt:
+        pass
+    except Exception as e:
+        print(traceback.format_exc())
+    finally:
+        print("Waiting for robomaster shutdown")
+        ep_camera.stop_video_stream()
+        ep_robot.close()
+
