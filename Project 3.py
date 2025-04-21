@@ -264,9 +264,22 @@ class Project3StateMachine:
         self.current_state = Project3States.LOOKING_FOR_BLOCK_IN_CLOSET
 
     def get_target_closet_position(self, closet_number):
-        # Get the target x, y from closet_number
-        target_x, target_y = self.grid[self.processed_grid == closet_number][0]
-        return target_x, target_y
+        """Find the coordinates of a closet with the given number in the grid"""
+        # Use np.where to find all coordinates where the grid value equals closet_number
+        closet_coords = np.where(self.grid == closet_number)
+        
+        if len(closet_coords[0]) > 0 and len(closet_coords[1]) > 0:
+            # Get the first matching position
+            target_x, target_y = closet_coords[0][0], closet_coords[1][0]
+            print(f"Found closet {closet_number} at grid position ({target_x}, {target_y})")
+            
+            # Convert grid coordinates to real-world coordinates
+            real_x = target_x * self.cube_size_meters
+            real_y = target_y * self.cube_size_meters
+            return real_x, real_y
+        else:
+            print(f"Warning: Closet number {closet_number} not found in grid")
+            return None, None
 
     def handle_looking_for_block_in_closet(self):
 
