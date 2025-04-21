@@ -9,6 +9,16 @@ from enum import Enum
 import traceback
 from matplotlib import pyplot as plt
 
+import pupil_apriltags
+import time
+import traceback
+from queue import Empty
+from robomaster import robot
+from robomaster import camera
+from scipy.spatial.transform import Rotation as R
+from matplotlib import pyplot as plt
+
+
 YOLO_MODEL_PATH = "best.pt"
 #NEED TO DETERMINE THESE VALUES
 TARGET_BBOX_SMALL_HEIGHT_APPROACH = 160
@@ -277,12 +287,21 @@ class Project3StateMachine:
                 print(traceback.format_exc())
                 self.current_state = Project3States.ERROR
                 break
+            if cv2.waitKey(1) == ord("q"):
+                break
 
         print(
             f"\n=== State Machine Finished with State: {self.current_state.value} ==="
         )
 
         self.reset_robot()  
+
+class AprilTagDetector:
+    def __init__(self, K, family="tag36h11", threads=2, marker_size_m=0.16):
+        self.camera_params = [K[0, 0], K[1, 1], K[0, 2], K[1, 2]]
+        self.marker_size_m = marker_size_m
+        self.detector = pupil_apriltags.Detector(family, threads)
+
 
 if __name__ == "__main__":
     # More legible printing from numpy.
