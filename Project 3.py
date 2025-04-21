@@ -8,13 +8,9 @@ from robomaster import robot, camera
 from enum import Enum
 import traceback
 from matplotlib import pyplot as plt
-
 import pupil_apriltags
-import time
 import traceback
 from queue import Empty
-from robomaster import robot
-from robomaster import camera
 from scipy.spatial.transform import Rotation as R
 from matplotlib import pyplot as plt
 
@@ -52,6 +48,15 @@ TARGET_CLOSET_NUMBER = 4 # either 3 or 4 (see InitialMap.csv)
 
 BLOCK_LABELS = [LEGO_BIG_LABEL, LEGO_SMALL_LABEL, LEGO_MED_LABEL]
 
+class AprilTagDetector:
+    def __init__(self, K, family="tag36h11", threads=2, marker_size_m=0.16):
+        self.camera_params = [K[0, 0], K[1, 1], K[0, 2], K[1, 2]]
+        self.marker_size_m = marker_size_m
+        self.detector = pupil_apriltags.Detector(family, threads)
+
+
+
+
 class Project3StateMachine:
     def __init__(self, robot_sn, map_file):
         self.csv_path = map_file
@@ -62,7 +67,13 @@ class Project3StateMachine:
         self.current_state = Project3States.INITIALIZING
         self.last_detection = None
         self.last_vis_frame = None
-        
+
+        K = np.array(
+        [[314, 0, 320], [0, 314, 180], [0, 0, 1]]
+        )  # Camera focal length and center pixel
+        marker_size_m = 0.153  # Size of the AprilTag in meters
+        apriltag = AprilTagDetector(K, threads=2, marker_size_m=marker_size_m)
+            
         # Grid-related variables (to be initialized in initialize_robot)
         self.cube_size_meters = 0.26  # 1 cube unit = 0.26 meters
         self.grid = None
@@ -86,7 +97,7 @@ class Project3StateMachine:
 
     def get_position(self):
         # Get raw position from robot
-        chassis_position = self.ep_robot.chassis.get_position()
+        chassis_position = self.ep_robot.chassis.sub_position()
         
         # Extract x, y, and theta values
         x, y, theta = chassis_position
@@ -193,7 +204,7 @@ class Project3StateMachine:
 
 
     def initialize_robot(self):
-
+        print("SERIAL NUMBER:",self.robot_sn)
         self.ep_robot.initialize(conn_type="sta", sn=self.robot_sn)
 
         self.ep_robot.camera.start_video_stream(
@@ -296,30 +307,12 @@ class Project3StateMachine:
 
         self.reset_robot()  
 
-class AprilTagDetector:
-    def __init__(self, K, family="tag36h11", threads=2, marker_size_m=0.16):
-        self.camera_params = [K[0, 0], K[1, 1], K[0, 2], K[1, 2]]
-        self.marker_size_m = marker_size_m
-        self.detector = pupil_apriltags.Detector(family, threads)
+
 
 
 if __name__ == "__main__":
     # More legible printing from numpy.
-    np.set_printoptions(precision=3, suppress=True, linewidth=120)
-
-    ep_robot = robot.Robot()
-    ep_robot.initialize(
-        conn_type="sta", sn="3JKCH8800100YN"
-    )  # (conn_type="sta", sn="3JKCH7T00100J0")
-    ep_chassis = ep_robot.chassis
-    ep_camera = ep_robot.camera
-    ep_camera.start_video_stream(display=False, resolution=camera.STREAM_360P)
-
-    K = np.array(
-        [[314, 0, 320], [0, 314, 180], [0, 0, 1]]
-    )  # Camera focal length and center pixel
-    marker_size_m = 0.153  # Size of the AprilTag in meters
-    apriltag = AprilTagDetector(K, threads=2, marker_size_m=marker_size_m)
+    
 
     state_machine = Project3StateMachine("3JKCH8800100YN", "./InitialMap.csv")
 
@@ -331,6 +324,5 @@ if __name__ == "__main__":
         print(traceback.format_exc())
     finally:
         print("Waiting for robomaster shutdown")
-        ep_camera.stop_video_stream()
-        ep_robot.close()
+
 
