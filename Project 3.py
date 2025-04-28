@@ -296,7 +296,8 @@ class Project3StateMachine:
         angle = np.arctan2(target_y - current_y, target_x - current_x)
         
         # Rotate the robot to face the target
-        self.ep_robot.chassis.rotate(angle)
+        #self.ep_robot.chassis.rotate(angle)
+        self.ep_robot.chassis.drive_speed(x=0, y=0, z=angle)
 
     def run(self):
         self.initialize_robot()
