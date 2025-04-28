@@ -489,7 +489,7 @@ class Project3StateMachine:
                 current_x, current_y, current_z = current_position
                 move_x = i[0] - current_x
                 move_y = i[1] - current_y
-                self.ep_robot.chassis.move(x = move_x, y = move_y)
+                self.ep_robot.chassis.move(x = move_x, y = move_y).wait_for_completed()
         #self.ep_robot.chassis.move
 
     # Grab block

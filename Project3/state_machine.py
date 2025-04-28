@@ -139,7 +139,8 @@ class RobotStateMachine:
                 move_x = waypoint[0] - current_pos[0]
                 move_y = waypoint[1] - current_pos[1]
                 print(f"Moving to waypoint: dx={move_x:.3f}, dy={move_y:.3f}")
-                self.robot.move(x=move_x, y=move_y)
+                self.robot.ep_robot.chassis.move(x=move_x, y=move_y,z=0, xy_speed=0.7).wait_for_completed()
+                
 
     def handle_grab_block(self):
         """Grab a block with the gripper."""
