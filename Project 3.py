@@ -31,8 +31,7 @@ class Project3States(Enum):
     LOOKING_FOR_BLOCK = "looking_for_block"
     APPROACH_BLOCK = "approach_block"
     GRAB_BLOCK = "grab_block"
-    LIFT_ARM = "lift_arm"
-    LOWER_ARM = "lower_arm"
+    MOVE_ARM = "move_arm"
     DROP_OFF = "drop_off"
     BACKUP = "backup"
     DELIVER_BLOCK = "deliver_block"
@@ -401,6 +400,29 @@ class Project3StateMachine:
 
         #self.ep_robot.chassis.move
 
+    # Grab block
+    def handle_grab_block(self):
+        self.ep_robot.gripper.close(power=70)
+        time.sleep(1.5)
+        self.ep_robot.gripper.pause()
+
+    # Releasing block
+    def handle_drop_off(self):
+        self.ep_robot.gripper.open(power=70)
+        time.sleep(1.5)
+        self.ep_robot.gripper.pause()
+
+    # Moving arm vertically up/down
+    def handle_move_arm(self, y_distance):
+        self.ep_robot.robotic_arm.move(y=y_distance).wait_for_completed(timeout=10)
+
+    # Backipng up after grabbing/releasing
+    def handle_backup(self, distance_m):
+        self.ep_robot.chassis.move(
+            x=-distance_m, y=0, z=0, xy_speed=0.1
+        ).wait_for_completed(timeout=15)
+
+
     def run(self):
         self.initialize_robot()
 
@@ -426,10 +448,8 @@ class Project3StateMachine:
                 #     self.handle_approach_block()
                 # elif self.current_state == Project3States.GRAB_BLOCK:
                 #     self.handle_grab_block()
-                # elif self.current_state == Project3States.LIFT_ARM:
-                #     self.handle_lift_arm()
-                # elif self.current_state == Project3States.LOWER_ARM:
-                #     self.handle_lower_arm()
+                # elif self.current_state == Project3States.MOVE_ARM:
+                #     self.handle_move_arm()
                 # elif self.current_state == Project3States.DROP_OFF:
                 #     self.handle_drop_off()
                 # elif self.current_state == Project3States.BACKUP:
