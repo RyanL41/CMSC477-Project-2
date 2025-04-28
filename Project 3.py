@@ -82,7 +82,7 @@ class Project3StateMachine:
         self.current_state = Project3States.INITIALIZING
         self.last_detection = None
         self.last_vis_frame = None
-        #self.positions = get_path(self.csv_path,STARTING_POSITION_NUMBER,SELF_CLOSET_NUMBER)
+       
         self.grid = get_grid_data(self.csv_path)
 
         K = np.array(
@@ -484,7 +484,12 @@ class Project3StateMachine:
 
 
         path = get_path(self.grid,STARTING_POSITION_NUMBER,SELF_CLOSET_NUMBER)
-
+        if path is not None:
+            for i in path:
+                current_x, current_y, current_z = current_position
+                move_x = i[0] - current_x
+                move_y = i[1] - current_y
+                self.ep_robot.chassis.move(x = move_x, y = move_y)
         #self.ep_robot.chassis.move
 
     # Grab block

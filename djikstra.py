@@ -73,7 +73,7 @@ def djikstra(grid,start1,end1):
     for i in range(len(grid)):
         for j in range(len(grid[i])):
             
-            if grid[i][j] == start:
+            if grid[i][j] == start1:
                 heap_queue.append((0, (i, j)))
                 distances[(i, j)] = 0
                 previous_elements[(i, j)] = starting_position
