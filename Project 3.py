@@ -63,30 +63,11 @@ class AprilTagDetector:
             tag_size=self.marker_size_m,
         )
         return detections
+def get_grid_data(csv_path):
 
-def csv_to_array(file_path):
-    """
-    Reads a CSV file and returns its contents as a 2D array (list of lists).
+    df = pd.read_csv(csv_path, header=None)
 
-    Args:
-        file_path (str): The path to the CSV file.
-
-    Returns:
-        list: A 2D array representing the CSV data, or None if an error occurs.
-    """
-    data_array = []
-    try:
-        with open(file_path, 'r') as file:
-            csv_reader = csv.reader(file)
-            for row in csv_reader:
-                data_array.append(row)
-        return data_array
-    except FileNotFoundError:
-        print(f"Error: File not found at '{file_path}'")
-        return None
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return None
+    return np.array(df)
 
 
 
@@ -102,7 +83,7 @@ class Project3StateMachine:
         self.last_detection = None
         self.last_vis_frame = None
         #self.positions = get_path(self.csv_path,STARTING_POSITION_NUMBER,SELF_CLOSET_NUMBER)
-        self.grid = csv_to_array(self.csv_path)
+        self.grid = get_grid_data(self.csv_path)
 
         K = np.array(
         [[314, 0, 320], [0, 314, 180], [0, 0, 1]]
