@@ -61,13 +61,13 @@ def get_diagonal_neighbors(position, grid):
     return neighbors
 
 
-def djikstra(grid):
+def djikstra(grid,start,end):
     heap_queue = []
     distances = {}
     previous_elements = {}
-    starting_position = np.where(grid == 2)
+    starting_position = np.where(grid == start)
     starting_position = (starting_position[0][0], starting_position[1][0])
-    ending_position = np.where(grid == 3)
+    ending_position = np.where(grid == end)
     ending_position = (ending_position[0][0], ending_position[1][0])
 
     for i in range(len(grid)):
@@ -148,7 +148,7 @@ def interpolate_path(points, num_points=1000, bc_type="natural"):
     return np.stack([x_fine, y_fine], axis=-1)
 
 
-def get_path(csv_path, upscaling_factor=4):
+def get_path(csv_path,start1,end1, upscaling_factor=4):
     starting_grid = get_grid_data(csv_path)
 
     upscale_factor = upscaling_factor * 2 - 1  # ensure odd number
@@ -166,7 +166,7 @@ def get_path(csv_path, upscaling_factor=4):
 
     padded_grid = get_padded_grid(upscaled_grid, radius=max(upscale_factor - 1, 1))
 
-    path = djikstra(padded_grid)
+    path = djikstra(padded_grid,start1,end1)
 
     path = np.array(path)
     path = (path - (upscaling_factor - 1)) / upscale_factor

@@ -14,6 +14,8 @@ from queue import Empty
 from scipy.spatial.transform import Rotation as R
 from matplotlib import pyplot as plt
 
+from djikstra import get_path
+
 
 YOLO_MODEL_PATH = "best.pt"
 #NEED TO DETERMINE THESE VALUES
@@ -43,8 +45,8 @@ LEGO_SMALL_LABEL = "lego_small"
 LEGO_MED_LABEL = "lego_med"
 
 STARTING_POSITION_NUMBER = 2 # either 2 or 5 (see InitialMap.csv)
-SELF_CLOSET_NUMBER = 3 # either 3 or 4 (see InitialMap.csv)
-TARGET_CLOSET_NUMBER = 4 # either 3 or 4 (see InitialMap.csv)   
+SELF_CLOSET_NUMBER = 4 # either 3 or 4 (see InitialMap.csv)
+TARGET_CLOSET_NUMBER = 3 # either 3 or 4 (see InitialMap.csv)   
 
 BLOCK_LABELS = [LEGO_BIG_LABEL, LEGO_SMALL_LABEL, LEGO_MED_LABEL]
 
@@ -53,7 +55,14 @@ class AprilTagDetector:
         self.camera_params = [K[0, 0], K[1, 1], K[0, 2], K[1, 2]]
         self.marker_size_m = marker_size_m
         self.detector = pupil_apriltags.Detector(family, threads)
-
+    def find_tags(self, frame_gray):
+        detections = self.detector.detect(
+            frame_gray,
+            estimate_tag_pose=True,
+            camera_params=self.camera_params,
+            tag_size=self.marker_size_m,
+        )
+        return detections
 
 
 
@@ -67,13 +76,15 @@ class Project3StateMachine:
         self.current_state = Project3States.INITIALIZING
         self.last_detection = None
         self.last_vis_frame = None
+        #self.positions = get_path(self.csv_path,STARTING_POSITION_NUMBER,SELF_CLOSET_NUMBER)
 
         K = np.array(
         [[314, 0, 320], [0, 314, 180], [0, 0, 1]]
         )  # Camera focal length and center pixel
         marker_size_m = 0.153  # Size of the AprilTag in meters
-        apriltag = AprilTagDetector(K, threads=2, marker_size_m=marker_size_m)
+        self.apriltag = AprilTagDetector(K, threads=2, marker_size_m=marker_size_m)
             
+        self.target_label = None    
         # Robot position tracking variables
         self.x = 0.0
         self.y = 0.0
@@ -92,6 +103,7 @@ class Project3StateMachine:
         self.target_closet_number = TARGET_CLOSET_NUMBER
         self.start_grid_x = 0
         self.start_grid_y = 0
+        self.start_rot = 0
         
         self.approach_plot_data = {
             state.value: {
@@ -148,7 +160,77 @@ class Project3StateMachine:
             
         df = pd.read_csv(csv_path, header=None)
         return np.array(df)
-    
+    def get_frame(self):
+        try:
+            frame = self.ep_robot.camera.read_cv2_image(strategy="newest", timeout=1.0)
+            if frame is None:
+                time.sleep(0.1)
+            return frame
+        except Exception as e:
+            time.sleep(0.5)
+            return None
+
+
+    def run_yolo_detection(self, frame):
+        if frame is None or self.yolo_model is None:
+            return [], None
+
+        results = self.yolo_model.predict(
+            source=frame, show=False, verbose=False, conf=0.70
+        )[0]
+
+        boxes = results.boxes
+        class_names = self.yolo_model.names
+        vis_frame = frame.copy()
+        detections_list = []
+
+        for box in boxes:
+            xyxy = box.xyxy.cpu().numpy().flatten().astype(int)
+            class_id = int(box.cls.cpu().numpy())
+            label = class_names[class_id]
+            confidence = float(box.conf.cpu().numpy())
+
+            detections_list.append(
+                {"label": label, "confidence": confidence, "box": xyxy}
+            )
+
+            cv2.rectangle(
+                vis_frame,
+                (xyxy[0], xyxy[1]),
+                (xyxy[2], xyxy[3]),
+                color=(0, 255, 0),
+                thickness=2,
+            )
+            label_text = f"{label} ({confidence:.2f})"
+            cv2.putText(
+                vis_frame,
+                label_text,
+                (xyxy[0], xyxy[1] - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 255, 0),
+                2,
+            )
+
+        self.last_vis_frame = vis_frame
+        return detections_list, vis_frame
+
+
+    def get_target_label_detection(self, target_label, detections):
+
+        if not detections:
+            return None
+
+        best_detection = None
+        max_confidence = 0.0
+
+        for det in detections:
+            if det["label"] == target_label and det["confidence"] > max_confidence:
+                max_confidence = det["confidence"]
+                best_detection = det
+
+        return best_detection
+
     def get_padded_grid(self, grid, radius):
         """
         Adds padding around obstacles in the grid.
@@ -170,6 +252,8 @@ class Project3StateMachine:
         
         return padded_grid
     
+
+
     def upscale_grid(self, grid=None, upscaling_factor=4):
         """
         Upscales a grid by the given factor.
@@ -243,6 +327,7 @@ class Project3StateMachine:
 
         # Subscribe to the position
         self.ep_robot.chassis.sub_position(cs=0, freq=5, callback=self.position_callback)
+        
         self.ep_robot.chassis.sub_attitude(freq=5, callback=self.attitude_callback)
 
         # Initialize grid data after robot is initialized
@@ -294,10 +379,27 @@ class Project3StateMachine:
 
         # Calculate the angle between the robot and the target
         angle = np.arctan2(target_y - current_y, target_x - current_x)
-        
-        # Rotate the robot to face the target
+        # dif_x = target_x - current_x
+        # dif_y = target_y - current_y
+        # # Rotate the robot to face the target
         #self.ep_robot.chassis.rotate(angle)
-        self.ep_robot.chassis.drive_speed(x=0, y=0, z=angle)
+        frame = self.get_frame()
+        detections, _ = self.run_yolo_detection(frame)
+        found_object = self.get_target_label_detection(
+            self.target_label, detections
+        )
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gray.astype(np.uint8)
+
+
+        print("ANGLE:",angle)
+        detections = self.apriltag.find_tags(gray)
+        if detections:
+            print("Detections",detections)
+
+        self.ep_robot.chassis.move(x=0, y=0, z=np.rad2deg(angle))
+
+        #self.ep_robot.chassis.move
 
     def run(self):
         self.initialize_robot()
@@ -305,6 +407,9 @@ class Project3StateMachine:
         while self.current_state not in [
             Project3States.ERROR,
         ]:
+            if cv2.waitKey(1) == ord("q"):
+                break
+
             current_time_str = time.strftime("%Y-%m-%d %H:%M:%S")
             print(f"\n--- {current_time_str} | State: {self.current_state.value} ---")
 
@@ -338,14 +443,16 @@ class Project3StateMachine:
             except Exception as e:
                 print(traceback.format_exc())
                 self.current_state = Project3States.ERROR
+                self.ep_robot.chassis.unsub_position()
+                self.ep_robot.chassis.unsub_attitude()
                 break
-            if cv2.waitKey(1) == ord("q"):
-                break
+            
 
         print(
             f"\n=== State Machine Finished with State: {self.current_state.value} ==="
         )
-
+        
+        # self.ep_robot.chassis._unsub_drone_all_status()
         self.reset_robot()  
 
 
