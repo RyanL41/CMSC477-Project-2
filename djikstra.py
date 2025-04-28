@@ -149,7 +149,7 @@ def interpolate_path(points, num_points=1000, bc_type="natural"):
 
 
 def get_path(csv_path,start1,end1, upscaling_factor=4):
-    starting_grid = get_grid_data(csv_path)
+    starting_grid = csv_path
 
     upscale_factor = upscaling_factor * 2 - 1  # ensure odd number
 

@@ -13,6 +13,7 @@ import traceback
 from queue import Empty
 from scipy.spatial.transform import Rotation as R
 from matplotlib import pyplot as plt
+import csv
 
 from djikstra import get_path
 
@@ -63,6 +64,31 @@ class AprilTagDetector:
         )
         return detections
 
+def csv_to_array(file_path):
+    """
+    Reads a CSV file and returns its contents as a 2D array (list of lists).
+
+    Args:
+        file_path (str): The path to the CSV file.
+
+    Returns:
+        list: A 2D array representing the CSV data, or None if an error occurs.
+    """
+    data_array = []
+    try:
+        with open(file_path, 'r') as file:
+            csv_reader = csv.reader(file)
+            for row in csv_reader:
+                data_array.append(row)
+        return data_array
+    except FileNotFoundError:
+        print(f"Error: File not found at '{file_path}'")
+        return None
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
+
+
 
 
 class Project3StateMachine:
@@ -76,6 +102,7 @@ class Project3StateMachine:
         self.last_detection = None
         self.last_vis_frame = None
         #self.positions = get_path(self.csv_path,STARTING_POSITION_NUMBER,SELF_CLOSET_NUMBER)
+        self.grid = csv_to_array(self.csv_path)
 
         K = np.array(
         [[314, 0, 320], [0, 314, 180], [0, 0, 1]]
@@ -393,10 +420,23 @@ class Project3StateMachine:
 
         print("ANGLE:",angle)
         detections = self.apriltag.find_tags(gray)
-        if detections:
-            print("Detections",detections)
-
+        
         self.ep_robot.chassis.move(x=0, y=0, z=np.rad2deg(angle))
+
+        frame = self.get_frame()
+        detections, _ = self.run_yolo_detection(frame)
+        found_object = self.get_target_label_detection(
+            self.target_label, detections
+        )
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        gray.astype(np.uint8)
+
+
+        print("ANGLE:",angle)
+        detections = self.apriltag.find_tags(gray)
+
+
+        path = get_path(self.grid,STARTING_POSITION_NUMBER,SELF_CLOSET_NUMBER)
 
         #self.ep_robot.chassis.move
 
