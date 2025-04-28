@@ -166,6 +166,7 @@ class RobotStateMachine:
         # Main control loop
         while self.current_state != RobotState.ERROR:
             if cv2.waitKey(1) == ord("q"):
+                self.robot.cleanup()
                 break
 
             # Print current state
