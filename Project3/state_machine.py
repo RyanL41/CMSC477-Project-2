@@ -1,0 +1,196 @@
+"""
+State machine implementation for robot control.
+"""
+import time
+import cv2
+import numpy as np
+import traceback
+
+from .config import (
+    RobotState, STARTING_POSITION_NUMBER, SELF_CLOSET_NUMBER, 
+    TARGET_CLOSET_NUMBER, CAMERA_MATRIX, APRILTAG_SIZE_METERS
+)
+from .apriltag_detector import AprilTagDetector
+from .vision import ObjectDetector
+from .robot_controller import RobotController
+from .grid import load_grid_from_csv, process_grid, find_position_in_grid, grid_to_world_coords
+
+# Import path planning 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from djikstra import get_path
+
+
+class RobotStateMachine:
+    def __init__(self, robot_sn, map_file):
+        """
+        Initialize the state machine.
+        
+        Args:
+            robot_sn: Serial number of the robot
+            map_file: Path to the CSV map file
+        """
+        self.map_file = map_file
+        self.current_state = RobotState.INITIALIZING
+        
+        # Initialize robot controller
+        self.robot = RobotController(robot_sn)
+        
+        # Initialize vision systems
+        self.object_detector = ObjectDetector()
+        self.apriltag_detector = AprilTagDetector(
+            np.array(CAMERA_MATRIX), 
+            marker_size_m=APRILTAG_SIZE_METERS
+        )
+        
+        # Target tracking
+        self.target_label = None
+        self.last_detection = None
+        
+        # Load and process grid
+        self.grid = load_grid_from_csv(map_file)
+        self.processed_grid = process_grid(self.grid)
+        
+        # Map configuration
+        self.starting_pos_number = STARTING_POSITION_NUMBER
+        self.self_closet_number = SELF_CLOSET_NUMBER
+        self.target_closet_number = TARGET_CLOSET_NUMBER
+        
+        # Performance tracking data
+        self.approach_data = {
+            state.value: {
+                "time_steps": [],
+                "actual_x": [],
+                "target_x": [],
+                "actual_y": [],
+                "target_y": [],
+            }
+            for state in RobotState
+        }
+
+    def initialize(self):
+        """Initialize the robot and setup systems."""
+        self.robot.initialize()
+        
+        # Find robot starting position in grid
+        start_x, start_y = find_position_in_grid(self.grid, self.starting_pos_number)
+        if start_x is not None and start_y is not None:
+            self.robot.set_grid_reference(start_x, start_y)
+            print(f"Robot starting position: grid ({start_x}, {start_y})")
+        else:
+            print("Warning: No starting position found in grid, using (0,0)")
+        
+        self.current_state = RobotState.LOOKING_FOR_BLOCK_IN_CLOSET
+
+    def get_closet_position(self, closet_number):
+        """Find the coordinates of a closet in the grid."""
+        grid_x, grid_y = find_position_in_grid(self.grid, closet_number)
+        return grid_to_world_coords(grid_x, grid_y)
+
+    def handle_looking_for_block_in_closet(self):
+        """Find blocks in the closet and approach them."""
+        # Get current and target positions
+        current_x, current_y, current_heading = self.robot.get_position()
+        target_x, target_y = self.get_closet_position(self.self_closet_number)
+        
+        if target_x is None or target_y is None:
+            print(f"Warning: Closet {self.self_closet_number} not found in grid")
+            return
+        
+        # Calculate angle to target
+        angle_to_target = np.arctan2(target_y - current_y, target_x - current_x)
+        print(f"Angle to target: {np.rad2deg(angle_to_target):.2f}°")
+        
+        # Get camera frame and run detections
+        frame = self.robot.get_frame()
+        if frame is None:
+            return
+            
+        # Run YOLO detection
+        detections, _ = self.object_detector.get_detections(frame)
+        found_object = self.object_detector.get_best_detection(self.target_label, detections)
+        
+        # Run AprilTag detection
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        apriltag_detections = self.apriltag_detector.find_tags(gray)
+        
+        # Process AprilTag detections
+        if apriltag_detections:
+            print(f"Found {len(apriltag_detections)} AprilTags")
+            robot_pos = (current_x, current_y)
+            
+            for detection in apriltag_detections:
+                # Get tag world position
+                tag_world_pos = self.apriltag_detector.get_tag_world_position(
+                    detection, robot_pos, current_heading
+                )
+                
+                # Get tag ID
+                tag_id = self.apriltag_detector.get_tag_id(detection)
+                print(f"AprilTag ID {tag_id} at position: ({tag_world_pos[0]:.3f}, {tag_world_pos[1]:.3f})")
+        
+        # Calculate and follow path to closet
+        path = get_path(self.grid, self.starting_pos_number, self.self_closet_number)
+        if path is not None:
+            print(f"Found path with {len(path)} waypoints")
+            for waypoint in path:
+                current_pos = self.robot.get_position()
+                move_x = waypoint[0] - current_pos[0]
+                move_y = waypoint[1] - current_pos[1]
+                print(f"Moving to waypoint: dx={move_x:.3f}, dy={move_y:.3f}")
+                self.robot.move(x=move_x, y=move_y)
+
+    def handle_grab_block(self):
+        """Grab a block with the gripper."""
+        self.robot.grab()
+
+    def handle_drop_off(self):
+        """Release a block with the gripper."""
+        self.robot.release()
+
+    def handle_move_arm(self, y_distance):
+        """Move the robot arm."""
+        self.robot.move_arm(y_distance)
+
+    def handle_backup(self, distance_m=0.3):
+        """Back up the robot."""
+        self.robot.backup(distance_m)
+
+    def run(self):
+        """Main state machine loop."""
+        # Initialize if needed
+        if self.current_state == RobotState.INITIALIZING:
+            self.initialize()
+        
+        # Main control loop
+        while self.current_state != RobotState.ERROR:
+            if cv2.waitKey(1) == ord("q"):
+                break
+
+            # Print current state
+            current_time = time.strftime("%Y-%m-%d %H:%M:%S")
+            print(f"\n--- {current_time} | State: {self.current_state.value} ---")
+
+            try:
+                # Handle states
+                if self.current_state == RobotState.LOOKING_FOR_BLOCK_IN_CLOSET:
+                    self.handle_looking_for_block_in_closet()
+                elif self.current_state == RobotState.GRAB_BLOCK:
+                    self.handle_grab_block()
+                elif self.current_state == RobotState.DROP_OFF:
+                    self.handle_drop_off()
+                elif self.current_state == RobotState.MOVE_ARM:
+                    self.handle_move_arm(-100)  # Default move up
+                elif self.current_state == RobotState.BACKUP:
+                    self.handle_backup()
+                # Add other states as needed
+                
+            except Exception as e:
+                print(traceback.format_exc())
+                self.current_state = RobotState.ERROR
+                self.robot.cleanup()
+                break
+
+        print(f"\n=== State Machine Finished with State: {self.current_state.value} ===")
+        self.robot.cleanup()
