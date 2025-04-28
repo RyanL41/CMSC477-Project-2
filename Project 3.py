@@ -392,6 +392,57 @@ class Project3StateMachine:
             print(f"Warning: Closet number {closet_number} not found in grid")
             return None, None
 
+    def get_pose_apriltag_in_camera_frame(self, detection):
+        """Extract pose information from AprilTag detection"""
+        R_ca = np.array(detection.pose_R).reshape(3, 3)  # Rotation matrix
+        t_ca = np.array(detection.pose_t).flatten()  # Translation vector
+        return t_ca, R_ca
+        
+    def get_apriltag_id(self, detection):
+        """Get AprilTag ID from detection"""
+        return detection.tag_id
+        
+    def get_tag_world_position(self, detection, robot_world_pos, robot_world_yaw):
+        """
+        Computes the AprilTag's position in world frame given:
+        1. The AprilTag detection
+        2. The robot's position in world frame
+        3. The robot's yaw in world frame
+        
+        Returns the tag position in world coordinates
+        """
+        # Get tag pose in camera frame
+        t_ca, R_ca = self.get_pose_apriltag_in_camera_frame(detection)
+        scale = 0.266  # scaling factor from image units to meters
+        
+        # Compute the offset of the tag in camera frame
+        offset = np.array([-t_ca[0] / scale, t_ca[2] / scale])
+        
+        # Extract relative rotation (yaw) from the detection
+        rot = R.from_matrix(R_ca)
+        z_rot = rot.as_euler("xyz", degrees=False)[1]
+        
+        # Rotate offset based on camera-to-tag orientation
+        R_z_rot = np.array(
+            [[np.cos(-z_rot), -np.sin(-z_rot)], [np.sin(-z_rot), np.cos(-z_rot)]]
+        )
+        offset = R_z_rot.dot(offset)
+        offset[1] = -offset[1]
+        
+        # Create rotation matrix for robot's orientation in world frame
+        robot_yaw = robot_world_yaw * (np.pi / 180.0)  # Convert to radians if needed
+        R_robot = np.array(
+            [[np.cos(robot_yaw), -np.sin(robot_yaw)], [np.sin(robot_yaw), np.cos(robot_yaw)]]
+        )
+        
+        # Transform the offset to world coordinates
+        world_offset = R_robot.dot(offset)
+        
+        # Tag position = robot position + rotated offset
+        tag_world_pos = np.array(robot_world_pos[:2]) - world_offset  # Subtracting because we're going from robot to tag
+        
+        return tag_world_pos
+        
     def handle_looking_for_block_in_closet(self):
 
         # get the robot's current position
@@ -419,9 +470,24 @@ class Project3StateMachine:
 
 
         print("ANGLE:",angle)
-        detections = self.apriltag.find_tags(gray)
+        apriltag_detections = self.apriltag.find_tags(gray)
         
-        self.ep_robot.chassis.move(x=0, y=0, z=np.rad2deg(angle))
+        if apriltag_detections:
+            print("AprilTag Detections:", apriltag_detections)
+            
+            # For each detected AprilTag, calculate its world position
+            robot_pos = (current_x, current_y)
+            
+            for detection in apriltag_detections:
+                # Get the tag's position in world coordinates
+                tag_world_pos = self.get_tag_world_position(detection, robot_pos, current_z)
+                
+                # Get the tag ID
+                tag_id = self.get_apriltag_id(detection)
+                
+                print(f"AprilTag ID {tag_id} detected at world position: ({tag_world_pos[0]:.3f}, {tag_world_pos[1]:.3f})")
+
+        # self.ep_robot.chassis.move(x=0, y=0, z=np.rad2deg(angle))
 
         frame = self.get_frame()
         detections, _ = self.run_yolo_detection(frame)
