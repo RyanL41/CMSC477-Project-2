@@ -2,6 +2,11 @@
 Main entry point for Project 3 - RoboMaster EP robot control.
 """
 import traceback
+import sys
+import os
+
+# Add the parent directory to sys.path to enable imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from Project3.state_machine import RobotStateMachine
 
 def main():
