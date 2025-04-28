@@ -2,7 +2,7 @@
 Main entry point for Project 3 - RoboMaster EP robot control.
 """
 import traceback
-from .state_machine import RobotStateMachine
+from Project3.state_machine import RobotStateMachine
 
 def main():
     # Robot serial number and map file

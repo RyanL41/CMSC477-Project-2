@@ -4,7 +4,7 @@ Robot controller module for interfacing with the RoboMaster EP robot.
 import time
 import numpy as np
 from robomaster import robot, camera
-from .config import CUBE_SIZE_METERS
+from Project3.config import CUBE_SIZE_METERS
 
 class RobotController:
     def __init__(self, robot_sn):

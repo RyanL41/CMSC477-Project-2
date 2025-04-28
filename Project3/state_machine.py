@@ -6,14 +6,14 @@ import cv2
 import numpy as np
 import traceback
 
-from .config import (
+from Project3.config import (
     RobotState, STARTING_POSITION_NUMBER, SELF_CLOSET_NUMBER, 
     TARGET_CLOSET_NUMBER, CAMERA_MATRIX, APRILTAG_SIZE_METERS
 )
-from .apriltag_detector import AprilTagDetector
-from .vision import ObjectDetector
-from .robot_controller import RobotController
-from .grid import load_grid_from_csv, process_grid, find_position_in_grid, grid_to_world_coords
+from Project3.apriltag_detector import AprilTagDetector
+from Project3.vision import ObjectDetector
+from Project3.robot_controller import RobotController
+from Project3.grid import load_grid_from_csv, process_grid, find_position_in_grid, grid_to_world_coords
 
 # Import path planning 
 import sys

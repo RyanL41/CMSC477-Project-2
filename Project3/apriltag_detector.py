@@ -4,7 +4,7 @@ AprilTag detector module to handle detection and pose estimation of AprilTags.
 import numpy as np
 import pupil_apriltags
 from scipy.spatial.transform import Rotation as R
-from .config import SCALE_FACTOR
+from Project3.config import SCALE_FACTOR
 
 class AprilTagDetector:
     def __init__(self, camera_matrix, marker_size_m=0.16, family="tag36h11", threads=2):

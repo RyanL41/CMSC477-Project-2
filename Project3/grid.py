@@ -3,7 +3,7 @@ Grid management module for map processing and path planning.
 """
 import numpy as np
 import pandas as pd
-from .config import CUBE_SIZE_METERS
+from Project3.config import CUBE_SIZE_METERS
 
 def load_grid_from_csv(csv_path):
     """
