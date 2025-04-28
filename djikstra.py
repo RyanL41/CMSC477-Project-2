@@ -72,14 +72,15 @@ def djikstra(grid,start1,end1):
 
     for i in range(len(grid)):
         for j in range(len(grid[i])):
-            if grid[i][j] == 0 or grid[i][j] == 3:
-                heap_queue.append((np.inf, (i, j)))
-                distances[(i, j)] = np.inf
-                previous_elements[(i, j)] = None
-            elif grid[i][j] == 2:
+            
+            if grid[i][j] == start:
                 heap_queue.append((0, (i, j)))
                 distances[(i, j)] = 0
                 previous_elements[(i, j)] = starting_position
+            else:
+                heap_queue.append((np.inf, (i, j)))
+                distances[(i, j)] = np.inf
+                previous_elements[(i, j)] = None
 
     while heap_queue:
         current_distance, current_position = heap_queue.pop(0)
@@ -148,8 +149,8 @@ def interpolate_path(points, num_points=1000, bc_type="natural"):
     return np.stack([x_fine, y_fine], axis=-1)
 
 
-def get_path(csv_path,start1,end1, upscaling_factor=4):
-    starting_grid = csv_path
+def get_path(grid,start1,end1, upscaling_factor=4):
+    starting_grid = grid
 
     upscale_factor = upscaling_factor * 2 - 1  # ensure odd number
 
