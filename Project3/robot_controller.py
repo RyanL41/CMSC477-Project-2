@@ -64,6 +64,8 @@ class RobotController:
 
         if self.pitch < 0:
             self.pitch += 360
+        elif self.pitch > 360:
+            self.pitch -= 360
 
         if not self.last_attitude_update:
             self.last_attitude_update = time.time()
@@ -71,6 +73,12 @@ class RobotController:
 
         self.last_attitude_update = time.time()
         self.theta = self.pitch + self.theta_offset
+
+        if self.theta > 360:
+            self.theta -= 360
+        elif self.theta < 0:
+            self.theta += 360
+
         print(f"Attitude: pitch={self.pitch:.2f}°, roll={self.roll:.2f}°, yaw={self.yaw:.2f}°")
     
     def set_grid_reference(self, grid_x, grid_y):
