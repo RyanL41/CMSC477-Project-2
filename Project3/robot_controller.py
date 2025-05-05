@@ -21,6 +21,7 @@ class RobotController:
         self.x = 0.0
         self.y = 0.0
         self.theta = 0.0  # Yaw angle in degrees
+        self.theta_offset = 0.0
         self.pitch = 0.0
         self.roll = 0.0
         self.yaw = 0.0
@@ -60,8 +61,16 @@ class RobotController:
     def attitude_callback(self, attitude_info):
         """Callback function to handle chassis attitude updates."""
         self.pitch, self.roll, self.yaw = attitude_info
+
+        if self.pitch < 0:
+            self.pitch += 360
+
+        if not self.last_attitude_update:
+            self.last_attitude_update = time.time()
+            self.theta_offset = self.pitch
+
         self.last_attitude_update = time.time()
-        self.theta = self.pitch
+        self.theta = self.pitch + self.theta_offset
         print(f"Attitude: pitch={self.pitch:.2f}°, roll={self.roll:.2f}°, yaw={self.yaw:.2f}°")
     
     def set_grid_reference(self, grid_x, grid_y):
