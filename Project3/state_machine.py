@@ -172,8 +172,8 @@ class RobotStateMachine:
 
                 # What is our target position in blocks?
                 target_pos_blocks = [
-                    waypoint[0],
-                    -waypoint[1]
+                    waypoint[1],
+                    -waypoint[0]
                 ]
                 print("Current Posex:",current_pos[0],"Currpos BLcokx:",current_pos_blocks[0])
                 print("Current Posey:",current_pos[1],"Currpos BLcoky:",current_pos_blocks[1])
