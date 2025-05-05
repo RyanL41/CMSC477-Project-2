@@ -162,11 +162,11 @@ class RobotStateMachine:
                 
                 move_x = waypoint[0] - current_pos[0]
                 move_y = waypoint[1] - current_pos[1]
-                move_y = -move_y
+                
                 vel = np.array([move_x, move_y])
 
                 vel = vel @ R_z_rot
-                
+                vel[0] = -vel[0]
 
                 print(f"Moving to waypoint: dx={vel[0]:.3f}, dy={vel[1]:.3f} theta={current_pos[2]:.3f}")
                 self.robot.ep_robot.chassis.move(x=vel[1], y=vel[0],z=0, xy_speed=0.5).wait_for_completed()
