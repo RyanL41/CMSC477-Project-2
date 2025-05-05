@@ -154,22 +154,38 @@ class RobotStateMachine:
                 self.target_label = LEGO_BIG_LABEL
                 found_big_object = self.object_detector.get_best_detection(self.target_label, detections)
 
+                # Current position in meters
                 current_pos = self.robot.get_position()
                 
                 R_z_rot = np.array(
                     [[np.cos(current_pos[2]), -np.sin(current_pos[2])], [np.sin(current_pos[2]), np.cos(current_pos[2])]]
                 )
+
+                # How much do we want to move forward?
+
+                # What is our current position in blocks?
+                current_pos_blocks = [
+                    current_pos[0] / 0.26,
+                    current_pos[1] / 0.26
+                ]
+
+                # What is our target position in blocks?
+                target_pos_blocks = [
+                    waypoint[1],
+                    -waypoint[0]
+                ]
                 
-                move_x = waypoint[0] - current_pos[0]
-                move_y = waypoint[1] - current_pos[1]
+                move_x = target_pos_blocks[0] - current_pos_blocks[0]
+                move_y = target_pos_blocks[1] - current_pos_blocks[1]
                 
                 vel = np.array([move_x, move_y])
 
                 vel = vel @ R_z_rot
-                vel[0] = -vel[0]
+                
+                vel *= 0.26
 
                 print(f"Moving to waypoint: dx={vel[0]:.3f}, dy={vel[1]:.3f} theta={current_pos[2]:.3f}")
-                self.robot.ep_robot.chassis.move(x=vel[1], y=vel[0],z=0, xy_speed=0.5).wait_for_completed()
+                self.robot.ep_robot.chassis.move(x=vel[0], y=vel[1],z=0, xy_speed=0.5).wait_for_completed()
                 if found_small_object and self.straight_line_path(path):
                     self.current_state = RobotState.APPROACH_BLOCK
                     self.target_label = LEGO_SMALL_LABEL
