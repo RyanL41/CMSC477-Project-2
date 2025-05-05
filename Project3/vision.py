@@ -6,6 +6,12 @@ import numpy as np
 from ultralytics import YOLO
 from .config import YOLO_MODEL_PATH
 
+
+LEGO_BIG_LABEL = "lego_big"
+LEGO_SMALL_LABEL = "lego_small"
+LEGO_MED_LABEL = "lego_med"
+
+
 class ObjectDetector:
     def __init__(self, model_path=YOLO_MODEL_PATH):
         """

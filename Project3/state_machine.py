@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import traceback
 
+
 from Project3.config import (
     RobotState, STARTING_POSITION_NUMBER, SELF_CLOSET_NUMBER, 
     TARGET_CLOSET_NUMBER, CAMERA_MATRIX, APRILTAG_SIZE_METERS
@@ -21,6 +22,10 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from djikstra import get_path
 
+
+LEGO_BIG_LABEL = "lego_big"
+LEGO_SMALL_LABEL = "lego_small"
+LEGO_MED_LABEL = "lego_med"
 
 class RobotStateMachine:
     def __init__(self, robot_sn, map_file):
@@ -109,8 +114,14 @@ class RobotStateMachine:
             
         # Run YOLO detection
         detections, _ = self.object_detector.get_detections(frame)
-        found_object = self.object_detector.get_best_detection(self.target_label, detections)
-        
+        self.target_label = LEGO_SMALL_LABEL
+        found_small_object = self.object_detector.get_best_detection(self.target_label, detections)
+        self.target_label = LEGO_MED_LABEL
+        found_med_object = self.object_detector.get_best_detection(self.target_label, detections)
+        self.target_label = LEGO_BIG_LABEL
+        found_big_object = self.object_detector.get_best_detection(self.target_label, detections)
+
+
         # Run AprilTag detection
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         apriltag_detections = self.apriltag_detector.find_tags(gray)
@@ -135,12 +146,35 @@ class RobotStateMachine:
         if path is not None:
             print(f"Found path with {len(path)} waypoints")
             for waypoint in path:
+                detections, _ = self.object_detector.get_detections(frame)
+                self.target_label = LEGO_SMALL_LABEL
+                found_small_object = self.object_detector.get_best_detection(self.target_label, detections)
+                self.target_label = LEGO_MED_LABEL
+                found_med_object = self.object_detector.get_best_detection(self.target_label, detections)
+                self.target_label = LEGO_BIG_LABEL
+                found_big_object = self.object_detector.get_best_detection(self.target_label, detections)
+
                 current_pos = self.robot.get_position()
                 move_x = waypoint[0] - current_pos[0]
                 move_y = waypoint[1] - current_pos[1]
+                move_y = -move_y
                 print(f"Moving to waypoint: dx={move_x:.3f}, dy={move_y:.3f}")
-                self.robot.ep_robot.chassis.move(x=move_x, y=move_y,z=0, xy_speed=0.7).wait_for_completed()
-                
+                self.robot.ep_robot.chassis.move(x=move_x, y=move_y,z=0, xy_speed=0.2).wait_for_completed()
+                if found_small_object and self.straight_line_path(path):
+                    self.current_state = RobotState.APPROACH_BLOCK
+                    self.target_label = LEGO_SMALL_LABEL
+                    break
+                elif found_med_object and self.straight_line_path(path):
+                    self.current_state = RobotState.APPROACH_BLOCK
+                    self.target_label = LEGO_MED_LABEL
+                    break
+                elif found_big_object and self.straight_line_path(path):
+                    self.current_state = RobotState.APPROACH_BLOCK
+                    self.target_label = LEGO_BIG_LABEL
+                    break
+
+    def handle_approach_block(self,object):
+        self.robot.approach(self,object)
 
     def handle_grab_block(self):
         """Grab a block with the gripper."""
@@ -178,6 +212,8 @@ class RobotStateMachine:
                 # Handle states
                 if self.current_state == RobotState.LOOKING_FOR_BLOCK_IN_CLOSET:
                     self.handle_looking_for_block_in_closet()
+                elif self.current_state == RobotState.APPROACH_BLOCK:
+                    self.handle_Approach_block()
                 elif self.current_state == RobotState.GRAB_BLOCK:
                     self.handle_grab_block()
                 elif self.current_state == RobotState.DROP_OFF:
