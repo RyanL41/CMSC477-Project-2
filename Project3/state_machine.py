@@ -169,7 +169,7 @@ class RobotStateMachine:
                 
 
                 print(f"Moving to waypoint: dx={vel[0]:.3f}, dy={vel[1]:.3f} theta={current_pos[2]:.3f}")
-                self.robot.ep_robot.chassis.move(x=vel[0], y=vel[1],z=0, xy_speed=0.2).wait_for_completed()
+                self.robot.ep_robot.chassis.move(x=vel[1], y=vel[0],z=0, xy_speed=0.5).wait_for_completed()
                 if found_small_object and self.straight_line_path(path):
                     self.current_state = RobotState.APPROACH_BLOCK
                     self.target_label = LEGO_SMALL_LABEL

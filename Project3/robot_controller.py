@@ -21,7 +21,7 @@ class RobotController:
         self.x = 0.0
         self.y = 0.0
         self.theta = 0.0  # Yaw angle in degrees
-        self.theta_offset = 0.0
+        self.theta_offset = None
         self.pitch = 0.0
         self.roll = 0.0
         self.yaw = 0.0
@@ -54,9 +54,9 @@ class RobotController:
         
     def position_callback(self, position_info):
         """Callback function to handle chassis position updates."""
-        self.x, self.y, self.theta = position_info
+        self.x, self.y, _ = position_info
         self.last_position_update = time.time()
-        print(f"Position: x={self.x:.2f}, y={self.y:.2f}, theta={self.theta:.2f}°")
+        #print(f"Position: x={self.x:.2f}, y={self.y:.2f}, theta={self.theta:.2f}°")
     
     def attitude_callback(self, attitude_info):
         """Callback function to handle chassis attitude updates."""
@@ -67,19 +67,19 @@ class RobotController:
         elif self.pitch > 360:
             self.pitch -= 360
 
-        if not self.last_attitude_update:
-            self.last_attitude_update = time.time()
+        if self.theta_offset is None:
             self.theta_offset = self.pitch
+            print("Offset: ", self.theta_offset)
 
         self.last_attitude_update = time.time()
-        self.theta = self.pitch + self.theta_offset
+        self.theta = self.pitch - self.theta_offset
 
         if self.theta > 360:
             self.theta -= 360
         elif self.theta < 0:
             self.theta += 360
 
-        print(f"Attitude: pitch={self.pitch:.2f}°, roll={self.roll:.2f}°, yaw={self.yaw:.2f}°")
+        #print(f"Attitude: pitch={self.pitch:.2f}°, roll={self.roll:.2f}°, yaw={self.yaw:.2f}°")
     
     def set_grid_reference(self, grid_x, grid_y):
         """Set the grid reference position for coordinate transformations."""
