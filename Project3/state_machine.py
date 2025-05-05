@@ -146,7 +146,7 @@ class RobotStateMachine:
         print(path[:20])
         if path is not None:
             print(f"Found path with {len(path)} waypoints")
-            for waypoint in path:
+            for waypoint in path[::3]:
                 detections, _ = self.object_detector.get_detections(frame)
                 self.target_label = LEGO_SMALL_LABEL
                 found_small_object = self.object_detector.get_best_detection(self.target_label, detections)
@@ -172,8 +172,8 @@ class RobotStateMachine:
 
                 # What is our target position in blocks?
                 target_pos_blocks = [
-                    waypoint[1],
-                    -waypoint[0]
+                    waypoint[0],
+                    -waypoint[1]
                 ]
                 print("Current Posex:",current_pos[0],"Currpos BLcokx:",current_pos_blocks[0])
                 print("Current Posey:",current_pos[1],"Currpos BLcoky:",current_pos_blocks[1])
