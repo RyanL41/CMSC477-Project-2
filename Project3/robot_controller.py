@@ -55,13 +55,14 @@ class RobotController:
         """Callback function to handle chassis position updates."""
         self.x, self.y, self.theta = position_info
         self.last_position_update = time.time()
-        #print(f"Position: x={self.x:.2f}, y={self.y:.2f}, theta={self.theta:.2f}°")
+        print(f"Position: x={self.x:.2f}, y={self.y:.2f}, theta={self.theta:.2f}°")
     
     def attitude_callback(self, attitude_info):
         """Callback function to handle chassis attitude updates."""
         self.pitch, self.roll, self.yaw = attitude_info
         self.last_attitude_update = time.time()
-        #print(f"Attitude: pitch={self.pitch:.2f}°, roll={self.roll:.2f}°, yaw={self.yaw:.2f}°")
+        self.theta = self.pitch
+        print(f"Attitude: pitch={self.pitch:.2f}°, roll={self.roll:.2f}°, yaw={self.yaw:.2f}°")
     
     def set_grid_reference(self, grid_x, grid_y):
         """Set the grid reference position for coordinate transformations."""

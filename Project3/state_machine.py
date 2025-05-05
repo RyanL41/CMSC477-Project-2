@@ -155,11 +155,21 @@ class RobotStateMachine:
                 found_big_object = self.object_detector.get_best_detection(self.target_label, detections)
 
                 current_pos = self.robot.get_position()
+                
+                R_z_rot = np.array(
+                    [[np.cos(current_pos[2]), -np.sin(current_pos[2])], [np.sin(current_pos[2]), np.cos(current_pos[2])]]
+                )
+                
                 move_x = waypoint[0] - current_pos[0]
                 move_y = waypoint[1] - current_pos[1]
                 move_y = -move_y
-                print(f"Moving to waypoint: dx={move_x:.3f}, dy={move_y:.3f}")
-                self.robot.ep_robot.chassis.move(x=move_x, y=move_y,z=0, xy_speed=0.2).wait_for_completed()
+                vel = np.array([move_x, move_y])
+
+                vel = vel @ R_z_rot
+                
+
+                print(f"Moving to waypoint: dx={vel[0]:.3f}, dy={vel[1]:.3f} theta={current_pos[2]:.3f}")
+                self.robot.ep_robot.chassis.move(x=vel[0], y=vel[1],z=0, xy_speed=0.2).wait_for_completed()
                 if found_small_object and self.straight_line_path(path):
                     self.current_state = RobotState.APPROACH_BLOCK
                     self.target_label = LEGO_SMALL_LABEL
