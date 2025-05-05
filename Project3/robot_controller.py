@@ -56,7 +56,7 @@ class RobotController:
         """Callback function to handle chassis position updates."""
         self.x, self.y, _ = position_info
         self.last_position_update = time.time()
-        #print(f"Position: x={self.x:.2f}, y={self.y:.2f}, theta={self.theta:.2f}°")
+        print(f"Position: x={self.x:.2f}, y={self.y:.2f}, theta={self.theta:.2f}°")
     
     def attitude_callback(self, attitude_info):
         """Callback function to handle chassis attitude updates."""

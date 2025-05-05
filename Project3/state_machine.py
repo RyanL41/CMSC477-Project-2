@@ -146,7 +146,7 @@ class RobotStateMachine:
         print(path[:20])
         if path is not None:
             print(f"Found path with {len(path)} waypoints")
-            for waypoint in path[::3]:
+            for waypoint in path[::10]:
                 detections, _ = self.object_detector.get_detections(frame)
                 self.target_label = LEGO_SMALL_LABEL
                 found_small_object = self.object_detector.get_best_detection(self.target_label, detections)
@@ -192,7 +192,71 @@ class RobotStateMachine:
                 vel *= 0.26
 
                 print(f"Moving to waypoint: dx={vel[0]:.3f}, dy={vel[1]:.3f} theta={current_pos[2]:.3f}")
-                self.robot.ep_robot.chassis.move(x=vel[0], y=vel[1],z=0, xy_speed=0.5).wait_for_completed()
+                self.robot.ep_robot.chassis.move(x=vel[0], y=vel[1],z=0, xy_speed=0.1).wait_for_completed()
+                if found_small_object and self.straight_line_path(path):
+                    self.current_state = RobotState.APPROACH_BLOCK
+                    self.target_label = LEGO_SMALL_LABEL
+                    break
+                elif found_med_object and self.straight_line_path(path):
+                    self.current_state = RobotState.APPROACH_BLOCK
+                    self.target_label = LEGO_MED_LABEL
+                    break
+                elif found_big_object and self.straight_line_path(path):
+                    self.current_state = RobotState.APPROACH_BLOCK
+                    self.target_label = LEGO_BIG_LABEL
+                    break
+
+        #SECOND PATH HERE
+        path = get_path(self.grid, 4, 5)
+        if path is not None:
+            print(f"Found path with {len(path)} waypoints")
+            for waypoint in path[::10]:
+                detections, _ = self.object_detector.get_detections(frame)
+                self.target_label = LEGO_SMALL_LABEL
+                found_small_object = self.object_detector.get_best_detection(self.target_label, detections)
+                self.target_label = LEGO_MED_LABEL
+                found_med_object = self.object_detector.get_best_detection(self.target_label, detections)
+                self.target_label = LEGO_BIG_LABEL
+                found_big_object = self.object_detector.get_best_detection(self.target_label, detections)
+
+                # Current position in meters
+                current_pos = self.robot.get_position()
+                
+                R_z_rot = np.array(
+                    [[np.cos(current_pos[2]), -np.sin(current_pos[2])], [np.sin(current_pos[2]), np.cos(current_pos[2])]]
+                )
+
+                # How much do we want to move forward?
+
+                # What is our current position in blocks?
+                current_pos_blocks = [
+                    current_pos[0] / 0.26,
+                    current_pos[1] / 0.26
+                ]
+
+                # What is our target position in blocks?
+                target_pos_blocks = [
+                    waypoint[0],
+                    -waypoint[1]
+                ]
+                print("Current Posex:",current_pos[0],"Currpos BLcokx:",current_pos_blocks[0])
+                print("Current Posey:",current_pos[1],"Currpos BLcoky:",current_pos_blocks[1])
+                print("Target_pos x:",target_pos_blocks[0],"Target_pose y:",target_pos_blocks[1])
+                move_x = target_pos_blocks[0] - current_pos_blocks[0]
+                move_y = target_pos_blocks[1] - current_pos_blocks[1]
+                
+                vel = np.array([move_x, move_y])
+
+                print(vel)
+
+                vel = R_z_rot @ vel
+
+                print(vel)
+                
+                vel *= 0.26
+
+                print(f"Moving to waypoint: dx={vel[0]:.3f}, dy={vel[1]:.3f} theta={current_pos[2]:.3f}")
+                self.robot.ep_robot.chassis.move(x=vel[0], y=vel[1],z=0, xy_speed=0.1).wait_for_completed()
                 if found_small_object and self.straight_line_path(path):
                     self.current_state = RobotState.APPROACH_BLOCK
                     self.target_label = LEGO_SMALL_LABEL
