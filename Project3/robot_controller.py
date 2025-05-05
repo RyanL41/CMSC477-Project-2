@@ -78,6 +78,7 @@ class RobotController:
             self.theta -= 360
         elif self.theta < 0:
             self.theta += 360
+        
         self.theta = np.deg2rad(self.theta)
         #print(f"Attitude: pitch={self.pitch:.2f}°, roll={self.roll:.2f}°, yaw={self.yaw:.2f}°")
     
