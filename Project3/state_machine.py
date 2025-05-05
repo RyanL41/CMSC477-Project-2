@@ -143,6 +143,7 @@ class RobotStateMachine:
         
         # Calculate and follow path to closet
         path = get_path(self.grid, self.starting_pos_number, self.self_closet_number)
+        print(path[:20])
         if path is not None:
             print(f"Found path with {len(path)} waypoints")
             for waypoint in path:
@@ -171,16 +172,22 @@ class RobotStateMachine:
 
                 # What is our target position in blocks?
                 target_pos_blocks = [
-                    waypoint[1],
-                    -waypoint[0]
+                    waypoint[0],
+                    -waypoint[1]
                 ]
-                
+                print("Current Posex:",current_pos[0],"Currpos BLcokx:",current_pos_blocks[0])
+                print("Current Posey:",current_pos[1],"Currpos BLcoky:",current_pos_blocks[1])
+                print("Target_pos x:",target_pos_blocks[0],"Target_pose y:",target_pos_blocks[1])
                 move_x = target_pos_blocks[0] - current_pos_blocks[0]
                 move_y = target_pos_blocks[1] - current_pos_blocks[1]
                 
                 vel = np.array([move_x, move_y])
 
-                vel = vel @ R_z_rot
+                print(vel)
+
+                vel = R_z_rot @ vel
+
+                print(vel)
                 
                 vel *= 0.26
 

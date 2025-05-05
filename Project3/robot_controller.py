@@ -78,13 +78,13 @@ class RobotController:
             self.theta -= 360
         elif self.theta < 0:
             self.theta += 360
-
+        self.theta = np.deg2rad(self.theta)
         #print(f"Attitude: pitch={self.pitch:.2f}°, roll={self.roll:.2f}°, yaw={self.yaw:.2f}°")
     
     def set_grid_reference(self, grid_x, grid_y):
         """Set the grid reference position for coordinate transformations."""
-        self.start_grid_x = grid_x
-        self.start_grid_y = grid_y
+        self.start_grid_x = grid_y
+        self.start_grid_y = -grid_x
     
     def get_position(self):
         """Returns the latest position of the robot with grid-based adjustments."""
