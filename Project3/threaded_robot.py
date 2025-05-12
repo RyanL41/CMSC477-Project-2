@@ -5,8 +5,8 @@ import threading
 import time
 import cv2
 from robomaster import robot
-from Project3.vision import ObjectDetector
-from Project3.state_machine import RobotStateMachine
+from .vision import ObjectDetector
+from .state_machine import RobotStateMachine
 
 class SharedDetections:
     def __init__(self):
