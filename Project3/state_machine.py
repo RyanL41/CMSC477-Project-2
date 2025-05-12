@@ -225,13 +225,13 @@ class RobotStateMachine:
 
                     # Create and start two threads
                     vision_thread = threading.Thread(target=self.get_path_from_vision)
-                    path_thread = threading.Thread(target=self.follow_path)
+                    # path_thread = threading.Thread(target=self.follow_path)
                     
                     vision_thread.start()
-                    path_thread.start()
+                    # path_thread.start()
                     
                     # Wait for the follow_path thread to complete
-                    path_thread.join()
+                    # path_thread.join()
                     
                     # Stop the vision thread
                     self.stop_vision_thread = True
