@@ -1,6 +1,7 @@
 """
 State machine implementation for robot control.
 """
+import threading
 import time
 import cv2
 import numpy as np
@@ -132,7 +133,7 @@ class RobotStateMachine:
         
     
 
-    def handle_looking_for_block_in_closet(self):
+    def follow_path(self):
         """Find blocks in the closet and approach them."""
         # Get current and target positions
         current_x, current_y, current_heading = self.robot.get_position()
@@ -148,7 +149,7 @@ class RobotStateMachine:
         
         # Calculate and follow path to closet
         print(self.grid)
-        path = get_path(self.grid, self.starting_pos_number, self.self_closet_number, num_points=250)
+        path = get_path(self.grid, self.starting_pos_number, upscale_factor=2, self.self_closet_number, num_points=250)
         print(path[:20])
         if path is not None:
             print(f"Found path with {len(path)} waypoints")
@@ -238,10 +239,26 @@ class RobotStateMachine:
                     # In parallel, we call follow_path_to_closet and update_path_with_vision
                     # 2 async loops
                     # follow_path_to_closet looks at self.path and follows it
+                    # one async loop with get_path_from_vision()
+                    # one async loop with follow_path()
+                    self.follow_path()
 
-                    self.handle_looking_for_block_in_closet()
+                    # # Create and start two threads
+                    # vision_thread = threading.Thread(target=self.get_path_from_vision)
+                    # path_thread = threading.Thread(target=self.follow_path)
+                    
+                    # vision_thread.start()
+                    # path_thread.start()
+                    
+                    # # Wait for the follow_path thread to complete
+                    # path_thread.join()
+                    
+                    # # Stop the vision thread
+                    # self.stop_vision_thread = True
+                    # vision_thread.join()
+
                 elif self.current_state == RobotState.APPROACH_BLOCK:
-                    self.handle_Approach_block()
+                    self.handle_approach_block()
                 elif self.current_state == RobotState.GRAB_BLOCK:
                     self.handle_grab_block()
                 elif self.current_state == RobotState.DROP_OFF:
