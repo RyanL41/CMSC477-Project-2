@@ -73,9 +73,9 @@ def state_machine_thread(shared, robot_sn, map_file):
 
 def main():
     ep_robot = robot.Robot()
-    ep_robot.initialize(conn_type="sta")
+    ep_robot.initialize(conn_type="sta",sn= "3JKCH8800100YN")
     shared = SharedDetections()
-    robot_sn = "001"  # replace with your robot serial or config
+    robot_sn = "3JKCH8800100YN"  # replace with your robot serial or config
     map_file = "InitialMap.csv"  # replace with your map file path
     vt = threading.Thread(target=vision_thread, args=(shared, ep_robot), daemon=True)
     st = threading.Thread(target=state_machine_thread, args=(shared, robot_sn, map_file), daemon=True)

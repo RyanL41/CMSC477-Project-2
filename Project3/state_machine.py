@@ -92,6 +92,8 @@ class RobotStateMachine:
         """Find the coordinates of a closet in the grid."""
         grid_x, grid_y = find_position_in_grid(self.grid, closet_number)
         return grid_to_world_coords(grid_x, grid_y)
+    
+    
 
     def handle_looking_for_block_in_closet(self):
         """Find blocks in the closet and approach them."""
