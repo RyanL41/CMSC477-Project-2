@@ -152,12 +152,7 @@ def interpolate_path(points, num_points=1000, bc_type="natural"):
 
 def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_obstacles = [], starting_pos_blocks = None):
     starting_grid = grid
-
     upscale_factor = upscaling_factor * 2 - 1  # ensure odd number
-
-    upscaled_grid = np.zeros(
-        (len(starting_grid) * upscale_factor, len(starting_grid[0]) * upscale_factor)
-    )
 
     for (obs_x, obs_y) in additional_obstacles:
         print("Assigning", obs_x, obs_y)
@@ -170,7 +165,12 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
         y_index = int(obs_y * upscale_factor + upscale_factor // 2)
 
         print("Assigning", x_index, y_index)
-        upscaled_grid[x_index, y_index] = 1
+        starting_grid[x_index, y_index] = 1
+
+
+    upscaled_grid = np.zeros(
+        (len(starting_grid) * upscale_factor, len(starting_grid[0]) * upscale_factor)
+    )
 
     grid = ""
     for row in upscaled_grid:
