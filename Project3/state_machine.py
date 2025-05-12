@@ -236,7 +236,7 @@ class RobotStateMachine:
                     # path_thread.join()
                     
                     # Stop the vision thread
-                    self.stop_vision_thread = True
+                    # self.stop_vision_thread = True
                     vision_thread.join()
 
                 elif self.current_state == RobotState.APPROACH_BLOCK:
