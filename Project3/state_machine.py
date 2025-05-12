@@ -135,7 +135,7 @@ class RobotStateMachine:
                     print("tag_relative_pos",tag_relative_pos)
                     tag_relative_pos = R_z_rot @ tag_relative_pos
                     print("tag_relative_pos",tag_relative_pos)
-                    tag_world_pos = (current_x_blocks - tag_relative_pos[0], current_y_blocks + tag_relative_pos[1])
+                    tag_world_pos = (current_x_blocks + tag_relative_pos[1], current_y_blocks - tag_relative_pos[0])
                     
                     # Get tag ID
                     tag_id = self.apriltag_detector.get_tag_id(detection)
