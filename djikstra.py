@@ -167,6 +167,19 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
         print("Assigning", x_index, y_index)
         starting_grid[x_index, y_index] = 1
 
+    if starting_pos_blocks is not None:
+        # remove all STARTING_POSITION_NUMBER from padded_grid
+        for i in range(len(starting_grid)):
+            for j in range(len(starting_grid[i])):
+                if starting_grid[i][j] == STARTING_POSITION_NUMBER:
+                    starting_grid[i][j] = 0
+
+        start_x = starting_pos_blocks[0]
+        start_y = starting_pos_blocks[1]
+        
+        # set starting position to 2
+        starting_grid[start_x, start_y] = 2
+
 
     upscaled_grid = np.zeros(
         (len(starting_grid) * upscale_factor, len(starting_grid[0]) * upscale_factor)
@@ -189,18 +202,7 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
 
     print(padded_grid)
 
-    if starting_pos_blocks is not None:
-        # remove all STARTING_POSITION_NUMBER from padded_grid
-        for i in range(len(padded_grid)):
-            for j in range(len(padded_grid[i])):
-                if padded_grid[i][j] == STARTING_POSITION_NUMBER:
-                    padded_grid[i][j] = 0
-
-        start_x = starting_pos_blocks[0]
-        start_y = starting_pos_blocks[1]
-        
-        # set starting position to 2
-        padded_grid[int(start_x * upscale_factor + upscale_factor // 2), int(start_y * upscale_factor + upscale_factor // 2)] = 2
+    
 
     path = djikstra(padded_grid,start1,end1)
 
