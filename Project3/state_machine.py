@@ -158,19 +158,12 @@ class RobotStateMachine:
                     waypoint[0],
                     -waypoint[1]
                 ]
-                print("Current Posex:",current_pos[0],"Currpos BLcokx:",current_pos_blocks[0])
-                print("Current Posey:",current_pos[1],"Currpos BLcoky:",current_pos_blocks[1])
-                print("Target_pos x:",target_pos_blocks[0],"Target_pose y:",target_pos_blocks[1])
                 move_x = target_pos_blocks[0] - current_pos_blocks[0]
                 move_y = target_pos_blocks[1] - current_pos_blocks[1]
                 
                 vel = np.array([move_x, move_y])
 
-                print(vel)
-
                 vel = R_z_rot @ vel
-
-                print(vel)
                 
                 vel *= 0.26
 
