@@ -154,7 +154,7 @@ class RobotStateMachine:
     def follow_path(self):
         """Find blocks in the closet and approach them."""
     
-        while self.path:
+        while self.path is not None and len(self.path) > 0:
             waypoint = self.path[0]
             self.path = self.path[1:]
             
