@@ -172,6 +172,8 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
 
     padded_grid = get_padded_grid(upscaled_grid, radius=max(upscale_factor - 1, 1))
 
+    print(padded_grid)
+
     if starting_pos_blocks is not None:
         # remove all STARTING_POSITION_NUMBER from padded_grid
         for i in range(len(padded_grid)):
