@@ -159,8 +159,9 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
         (len(starting_grid) * upscale_factor, len(starting_grid[0]) * upscale_factor)
     )
 
-    for obstacle in additional_obstacles:
-        upscaled_grid[obstacle[0] * upscale_factor + upscale_factor // 2, obstacle[1] * upscale_factor + upscale_factor // 2] = 1
+    for (obs_x, obs_y) in additional_obstacles:
+        print((obs_x, obs_y))
+        upscaled_grid[obs_x * upscale_factor + upscale_factor // 2, obs_y * upscale_factor + upscale_factor // 2] = 1
 
     for x, row in enumerate(starting_grid):
         for y, cell in enumerate(row):
