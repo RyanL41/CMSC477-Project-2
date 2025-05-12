@@ -56,7 +56,7 @@ class RobotController:
         """Callback function to handle chassis position updates."""
         self.x, self.y, _ = position_info
         self.last_position_update = time.time()
-        print(f"Position: x={self.x:.2f}, y={self.y:.2f}, theta={self.theta:.2f}°")
+        # print(f"Position: x={self.x:.2f}, y={self.y:.2f}, theta={self.theta:.2f}°")
     
     def attitude_callback(self, attitude_info):
         """Callback function to handle chassis attitude updates."""
@@ -69,7 +69,7 @@ class RobotController:
 
         if self.theta_offset is None:
             self.theta_offset = self.pitch
-            print("Offset: ", self.theta_offset)
+            # print("Offset: ", self.theta_offset)
 
         self.last_attitude_update = time.time()
         self.theta = self.pitch - self.theta_offset
