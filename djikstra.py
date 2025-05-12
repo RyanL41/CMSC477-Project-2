@@ -149,7 +149,7 @@ def interpolate_path(points, num_points=1000, bc_type="natural"):
     return np.stack([x_fine, y_fine], axis=-1)
 
 
-def get_path(grid,start1,end1, upscaling_factor=4):
+def get_path(grid,start1,end1, upscaling_factor=4, num_points=250):
     starting_grid = grid
 
     upscale_factor = upscaling_factor * 2 - 1  # ensure odd number
@@ -172,6 +172,6 @@ def get_path(grid,start1,end1, upscaling_factor=4):
     path = np.array(path)
     path = (path - (upscaling_factor - 1)) / upscale_factor
 
-    interpolated_path = interpolate_path(path)
+    interpolated_path = interpolate_path(path, num_points=num_points)
 
     return interpolated_path
