@@ -67,13 +67,20 @@ class AprilTagDetector:
         """
         # Get tag pose in camera frame
         t_ca, r_ca = self.get_pose_from_detection(detection)
+
+        print("TCA",t_ca)
+        print("RCa",r_ca)
         
         # Compute the offset of the tag in camera frame
         offset = np.array([-t_ca[0] / SCALE_FACTOR, t_ca[2] / SCALE_FACTOR])
+
+        print("Offset",offset)
         
         # Extract relative rotation (yaw) from the detection
         rot = R.from_matrix(r_ca)
         z_rot = rot.as_euler("xyz", degrees=False)[1]
+
+        print("Z_rot",z_rot)
         
         # Rotate offset based on camera-to-tag orientation
         r_z_rot = np.array([
@@ -89,10 +96,13 @@ class AprilTagDetector:
             [np.cos(robot_yaw_rad), -np.sin(robot_yaw_rad)], 
             [np.sin(robot_yaw_rad), np.cos(robot_yaw_rad)]
         ])
+
+        print("Rrobot",r_robot)
         
         # Transform the offset to world coordinates
         world_offset = r_robot.dot(offset)
-        
+
+        print("World offset",world_offset)        
         # Tag position = robot position - rotated offset
         tag_world_pos = np.array(robot_pos[:2]) - world_offset
         
