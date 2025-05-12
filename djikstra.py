@@ -166,7 +166,11 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
             continue
         upscaled_grid[int(obs_x * upscale_factor + upscale_factor // 2), int(obs_y * upscale_factor + upscale_factor // 2)] = 1
 
-    print(list(upscaled_grid))
+    grid = ""
+    for row in upscaled_grid:
+        grid += ",".join(map(str, row)) + "\n"
+
+    print(grid)
 
     for x, row in enumerate(starting_grid):
         for y, cell in enumerate(row):
