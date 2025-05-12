@@ -163,6 +163,8 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
         print((obs_x, obs_y))
         upscaled_grid[int(obs_x * upscale_factor + upscale_factor // 2), int(obs_y * upscale_factor + upscale_factor // 2)] = 1
 
+    print(list(upscaled_grid))
+
     for x, row in enumerate(starting_grid):
         for y, cell in enumerate(row):
             if cell in [2, 3]:
