@@ -135,46 +135,22 @@ class RobotStateMachine:
 
     def follow_path(self):
         """Find blocks in the closet and approach them."""
-        # Get current and target positions
-        current_x, current_y, current_heading = self.robot.get_position()
-        target_x, target_y = self.get_closet_position(self.self_closet_number)
-        
-        if target_x is None or target_y is None:
-            print(f"Warning: Closet {self.self_closet_number} not found in grid")
-            return
-        
-        # Calculate angle to target
-        angle_to_target = np.arctan2(target_y - current_y, target_x - current_x)
-        print(f"Angle to target: {np.rad2deg(angle_to_target):.2f}°")
-        
-        # Calculate and follow path to closet
-        print(self.grid)
-        path = get_path(self.grid, self.starting_pos_number, self.self_closet_number, upscaling_factor=2, num_points=50)
-        print(path[:20])
-        if path is not None:
-            print(f"Found path with {len(path)} waypoints")
-            # while path: 
-            #      next_wp = path.pop(0)
-            #      current_position = self.robot.get_position()
+    
+        if self.path is not None:
             
-            for waypoint in path:
-                
-                # Current position in meters
+            for waypoint in self.path:
+
                 current_pos = self.robot.get_position()
                 
                 R_z_rot = np.array(
                     [[np.cos(current_pos[2]), -np.sin(current_pos[2])], [np.sin(current_pos[2]), np.cos(current_pos[2])]]
                 )
 
-                # How much do we want to move forward?
-
-                # What is our current position in blocks?
                 current_pos_blocks = [
                     current_pos[0] / 0.26,
                     current_pos[1] / 0.26
                 ]
 
-                # What is our target position in blocks?
                 target_pos_blocks = [
                     waypoint[0],
                     -waypoint[1]
@@ -241,21 +217,21 @@ class RobotStateMachine:
                     # follow_path_to_closet looks at self.path and follows it
                     # one async loop with get_path_from_vision()
                     # one async loop with follow_path()
-                    self.follow_path()
+                    self.path = get_path(self.grid, self.starting_pos_number, self.self_closet_number, upscaling_factor=2, num_points=50)
 
-                    # # Create and start two threads
-                    # vision_thread = threading.Thread(target=self.get_path_from_vision)
-                    # path_thread = threading.Thread(target=self.follow_path)
+                    # Create and start two threads
+                    vision_thread = threading.Thread(target=self.get_path_from_vision)
+                    path_thread = threading.Thread(target=self.follow_path)
                     
-                    # vision_thread.start()
-                    # path_thread.start()
+                    vision_thread.start()
+                    path_thread.start()
                     
-                    # # Wait for the follow_path thread to complete
-                    # path_thread.join()
+                    # Wait for the follow_path thread to complete
+                    path_thread.join()
                     
-                    # # Stop the vision thread
-                    # self.stop_vision_thread = True
-                    # vision_thread.join()
+                    # Stop the vision thread
+                    self.stop_vision_thread = True
+                    vision_thread.join()
 
                 elif self.current_state == RobotState.APPROACH_BLOCK:
                     self.handle_approach_block()
