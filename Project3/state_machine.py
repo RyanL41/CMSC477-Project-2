@@ -144,6 +144,7 @@ class RobotStateMachine:
                 print(f"AprilTag ID {tag_id} at position: ({tag_world_pos[0]:.3f}, {tag_world_pos[1]:.3f})")
         
         # Calculate and follow path to closet
+        print(self.grid)
         path = get_path(self.grid, self.starting_pos_number, self.self_closet_number)
         print(path[:20])
         if path is not None:
