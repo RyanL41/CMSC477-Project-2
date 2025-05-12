@@ -161,7 +161,7 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
 
     for (obs_x, obs_y) in additional_obstacles:
         print((obs_x, obs_y))
-        upscaled_grid[obs_x * upscale_factor + upscale_factor // 2, obs_y * upscale_factor + upscale_factor // 2] = 1
+        upscaled_grid[int(obs_x * upscale_factor + upscale_factor // 2), int(obs_y * upscale_factor + upscale_factor // 2)] = 1
 
     for x, row in enumerate(starting_grid):
         for y, cell in enumerate(row):
@@ -183,7 +183,7 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
         start_y = starting_pos_blocks[1]
         
         # set starting position to 2
-        padded_grid[start_x * upscale_factor + upscale_factor // 2, start_y * upscale_factor + upscale_factor // 2] = 2
+        padded_grid[int(start_x * upscale_factor + upscale_factor // 2), int(start_y * upscale_factor + upscale_factor // 2)] = 2
 
     path = djikstra(padded_grid,start1,end1)
 
