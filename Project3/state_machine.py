@@ -97,7 +97,8 @@ class RobotStateMachine:
         return grid_to_world_coords(grid_x, grid_y)
     
     def get_path_from_vision(self):
-        while not self.stop_vision_thread:
+        count = 0
+        while not self.stop_vision_thread and count < 5:
             current_x, current_y, current_heading = self.robot.get_position()
             current_x_blocks, current_y_blocks = current_x / SCALE_FACTOR, current_y / SCALE_FACTOR
 
@@ -148,7 +149,7 @@ class RobotStateMachine:
             
             # Add a small sleep to avoid CPU hogging
             time.sleep(0.05)
-
+            count += 1
     
 
     def follow_path(self):
