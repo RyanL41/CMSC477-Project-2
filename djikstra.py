@@ -161,9 +161,9 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250):
     for x, row in enumerate(starting_grid):
         for y, cell in enumerate(row):
             if cell in [2, 3]:
-                upscaled_grid[x * 7 + 3, y * 7 + 3] = cell
+                upscaled_grid[x * upscale_factor + upscale_factor // 2, y * upscale_factor + upscale_factor // 2] = cell
             else:
-                upscaled_grid[x * 7 : x * 7 + 7, y * 7 : y * 7 + 7] = cell
+                upscaled_grid[x * upscale_factor : x * upscale_factor + upscale_factor, y * upscale_factor : y * upscale_factor + upscale_factor] = cell
 
     padded_grid = get_padded_grid(upscaled_grid, radius=max(upscale_factor - 1, 1))
 
