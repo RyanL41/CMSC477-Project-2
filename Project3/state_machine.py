@@ -149,7 +149,7 @@ class RobotStateMachine:
         
         # Calculate and follow path to closet
         print(self.grid)
-        path = get_path(self.grid, self.starting_pos_number, self.self_closet_number, upscaling_factor=2, num_points=250)
+        path = get_path(self.grid, self.starting_pos_number, self.self_closet_number, upscaling_factor=2, num_points=50)
         print(path[:20])
         if path is not None:
             print(f"Found path with {len(path)} waypoints")
@@ -157,7 +157,7 @@ class RobotStateMachine:
             #      next_wp = path.pop(0)
             #      current_position = self.robot.get_position()
             
-            for waypoint in path[::10]:
+            for waypoint in path:
                 
                 # Current position in meters
                 current_pos = self.robot.get_position()
