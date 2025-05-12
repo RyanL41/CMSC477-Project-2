@@ -164,7 +164,12 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
             continue
         if obs_x > len(starting_grid) or obs_y > len(starting_grid[0]):
             continue
-        upscaled_grid[int(obs_x * upscale_factor + upscale_factor // 2), int(obs_y * upscale_factor + upscale_factor // 2)] = 1
+            
+        x_index = int(obs_x * upscale_factor + upscale_factor // 2)
+        y_index = int(obs_y * upscale_factor + upscale_factor // 2)
+
+        print("Assigning", x_index, y_index)
+        upscaled_grid[x_index, y_index] = 1
 
     grid = ""
     for row in upscaled_grid:
