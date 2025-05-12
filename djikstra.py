@@ -7,6 +7,7 @@ Original file is located at
     https://colab.research.google.com/drive/1Q1DysNelGjkZ1z6iYWNe8ubBZ6YO0u2t
 """
 
+from Project3.config import STARTING_POSITION_NUMBER
 import pandas as pd
 import numpy as np
 import heapq
@@ -149,7 +150,7 @@ def interpolate_path(points, num_points=1000, bc_type="natural"):
     return np.stack([x_fine, y_fine], axis=-1)
 
 
-def get_path(grid,start1,end1, upscaling_factor=4, num_points=250):
+def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_obstacles = [], starting_pos_blocks = None):
     starting_grid = grid
 
     upscale_factor = upscaling_factor * 2 - 1  # ensure odd number
@@ -157,6 +158,9 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250):
     upscaled_grid = np.zeros(
         (len(starting_grid) * upscale_factor, len(starting_grid[0]) * upscale_factor)
     )
+
+    for obstacle in additional_obstacles:
+        upscaled_grid[obstacle[0] * upscale_factor + upscale_factor // 2, obstacle[1] * upscale_factor + upscale_factor // 2] = 1
 
     for x, row in enumerate(starting_grid):
         for y, cell in enumerate(row):
@@ -166,6 +170,19 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250):
                 upscaled_grid[x * upscale_factor : x * upscale_factor + upscale_factor, y * upscale_factor : y * upscale_factor + upscale_factor] = cell
 
     padded_grid = get_padded_grid(upscaled_grid, radius=max(upscale_factor - 1, 1))
+
+    if starting_pos_blocks is not None:
+        # remove all STARTING_POSITION_NUMBER from padded_grid
+        for i in range(len(padded_grid)):
+            for j in range(len(padded_grid[i])):
+                if padded_grid[i][j] == STARTING_POSITION_NUMBER:
+                    padded_grid[i][j] = 0
+
+        start_x = starting_pos_blocks[0]
+        start_y = starting_pos_blocks[1]
+        
+        # set starting position to 2
+        padded_grid[start_x * upscale_factor + upscale_factor // 2, start_y * upscale_factor + upscale_factor // 2] = 2
 
     path = djikstra(padded_grid,start1,end1)
 

@@ -119,6 +119,8 @@ class RobotStateMachine:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             apriltag_detections = self.apriltag_detector.find_tags(gray)
             
+            obstacles = []
+            
             # Process AprilTag detections
             if apriltag_detections:
                 print(f"Found {len(apriltag_detections)} AprilTags")
@@ -140,6 +142,9 @@ class RobotStateMachine:
                     # Get tag ID
                     tag_id = self.apriltag_detector.get_tag_id(detection)
                     print(f"AprilTag ID {tag_id} at position: ({tag_world_pos[0]:.3f}, {tag_world_pos[1]:.3f})")
+                    obstacles.append(tag_world_pos)
+
+            self.path = get_path(self.grid, self.starting_pos_number, self.self_closet_number, upscaling_factor=2, num_points=50, additional_obstacles=obstacles, starting_pos_blocks=(current_x_blocks, -current_y_blocks))
             
             # Add a small sleep to avoid CPU hogging
             time.sleep(0.05)
