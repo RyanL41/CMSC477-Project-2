@@ -63,7 +63,8 @@ def state_machine_thread(shared, robot_sn, map_file):
             detections, frame = shared.get()
             # Optionally, you can pass detections/frame to your state machine here
             # For now, just run the normal state machine logic
-            sm.handle_looking_for_block_in_closet()  # or your main loop function
+            # sm.handle_looking_for_block_in_closet()  # or your main loop function
+            sm.run()
             time.sleep(0.05)
     except Exception as e:
         print(f"[StateMachine] Exception: {e}")
