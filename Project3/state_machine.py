@@ -95,42 +95,45 @@ class RobotStateMachine:
         return grid_to_world_coords(grid_x, grid_y)
     
     def get_path_from_vision(self):
-        current_x, current_y, current_heading = self.robot.get_position()
 
-         # Get camera frame and run detections
-        frame = self.robot.get_frame()
-        if frame is None:
-            return
+
+        while True:
+            current_x, current_y, current_heading = self.robot.get_position()
+
+            # Get camera frame and run detections
+            frame = self.robot.get_frame()
+            if frame is None:
+                continue
             
-        # Run YOLO detection
-        detections, _ = self.object_detector.get_detections(frame)
-        self.target_label = LEGO_SMALL_LABEL
-        found_small_object = self.object_detector.get_best_detection(self.target_label, detections)
-        self.target_label = LEGO_MED_LABEL
-        found_med_object = self.object_detector.get_best_detection(self.target_label, detections)
-        self.target_label = LEGO_BIG_LABEL
-        found_big_object = self.object_detector.get_best_detection(self.target_label, detections)
+            # Run YOLO detection
+            detections, _ = self.object_detector.get_detections(frame)
+            self.target_label = LEGO_SMALL_LABEL
+            found_small_object = self.object_detector.get_best_detection(self.target_label, detections)
+            self.target_label = LEGO_MED_LABEL
+            found_med_object = self.object_detector.get_best_detection(self.target_label, detections)
+            self.target_label = LEGO_BIG_LABEL
+            found_big_object = self.object_detector.get_best_detection(self.target_label, detections)
 
 
-        # Run AprilTag detection
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        apriltag_detections = self.apriltag_detector.find_tags(gray)
-        
-        # Process AprilTag detections
-        if apriltag_detections:
-            print(f"Found {len(apriltag_detections)} AprilTags")
-            robot_pos = (current_x, current_y)
+            # Run AprilTag detection
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            apriltag_detections = self.apriltag_detector.find_tags(gray)
             
-            for detection in apriltag_detections:
-                # Get tag world position
-                tag_world_pos = self.apriltag_detector.get_tag_world_position(
-                    detection, robot_pos, current_heading
-                )
+            # Process AprilTag detections
+            if apriltag_detections:
+                print(f"Found {len(apriltag_detections)} AprilTags")
+                robot_pos = (current_x, current_y)
                 
-                # Get tag ID
-                tag_id = self.apriltag_detector.get_tag_id(detection)
-                print(f"AprilTag ID {tag_id} at position: ({tag_world_pos[0]:.3f}, {tag_world_pos[1]:.3f})")
-        
+                for detection in apriltag_detections:
+                    # Get tag world position
+                    tag_world_pos = self.apriltag_detector.get_tag_world_position(
+                        detection, robot_pos, current_heading
+                    )
+                    
+                    # Get tag ID
+                    tag_id = self.apriltag_detector.get_tag_id(detection)
+                    print(f"AprilTag ID {tag_id} at position: ({tag_world_pos[0]:.3f}, {tag_world_pos[1]:.3f})")
+            
     
 
     def follow_path(self):
