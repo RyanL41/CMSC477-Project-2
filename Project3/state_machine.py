@@ -101,8 +101,6 @@ class RobotStateMachine:
             current_x, current_y, current_heading = self.robot.get_position()
             current_x_blocks, current_y_blocks = current_x / SCALE_FACTOR, current_y / SCALE_FACTOR
 
-            print("Current blocks position",current_x_blocks, current_y_blocks)
-
             # Get camera frame and run detections
             frame = self.robot.get_frame()
             if frame is None:
