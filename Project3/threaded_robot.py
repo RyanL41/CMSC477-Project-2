@@ -1,3 +1,5 @@
+# Run with python3 Project3/threaded_robot.py
+
 #!/usr/bin/env python3
 import threading
 import time
