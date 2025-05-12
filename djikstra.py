@@ -160,6 +160,7 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
     )
 
     for (obs_x, obs_y) in additional_obstacles:
+        print("Assigning", obs_x, obs_y)
         if obs_x < 0 or obs_y < 0:
             continue
         if obs_x > len(starting_grid) or obs_y > len(starting_grid[0]):
