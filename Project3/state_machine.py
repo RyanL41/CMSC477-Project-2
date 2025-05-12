@@ -74,6 +74,8 @@ class RobotStateMachine:
             }
             for state in RobotState
         }
+        # Thread stop flag for vision
+        self.stop_vision_thread = False
 
     def initialize(self):
         """Initialize the robot and setup systems."""
@@ -95,9 +97,7 @@ class RobotStateMachine:
         return grid_to_world_coords(grid_x, grid_y)
     
     def get_path_from_vision(self):
-
-
-        while True:
+        while not self.stop_vision_thread:
             current_x, current_y, current_heading = self.robot.get_position()
             current_x_blocks, current_y_blocks = current_x / SCALE_FACTOR, current_y / SCALE_FACTOR
 
@@ -114,7 +114,6 @@ class RobotStateMachine:
             found_med_object = self.object_detector.get_best_detection(self.target_label, detections)
             self.target_label = LEGO_BIG_LABEL
             found_big_object = self.object_detector.get_best_detection(self.target_label, detections)
-
 
             # Run AprilTag detection
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -136,12 +135,15 @@ class RobotStateMachine:
                     print("tag_relative_pos",tag_relative_pos)
                     tag_relative_pos = R_z_rot @ tag_relative_pos
                     print("tag_relative_pos",tag_relative_pos)
-                    tag_world_pos = (current_x_blocks + tag_relative_pos[0], current_y_blocks + tag_relative_pos[1])
+                    tag_world_pos = (current_x_blocks - tag_relative_pos[0], current_y_blocks + tag_relative_pos[1])
                     
                     # Get tag ID
                     tag_id = self.apriltag_detector.get_tag_id(detection)
                     print(f"AprilTag ID {tag_id} at position: ({tag_world_pos[0]:.3f}, {tag_world_pos[1]:.3f})")
             
+            # Add a small sleep to avoid CPU hogging
+            time.sleep(0.05)
+
     
 
     def follow_path(self):
