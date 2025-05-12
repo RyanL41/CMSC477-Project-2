@@ -154,36 +154,36 @@ class RobotStateMachine:
     def follow_path(self):
         """Find blocks in the closet and approach them."""
     
-        if self.path is not None:
+        while self.path:
+            waypoint = self.path[0]
+            self.path = self.path[1:]
             
-            for waypoint in self.path:
+            current_pos = self.robot.get_position()
+            
+            R_z_rot = np.array(
+                [[np.cos(current_pos[2]), -np.sin(current_pos[2])], [np.sin(current_pos[2]), np.cos(current_pos[2])]]
+            )
 
-                current_pos = self.robot.get_position()
-                
-                R_z_rot = np.array(
-                    [[np.cos(current_pos[2]), -np.sin(current_pos[2])], [np.sin(current_pos[2]), np.cos(current_pos[2])]]
-                )
+            current_pos_blocks = [
+                current_pos[0] / 0.26,
+                current_pos[1] / 0.26
+            ]
 
-                current_pos_blocks = [
-                    current_pos[0] / 0.26,
-                    current_pos[1] / 0.26
-                ]
+            target_pos_blocks = [
+                waypoint[0],
+                -waypoint[1]
+            ]
+            move_x = target_pos_blocks[0] - current_pos_blocks[0]
+            move_y = target_pos_blocks[1] - current_pos_blocks[1]
+            
+            vel = np.array([move_x, move_y])
 
-                target_pos_blocks = [
-                    waypoint[0],
-                    -waypoint[1]
-                ]
-                move_x = target_pos_blocks[0] - current_pos_blocks[0]
-                move_y = target_pos_blocks[1] - current_pos_blocks[1]
-                
-                vel = np.array([move_x, move_y])
+            vel = R_z_rot @ vel
+            
+            vel *= 0.26
 
-                vel = R_z_rot @ vel
-                
-                vel *= 0.26
-
-                print(f"Moving to waypoint: dx={vel[0]:.3f}, dy={vel[1]:.3f} theta={current_pos[2]:.3f}")
-                self.robot.ep_robot.chassis.move(x=vel[0], y=vel[1],z=0, xy_speed=0.1).wait_for_completed()
+            print(f"Moving to waypoint: dx={vel[0]:.3f}, dy={vel[1]:.3f} theta={current_pos[2]:.3f}")
+            self.robot.ep_robot.chassis.move(x=vel[0], y=vel[1],z=0, xy_speed=0.1).wait_for_completed()
 
     def handle_approach_block(self,object):
         self.robot.approach(self,object)
