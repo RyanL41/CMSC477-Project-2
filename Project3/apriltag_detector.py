@@ -53,14 +53,12 @@ class AprilTagDetector:
         """Get AprilTag ID from detection"""
         return detection.tag_id
         
-    def get_tag_world_position(self, detection, robot_pos, robot_yaw):
+    def get_tag_world_position(self, detection):
         """
         Computes the AprilTag's position in world frame.
         
         Args:
             detection: AprilTag detection
-            robot_pos: Robot position (x, y) in world frame
-            robot_yaw: Robot yaw angle in degrees
             
         Returns:
             Tag position in world coordinates (x, y)
@@ -72,23 +70,5 @@ class AprilTagDetector:
         
         # Compute the offset of the tag in camera frame
         offset = np.array([-t_ca[0] / SCALE_FACTOR, t_ca[2] / SCALE_FACTOR])
-
-        offset[1] = -offset[1]
         
-        # Create rotation matrix for robot's orientation in world frame
-        robot_yaw_rad = robot_yaw * (np.pi / 180.0)  # Convert to radians
-        r_robot = np.array([
-            [np.cos(robot_yaw_rad), -np.sin(robot_yaw_rad)], 
-            [np.sin(robot_yaw_rad), np.cos(robot_yaw_rad)]
-        ])
-
-        print("Rrobot",r_robot)
-        
-        # Transform the offset to world coordinates
-        world_offset = r_robot.dot(offset)
-
-        print("World offset",world_offset)        
-        # Tag position = robot position - rotated offset
-        tag_world_pos = np.array(robot_pos[:2]) - world_offset
-        
-        return tag_world_pos
+        return offset

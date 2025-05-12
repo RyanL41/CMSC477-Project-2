@@ -9,7 +9,7 @@ import traceback
 
 
 from Project3.config import (
-    RobotState, STARTING_POSITION_NUMBER, SELF_CLOSET_NUMBER, 
+    SCALE_FACTOR, RobotState, STARTING_POSITION_NUMBER, SELF_CLOSET_NUMBER, 
     TARGET_CLOSET_NUMBER, CAMERA_MATRIX, APRILTAG_SIZE_METERS
 )
 from Project3.apriltag_detector import AprilTagDetector
@@ -99,6 +99,9 @@ class RobotStateMachine:
 
         while True:
             current_x, current_y, current_heading = self.robot.get_position()
+            current_x_blocks, current_y_blocks = current_x / SCALE_FACTOR, current_y / SCALE_FACTOR
+
+            print(current_x_blocks, current_y_blocks)
 
             # Get camera frame and run detections
             frame = self.robot.get_frame()
@@ -126,9 +129,14 @@ class RobotStateMachine:
                 
                 for detection in apriltag_detections:
                     # Get tag world position
-                    tag_world_pos = self.apriltag_detector.get_tag_world_position(
-                        detection, robot_pos, current_heading
+                    tag_relative_pos = self.apriltag_detector.get_tag_world_position(detection)
+
+                    # rotate the relative position by the robot's heading
+                    R_z_rot = np.array(
+                        [[np.cos(current_heading), -np.sin(current_heading)], [np.sin(current_heading), np.cos(current_heading)]]
                     )
+                    tag_relative_pos = R_z_rot @ tag_relative_pos
+                    tag_world_pos = np.array(robot_pos[:2]) + tag_relative_pos
                     
                     # Get tag ID
                     tag_id = self.apriltag_detector.get_tag_id(detection)
