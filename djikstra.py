@@ -178,7 +178,7 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
         start_y = starting_pos_blocks[1]
         
         # set starting position to 2
-        starting_grid[start_x, start_y] = 2
+        starting_grid[int(start_x), int(start_y)] = 2
 
 
     upscaled_grid = np.zeros(
