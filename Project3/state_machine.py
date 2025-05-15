@@ -100,8 +100,11 @@ class RobotStateMachine:
         count = 0
         while not self.stop_vision_thread and count < 5:
             current_x, current_y, current_heading = self.robot.get_position()
+
+            print("Current Position:", current_x, current_y, current_heading)
             current_x_blocks, current_y_blocks = current_x / SCALE_FACTOR, current_y / SCALE_FACTOR
 
+            print("Current Position Blocks:", current_x_blocks, current_y_blocks)
             # Get camera frame and run detections
             frame = self.robot.get_frame()
             if frame is None:
