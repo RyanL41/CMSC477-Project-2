@@ -200,11 +200,13 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
 
     for x, row in enumerate(starting_grid):
         for y, cell in enumerate(row):
-            if cell in [start1, end1]:
-                print("Found ", start1, " at ", x, y)
-                upscaled_grid[x * upscale_factor + upscale_factor // 2, y * upscale_factor + upscale_factor // 2] = cell
-            else:
+            if not cell in [start1, end1]:
                 upscaled_grid[x * upscale_factor : x * upscale_factor + upscale_factor, y * upscale_factor : y * upscale_factor + upscale_factor] = cell
+
+    for x, row in enumerate(starting_grid):
+        for y, cell in enumerate(row):
+            if cell in [start1, end1]:
+                upscaled_grid[x * upscale_factor + upscale_factor // 2, y * upscale_factor + upscale_factor // 2] = cell
 
     padded_grid = get_padded_grid(upscaled_grid, radius=max(upscale_factor - 1, 1))
 
