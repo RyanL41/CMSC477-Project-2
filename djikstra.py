@@ -29,7 +29,8 @@ def get_padded_grid(grid, radius):
         # calculate all cells in the radius
         for x in range(max(0, i - radius), min(len(grid), i + radius + 1)):
             for y in range(max(0, j - radius), min(len(grid[i]), j + radius + 1)):
-                padded_grid[x][y] = 1
+                if padded_grid[x][y] == 0 or padded_grid[x][y] == 1:
+                    padded_grid[x][y] = 1
 
     return padded_grid
 
@@ -206,6 +207,7 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
     for x, row in enumerate(starting_grid):
         for y, cell in enumerate(row):
             if cell in [start1, end1]:
+                print(x,y,cell)
                 upscaled_grid[x * upscale_factor + upscale_factor // 2, y * upscale_factor + upscale_factor // 2] = cell
 
     padded_grid = get_padded_grid(upscaled_grid, radius=max(upscale_factor - 1, 1))
