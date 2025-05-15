@@ -63,13 +63,20 @@ def get_diagonal_neighbors(position, grid):
 
 
 def djikstra(grid,start1,end1):
+    print("start1",start1)
+    print("end1:",end1)
     heap_queue = []
     distances = {}
     previous_elements = {}
     starting_position = np.where(grid == start1)
+    print("Starting Pos:",starting_position)
     starting_position = (starting_position[0][0], starting_position[1][0])
     ending_position = np.where(grid == end1)
+    print("Ending pos:",ending_position)
     ending_position = (ending_position[0][0], ending_position[1][0])
+    
+    
+    
 
     for i in range(len(grid)):
         for j in range(len(grid[i])):
