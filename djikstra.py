@@ -192,15 +192,15 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
         (len(starting_grid) * upscale_factor, len(starting_grid[0]) * upscale_factor)
     )
 
-    grid = ""
-    for row in upscaled_grid:
-        grid += ",".join(map(str, row)) + "\n"
+    grid_to_print = ""
+    for row in starting_grid:
+        grid_to_print += ",".join(map(str, row)) + "\n"
 
-    print(grid)
+    print(grid_to_print)
 
     for x, row in enumerate(starting_grid):
         for y, cell in enumerate(row):
-            if cell in [2, 3]:
+            if cell in [start1, end1]:
                 upscaled_grid[x * upscale_factor + upscale_factor // 2, y * upscale_factor + upscale_factor // 2] = cell
             else:
                 upscaled_grid[x * upscale_factor : x * upscale_factor + upscale_factor, y * upscale_factor : y * upscale_factor + upscale_factor] = cell
