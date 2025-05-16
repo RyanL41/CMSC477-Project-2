@@ -22,6 +22,8 @@ class RobotController:
         self.y = 0.0
         self.theta = 0.0  # Yaw angle in degrees
         self.theta_offset = None
+        self.x_offset = None
+        self.y_offset = None
         self.pitch = 0.0
         self.roll = 0.0
         self.yaw = 0.0
@@ -55,6 +57,15 @@ class RobotController:
     def position_callback(self, position_info):
         """Callback function to handle chassis position updates."""
         self.x, self.y, _ = position_info
+
+        if self.x_offset is None:
+            self.x_offset = self.x
+        if self.y_offset is None:
+            self.y_offset = self.y
+
+        self.x -= self.x_offset
+        self.y -= self.y_offset
+
         self.last_position_update = time.time()
         # print(f"Position: x={self.x:.2f}, y={self.y:.2f}, theta={self.theta:.2f}°")
     
