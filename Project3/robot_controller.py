@@ -139,10 +139,11 @@ class RobotController:
     
     def grab(self):
         """Close the gripper to grab an object."""
-        
+
         self.ep_robot.gripper.close(power=70)
         time.sleep(1.5)
         self.ep_robot.gripper.pause()
+        
     
     def release(self):
         """Open the gripper to release an object."""
@@ -157,7 +158,7 @@ class RobotController:
     def backup(self, distance_m=0.3):
         """Back up by the specified distance."""
         self.move(x=-distance_m)
-    
+
     def cleanup(self):
         """Clean up robot resources."""
         self.ep_robot.chassis.unsub_position()

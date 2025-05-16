@@ -296,6 +296,8 @@ class RobotStateMachine:
     def handle_grab_block(self):
         """Grab a block with the gripper."""
         self.robot.grab()
+        self.current_state = RobotState.DELIVER_BLOCK
+
 
     def handle_drop_off(self):
         """Release a block with the gripper."""
@@ -308,6 +310,9 @@ class RobotStateMachine:
     def handle_backup(self, distance_m=0.3):
         """Back up the robot."""
         self.robot.backup(distance_m)
+    def handle_deliver_direction(self):
+        self.robot.ep_robot.chassis.move(x=0, y=0,z=+10, xy_speed=0.1).wait_for_completed()
+
 
     def run(self):
         """Main state machine loop."""
@@ -359,6 +364,25 @@ class RobotStateMachine:
                     self.handle_move_arm(-100)  # Default move up
                 elif self.current_state == RobotState.BACKUP:
                     self.handle_backup()
+                #New state to go from our closet to other teams closet
+                elif self.current_state == RobotState.DELIVER_BLOCK:
+                    
+                    self.handle_deliver_direction()
+                    self.path = get_path(self.grid, self.self_closet_number, self.target_closet_number, upscaling_factor=2, num_points=50)
+
+                    # Create and start two threads
+                    vision_thread = threading.Thread(target=self.get_path_from_vision)
+                    path_thread = threading.Thread(target=self.follow_path)
+                    
+                    vision_thread.start()
+                    path_thread.start()
+                    
+                    # Wait for the follow_path thread to complete
+                    path_thread.join()
+                    
+                    # Stop the vision thread
+                    self.stop_vision_thread = True
+                    vision_thread.join()
                 # Add other states as needed
                 
             except Exception as e:
