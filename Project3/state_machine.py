@@ -197,6 +197,8 @@ class RobotStateMachine:
 
     def approach_object_simple(self, detection, target_label):
         target_y = 210
+        camera_center_x = 320  # Assuming camera width is 640px
+        
         if not detection:
             print(f"Approach {target_label}: No detection provided.")
             return 0, 0, 0
@@ -205,44 +207,33 @@ class RobotStateMachine:
         box_center_x = (x1 + x2) / 2
         box_height = y2 - y1
 
-        
-
-        # if current_state_key:
-        #     if current_state_key not in self.approach_plot_data:
-        #         self.approach_plot_data[current_state_key] = {
-        #             "time_steps": [],
-        #             "actual_x": [],
-        #             "target_x": [],
-        #             "actual_y": [],
-        #             "target_y": [],
-        #         }
-        #     step = len(self.approach_plot_data[current_state_key]["time_steps"])
-        #     self.approach_plot_data[current_state_key]["time_steps"].append(step)
-        #     self.approach_plot_data[current_state_key]["actual_x"].append(box_center_x)
-        #     self.approach_plot_data[current_state_key]["target_x"].append(
-        #         320
-        #     )
-        #     self.approach_plot_data[current_state_key]["actual_y"].append(y1)
-        #     self.approach_plot_data[current_state_key]["target_y"].append(target_y1)
-
-        # print(y1, target_y1)
-
         is_close_enough = y1 > target_y
         is_kinda_close = y1 > target_y - 50
 
         if is_close_enough:
             print(
-                f"Approach {target_label}: Close enough (y1={y1} > target={160}). Stopping."
+                f"Approach {target_label}: Close enough (y1={y1} > target={target_y}). Stopping."
             )
             return 0, 0, 0
 
-        error_x = 320 - box_center_x
+        error_x = camera_center_x - box_center_x
         z_vel = np.clip(-error_x * 0.1, -25, 25)
 
         if is_kinda_close:
             return 0.04, 0, z_vel
 
         return 0.1, 0, z_vel
+        
+    def get_center_distance(self, detection):
+        """Calculate how far the object's center is from the camera's horizontal center."""
+        if not detection:
+            return float('inf')
+            
+        x1, _, x2, _ = detection["box"]
+        box_center_x = (x1 + x2) / 2
+        camera_center_x = 320  # Assuming camera width is 640px
+        
+        return abs(box_center_x - camera_center_x)
 
     def handle_approach_block(self):
         self.robot.ep_robot.robotic_arm.move(x=0, y=-100).wait_for_completed()
@@ -254,48 +245,44 @@ class RobotStateMachine:
                 self.robot.ep_robot.chassis.move(x=0, y=0,z=+10, xy_speed=0.1).wait_for_completed()
                 continue
             
-                # Run YOLO detection
+            # Run YOLO detection
             detections, _ = self.object_detector.get_detections(frame)
+            
+            # Get detections for each object type
             self.target_label = LEGO_SMALL_LABEL
             found_small_object = self.object_detector.get_best_detection(self.target_label, detections)
             self.target_label = LEGO_MED_LABEL
             found_med_object = self.object_detector.get_best_detection(self.target_label, detections)
             self.target_label = LEGO_BIG_LABEL
             found_big_object = self.object_detector.get_best_detection(self.target_label, detections)
-
-            if found_small_object != None:
-                x_vel, y_vel, z_vel = self.approach_object_simple(
-                    found_small_object, LEGO_SMALL_LABEL
-                )
-                if x_vel == 0 and y_vel == 0 and z_vel == 0:
-                    self.robot.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
-                    self.current_state = RobotState.GRAB_BLOCK
-                    break
-                else:
-                    self.robot.ep_robot.chassis.drive_speed(x=x_vel, y=y_vel, z=z_vel)
-            elif found_med_object != None:
-                x_vel, y_vel, z_vel = self.approach_object_simple(
-                    found_med_object, LEGO_MED_LABEL
-                )
-                if x_vel == 0 and y_vel == 0 and z_vel == 0:
-                    self.robot.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
-                    self.current_state = RobotState.GRAB_BLOCK
-                    break
-                else:
-                    self.robot.ep_robot.chassis.drive_speed(x=x_vel, y=y_vel, z=z_vel)
-            elif found_big_object != None:
-                x_vel, y_vel, z_vel = self.approach_object_simple(
-                    found_big_object, LEGO_BIG_LABEL
-                )
-                if x_vel == 0 and y_vel == 0 and z_vel == 0:
-                    self.robot.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
-                    self.current_state = RobotState.GRAB_BLOCK
-                    break
-                else:
-                    self.robot.ep_robot.chassis.drive_speed(x=x_vel, y=y_vel, z=z_vel)
-            else:
+            
+            # Find the object with center closest to camera center
+            detected_objects = [
+                (found_small_object, LEGO_SMALL_LABEL),
+                (found_med_object, LEGO_MED_LABEL),
+                (found_big_object, LEGO_BIG_LABEL)
+            ]
+            
+            # Filter out None detections
+            valid_objects = [(obj, label) for obj, label in detected_objects if obj is not None]
+            
+            if not valid_objects:
                 x = x + 10
-                # self.robot.ep_robot.chassis.move(x=0, y=0,z=+10, xy_speed=0.1).wait_for_completed()
+                continue
+                
+            # Find object with minimum distance to center
+            closest_object, object_label = min(valid_objects, 
+                                              key=lambda obj_pair: self.get_center_distance(obj_pair[0]))
+                
+            # Approach the closest object
+            x_vel, y_vel, z_vel = self.approach_object_simple(closest_object, object_label)
+            
+            if x_vel == 0 and y_vel == 0 and z_vel == 0:
+                self.robot.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
+                self.current_state = RobotState.GRAB_BLOCK
+                break
+            else:
+                self.robot.ep_robot.chassis.drive_speed(x=x_vel, y=y_vel, z=z_vel)
         
 
     def handle_grab_block(self):
