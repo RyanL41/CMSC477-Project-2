@@ -96,6 +96,8 @@ def djikstra(grid,start1,end1):
         if current_position == ending_position:
             path = []
             while current_position != starting_position:
+                # print("Curr position:",current_position)
+                # print("End Position:",ending_position)
                 path.append(current_position)
                 current_position = previous_elements[current_position]
             path.append(starting_position)
@@ -107,9 +109,11 @@ def djikstra(grid,start1,end1):
 
         for neighbor in neighbors:
             distance = current_distance + 1
+            
             if distance < distances[neighbor]:
                 distances[neighbor] = distance
                 previous_elements[neighbor] = current_position
+
 
                 # delete element from heap_queue
                 for i in range(len(heap_queue)):
@@ -122,10 +126,11 @@ def djikstra(grid,start1,end1):
 
         for neighbor in diagonal_neighbors:
             distance = current_distance + np.sqrt(2)
+            
             if distance < distances[neighbor]:
                 distances[neighbor] = distance
                 previous_elements[neighbor] = current_position
-
+               
                 # delete element from heap_queue
                 for i in range(len(heap_queue)):
                     if heap_queue[i][1] == neighbor:
@@ -199,14 +204,15 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
 
     print(grid_to_print)
 
+#Changed it to only expand the walls and empty cells all other blocks should not be expanded
     for x, row in enumerate(starting_grid):
         for y, cell in enumerate(row):
-            if not cell in [start1, end1]:
+            if cell in [1, 0]:
                 upscaled_grid[x * upscale_factor : x * upscale_factor + upscale_factor, y * upscale_factor : y * upscale_factor + upscale_factor] = cell
 
     for x, row in enumerate(starting_grid):
         for y, cell in enumerate(row):
-            if cell in [start1, end1]:
+            if not cell in [1, 0]:
                 print(x,y,cell)
                 upscaled_grid[x * upscale_factor + upscale_factor // 2, y * upscale_factor + upscale_factor // 2] = cell
 

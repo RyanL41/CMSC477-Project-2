@@ -26,7 +26,7 @@ if __name__ == "__main__":
     ep_gripper = ep_robot.gripper
 
     # open gripper
-    ep_gripper.open(power=50)
+    ep_gripper.open(power=110)
     time.sleep(1)
     ep_gripper.pause()
 

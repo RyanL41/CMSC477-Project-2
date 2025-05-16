@@ -43,8 +43,8 @@ class RobotController:
         )
 
         # Initialize arm and gripper
-        # self.ep_robot.robotic_arm.move(x=0, y=-100).wait_for_completed()
-        self.ep_robot.gripper.open(power=70)
+        self.ep_robot.robotic_arm.move(x=0, y=+70).wait_for_completed()
+        self.ep_robot.gripper.open(power=80)
         time.sleep(1)
         self.ep_robot.gripper.pause()
 
@@ -143,6 +143,8 @@ class RobotController:
         self.ep_robot.gripper.close(power=70)
         time.sleep(1.5)
         self.ep_robot.gripper.pause()
+
+        self.ep_robot.robotic_arm.move(x=0, y=+70).wait_for_completed()
         
     
     def release(self):

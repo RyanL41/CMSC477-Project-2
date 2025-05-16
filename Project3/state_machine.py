@@ -57,6 +57,7 @@ class RobotStateMachine:
         # Load and process grid
         self.grid = load_grid_from_csv(map_file)
         self.processed_grid = process_grid(self.grid)
+        self.obstacles = []
         
         # Map configuration
         self.starting_pos_number = STARTING_POSITION_NUMBER
@@ -148,6 +149,9 @@ class RobotStateMachine:
                     print(f"AprilTag ID {tag_id} at position: ({tag_world_pos[0]:.3f}, {tag_world_pos[1]:.3f})")
                     obstacles.append((tag_world_pos[0], -tag_world_pos[1]))
 
+                    #Add self to call get path in other areas
+                    self.obstacles.append((tag_world_pos[0], -tag_world_pos[1]))
+
             self.path = get_path(self.grid, self.starting_pos_number, self.self_closet_number, upscaling_factor=1, num_points=50, additional_obstacles=obstacles, starting_pos_blocks=(current_x_blocks, -current_y_blocks))
             
             # Add a small sleep to avoid CPU hogging
@@ -187,12 +191,12 @@ class RobotStateMachine:
             vel *= 0.26
 
             print(f"Moving to waypoint: dx={vel[0]:.3f}, dy={vel[1]:.3f} theta={current_pos[2]:.3f}")
-            self.robot.ep_robot.chassis.move(x=vel[0], y=vel[1],z=0, xy_speed=0.1).wait_for_completed()
+            self.robot.ep_robot.chassis.move(x=vel[0], y=vel[1],z=15, xy_speed=0.1).wait_for_completed()
 
         self.current_state = RobotState.APPROACH_BLOCK
 
     def approach_object_simple(self, detection, target_label):
-        target_y = 200
+        target_y = 210
         if not detection:
             print(f"Approach {target_label}: No detection provided.")
             return 0, 0, 0
@@ -241,12 +245,13 @@ class RobotStateMachine:
         return 0.1, 0, z_vel
 
     def handle_approach_block(self):
+        self.robot.ep_robot.robotic_arm.move(x=0, y=-100).wait_for_completed()
         x = 0
         while x < 90: 
             frame = self.robot.get_frame()
             if frame is None:
                 x = x + 10
-                self.robot.ep_robot.chassis.move(x=0, y=0,z=-10, xy_speed=0.1).wait_for_completed()
+                self.robot.ep_robot.chassis.move(x=0, y=0,z=+10, xy_speed=0.1).wait_for_completed()
                 continue
             
                 # Run YOLO detection
@@ -310,8 +315,9 @@ class RobotStateMachine:
     def handle_backup(self, distance_m=0.3):
         """Back up the robot."""
         self.robot.backup(distance_m)
-    def handle_deliver_direction(self):
-        self.robot.ep_robot.chassis.move(x=0, y=0,z=+10, xy_speed=0.1).wait_for_completed()
+    def handle_deliver_direction(self,rot):
+        curr_pos = self.robot.get_position()
+        self.robot.ep_robot.chassis.move(x=0, y=0,z=rot, xy_speed=0.1).wait_for_completed()
 
 
     def run(self):
@@ -366,9 +372,10 @@ class RobotStateMachine:
                     self.handle_backup()
                 #New state to go from our closet to other teams closet
                 elif self.current_state == RobotState.DELIVER_BLOCK:
+
+                    self.handle_deliver_direction(90)
+                    self.path = get_path(self.grid, self.starting_pos_number, self.target_closet_number, upscaling_factor=1, num_points=50, additional_obstacles=self.obstacles)
                     
-                    self.handle_deliver_direction()
-                    self.path = get_path(self.grid, self.self_closet_number, self.target_closet_number, upscaling_factor=2, num_points=50)
 
                     # Create and start two threads
                     vision_thread = threading.Thread(target=self.get_path_from_vision)
@@ -383,6 +390,8 @@ class RobotStateMachine:
                     # Stop the vision thread
                     self.stop_vision_thread = True
                     vision_thread.join()
+                    self.current_state = RobotState.DROP_OFF
+
                 # Add other states as needed
                 
             except Exception as e:
