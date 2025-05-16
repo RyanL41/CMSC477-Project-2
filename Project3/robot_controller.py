@@ -139,6 +139,7 @@ class RobotController:
     
     def grab(self):
         """Close the gripper to grab an object."""
+        
         self.ep_robot.gripper.close(power=70)
         time.sleep(1.5)
         self.ep_robot.gripper.pause()

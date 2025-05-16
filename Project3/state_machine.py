@@ -189,8 +189,109 @@ class RobotStateMachine:
             print(f"Moving to waypoint: dx={vel[0]:.3f}, dy={vel[1]:.3f} theta={current_pos[2]:.3f}")
             self.robot.ep_robot.chassis.move(x=vel[0], y=vel[1],z=0, xy_speed=0.1).wait_for_completed()
 
-    def handle_approach_block(self,object):
-        self.robot.approach(self,object)
+        self.current_state = RobotState.APPROACH_BLOCK
+
+    def approach_object_simple(self, detection, target_label):
+        target_y = 200
+        if not detection:
+            print(f"Approach {target_label}: No detection provided.")
+            return 0, 0, 0
+
+        x1, y1, x2, y2 = detection["box"]
+        box_center_x = (x1 + x2) / 2
+        box_height = y2 - y1
+
+        
+
+        # if current_state_key:
+        #     if current_state_key not in self.approach_plot_data:
+        #         self.approach_plot_data[current_state_key] = {
+        #             "time_steps": [],
+        #             "actual_x": [],
+        #             "target_x": [],
+        #             "actual_y": [],
+        #             "target_y": [],
+        #         }
+        #     step = len(self.approach_plot_data[current_state_key]["time_steps"])
+        #     self.approach_plot_data[current_state_key]["time_steps"].append(step)
+        #     self.approach_plot_data[current_state_key]["actual_x"].append(box_center_x)
+        #     self.approach_plot_data[current_state_key]["target_x"].append(
+        #         320
+        #     )
+        #     self.approach_plot_data[current_state_key]["actual_y"].append(y1)
+        #     self.approach_plot_data[current_state_key]["target_y"].append(target_y1)
+
+        # print(y1, target_y1)
+
+        is_close_enough = y1 > target_y
+        is_kinda_close = y1 > target_y - 50
+
+        if is_close_enough:
+            print(
+                f"Approach {target_label}: Close enough (y1={y1} > target={160}). Stopping."
+            )
+            return 0, 0, 0
+
+        error_x = 320 - box_center_x
+        z_vel = np.clip(-error_x * 0.1, -25, 25)
+
+        if is_kinda_close:
+            return 0.04, 0, z_vel
+
+        return 0.1, 0, z_vel
+
+    def handle_approach_block(self):
+        x = 0
+        while x < 90: 
+            frame = self.robot.get_frame()
+            if frame is None:
+                x = x + 10
+                self.robot.ep_robot.chassis.move(x=0, y=0,z=-10, xy_speed=0.1).wait_for_completed()
+                continue
+            
+                # Run YOLO detection
+            detections, _ = self.object_detector.get_detections(frame)
+            self.target_label = LEGO_SMALL_LABEL
+            found_small_object = self.object_detector.get_best_detection(self.target_label, detections)
+            self.target_label = LEGO_MED_LABEL
+            found_med_object = self.object_detector.get_best_detection(self.target_label, detections)
+            self.target_label = LEGO_BIG_LABEL
+            found_big_object = self.object_detector.get_best_detection(self.target_label, detections)
+
+            if found_small_object != None:
+                x_vel, y_vel, z_vel = self.approach_object_simple(
+                    found_small_object, LEGO_SMALL_LABEL
+                )
+                if x_vel == 0 and y_vel == 0 and z_vel == 0:
+                    self.robot.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
+                    self.current_state = RobotState.GRAB_BLOCK
+                    break
+                else:
+                    self.robot.ep_robot.chassis.drive_speed(x=x_vel, y=y_vel, z=z_vel)
+            elif found_med_object != None:
+                x_vel, y_vel, z_vel = self.approach_object_simple(
+                    found_med_object, LEGO_MED_LABEL
+                )
+                if x_vel == 0 and y_vel == 0 and z_vel == 0:
+                    self.robot.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
+                    self.current_state = RobotState.GRAB_BLOCK
+                    break
+                else:
+                    self.robot.ep_robot.chassis.drive_speed(x=x_vel, y=y_vel, z=z_vel)
+            elif found_big_object != None:
+                x_vel, y_vel, z_vel = self.approach_object_simple(
+                    found_big_object, LEGO_BIG_LABEL
+                )
+                if x_vel == 0 and y_vel == 0 and z_vel == 0:
+                    self.robot.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
+                    self.current_state = RobotState.GRAB_BLOCK
+                    break
+                else:
+                    self.robot.ep_robot.chassis.drive_speed(x=x_vel, y=y_vel, z=z_vel)
+            else:
+                x = x + 10
+                # self.robot.ep_robot.chassis.move(x=0, y=0,z=+10, xy_speed=0.1).wait_for_completed()
+        
 
     def handle_grab_block(self):
         """Grab a block with the gripper."""

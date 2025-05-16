@@ -35,4 +35,4 @@ if __name__ == "__main__":
     # time.sleep(1)
     # ep_gripper.pause()
 
-    # ep_robot.close()
+    ep_robot.close()
