@@ -98,8 +98,8 @@ class RobotStateMachine:
         return grid_to_world_coords(grid_x, grid_y)
     
     def get_path_from_vision(self):
-        count = 0
-        while not self.stop_vision_thread and count < 5:
+        
+        while not self.stop_vision_thread:
             current_x, current_y, current_heading = self.robot.get_position()
 
             print("Current Position:", current_x, current_y, current_heading)
@@ -152,11 +152,12 @@ class RobotStateMachine:
                     #Add self to call get path in other areas
                     self.obstacles.append((tag_world_pos[0], -tag_world_pos[1]))
 
-            self.path = get_path(self.grid, self.starting_pos_number, self.self_closet_number, upscaling_factor=1, num_points=50, additional_obstacles=obstacles, starting_pos_blocks=(current_x_blocks, -current_y_blocks))
+            if obstacles:
+                self.path = get_path(self.grid, self.starting_pos_number, self.self_closet_number, upscaling_factor=1, num_points=25, additional_obstacles=obstacles, starting_pos_blocks=(current_x_blocks, -current_y_blocks))
             
             # Add a small sleep to avoid CPU hogging
-            time.sleep(0.05)
-            count += 1
+            time.sleep(10)
+            
     
 
     def follow_path(self):
@@ -169,7 +170,7 @@ class RobotStateMachine:
             current_pos = self.robot.get_position()
             
             R_z_rot = np.array(
-                [[np.cos(current_pos[2]), -np.sin(current_pos[2])], [np.sin(current_pos[2]), np.cos(current_pos[2])]]
+                [[np.cos(-current_pos[2]), -np.sin(-current_pos[2])], [np.sin(-current_pos[2]), np.cos(-current_pos[2])]]
             )
 
             current_pos_blocks = [
@@ -191,12 +192,12 @@ class RobotStateMachine:
             vel *= 0.26
 
             print(f"Moving to waypoint: dx={vel[0]:.3f}, dy={vel[1]:.3f} theta={current_pos[2]:.3f}")
-            self.robot.ep_robot.chassis.move(x=vel[0], y=vel[1],z=15, xy_speed=0.1).wait_for_completed()
+            self.robot.ep_robot.chassis.move(x=vel[0], y=vel[1],z=0, xy_speed=0.1).wait_for_completed()
 
         self.current_state = RobotState.APPROACH_BLOCK
 
     def approach_object_simple(self, detection, target_label):
-        target_y = 210
+        target_y = 260
         camera_center_x = 320  # Assuming camera width is 640px
         
         if not detection:
@@ -304,7 +305,8 @@ class RobotStateMachine:
         self.robot.backup(distance_m)
     def handle_deliver_direction(self,rot):
         curr_pos = self.robot.get_position()
-        self.robot.ep_robot.chassis.move(x=0, y=0,z=rot, xy_speed=0.1).wait_for_completed()
+        print("Rotating ",(rot-np.rad2deg(curr_pos[2]))%360," degrees")
+        self.robot.ep_robot.chassis.move(x=0, y=0,z=(rot-np.rad2deg(curr_pos[2]))%360, xy_speed=0.1).wait_for_completed()
 
 
     def run(self):
@@ -331,6 +333,7 @@ class RobotStateMachine:
                     # follow_path_to_closet looks at self.path and follows it
                     # one async loop with get_path_from_vision()
                     # one async loop with follow_path()
+                    self.stop_vision_thread = False
                     self.path = get_path(self.grid, self.starting_pos_number, self.self_closet_number, upscaling_factor=2, num_points=50)
 
                     # Create and start two threads
@@ -361,10 +364,18 @@ class RobotStateMachine:
                 elif self.current_state == RobotState.DELIVER_BLOCK:
 
                     self.handle_deliver_direction(90)
-                    self.path = get_path(self.grid, self.starting_pos_number, self.target_closet_number, upscaling_factor=1, num_points=50, additional_obstacles=self.obstacles)
+                    current_x, current_y, current_heading = self.robot.get_position()
+
+                    print("Current Position:", current_x, current_y, current_heading)
+                    current_x_blocks, current_y_blocks = current_x / SCALE_FACTOR, current_y / SCALE_FACTOR
+
+                    print("Current Position Blocks:", current_x_blocks, current_y_blocks)
+                    self.path = get_path(self.grid, self.starting_pos_number, self.target_closet_number, upscaling_factor=1, num_points=50, additional_obstacles=self.obstacles,starting_pos_blocks=(current_x_blocks,-current_y_blocks))
                     
 
                     # Create and start two threads
+                    self.stop_vision_thread = False
+
                     vision_thread = threading.Thread(target=self.get_path_from_vision)
                     path_thread = threading.Thread(target=self.follow_path)
                     
@@ -377,6 +388,7 @@ class RobotStateMachine:
                     # Stop the vision thread
                     self.stop_vision_thread = True
                     vision_thread.join()
+                    self.handle_deliver_direction(90)
                     self.current_state = RobotState.DROP_OFF
 
                 # Add other states as needed

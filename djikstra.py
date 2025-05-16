@@ -73,16 +73,20 @@ def djikstra(grid,start1,end1):
     print("Starting Pos:",starting_position)
     starting_position = (starting_position[0][0], starting_position[1][0])
     ending_position = np.where(grid == end1)
+    if not ending_position:
+        return []
     print("Ending pos:",ending_position)
     ending_position = (ending_position[0][0], ending_position[1][0])
     
     
     
-
+    
+    
     for i in range(len(grid)):
         for j in range(len(grid[i])):
             
             if grid[i][j] == start1:
+                
                 heap_queue.append((0, (i, j)))
                 distances[(i, j)] = 0
                 previous_elements[(i, j)] = starting_position
@@ -90,7 +94,7 @@ def djikstra(grid,start1,end1):
                 heap_queue.append((np.inf, (i, j)))
                 distances[(i, j)] = np.inf
                 previous_elements[(i, j)] = None
-
+    heap_queue.sort()
     while heap_queue:
         current_distance, current_position = heap_queue.pop(0)
         if current_position == ending_position:
@@ -109,7 +113,7 @@ def djikstra(grid,start1,end1):
 
         for neighbor in neighbors:
             distance = current_distance + 1
-            
+            # print("distance cardinal:",distance)
             if distance < distances[neighbor]:
                 distances[neighbor] = distance
                 previous_elements[neighbor] = current_position
@@ -120,13 +124,13 @@ def djikstra(grid,start1,end1):
                     if heap_queue[i][1] == neighbor:
                         del heap_queue[i]
                         break
-
+                
                 heap_queue.append((distance, neighbor))
                 heap_queue.sort()
 
         for neighbor in diagonal_neighbors:
             distance = current_distance + np.sqrt(2)
-            
+            # print("distance diagonal:",distance)
             if distance < distances[neighbor]:
                 distances[neighbor] = distance
                 previous_elements[neighbor] = current_position
@@ -136,7 +140,7 @@ def djikstra(grid,start1,end1):
                     if heap_queue[i][1] == neighbor:
                         del heap_queue[i]
                         break
-
+                
                 heap_queue.append((distance, neighbor))
                 heap_queue.sort()
 
