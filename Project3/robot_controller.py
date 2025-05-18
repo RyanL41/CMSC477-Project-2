@@ -45,7 +45,7 @@ class RobotController:
         )
 
         # Initialize arm and gripper
-        # self.ep_robot.robotic_arm.move(x=0, y=-70).wait_for_completed()
+        self.ep_robot.robotic_arm.move(x=0, y=+70).wait_for_completed()
         self.ep_robot.gripper.open(power=80)
         time.sleep(1)
         self.ep_robot.gripper.pause()
@@ -58,13 +58,13 @@ class RobotController:
         """Callback function to handle chassis position updates."""
         self.x, self.y, _ = position_info
 
-        if self.x_offset is None:
-            self.x_offset = self.x
-        if self.y_offset is None:
-            self.y_offset = self.y
+        # if self.x_offset is None:
+        #     self.x_offset = self.x
+        # if self.y_offset is None:
+        #     self.y_offset = self.y
 
-        self.x -= self.x_offset
-        self.y -= self.y_offset
+        # self.x -= self.x_offset
+        # self.y -= self.y_offset
 
         self.last_position_update = time.time()
         # print(f"Position: x={self.x:.2f}, y={self.y:.2f}, theta={self.theta:.2f}°")

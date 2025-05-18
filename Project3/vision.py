@@ -103,7 +103,9 @@ class ObjectDetector:
 
         for detection in detections:
             if detection["label"] == target_label and detection["confidence"] > max_confidence:
-                max_confidence = detection["confidence"]
-                best_detection = detection
+                x1, y1, x2, y2 = detection["box"]
+                if (x1 > 10 and x1 < 630 and x2 > 10 and x2 < 630):
+                    max_confidence = detection["confidence"]
+                    best_detection = detection
 
         return best_detection
