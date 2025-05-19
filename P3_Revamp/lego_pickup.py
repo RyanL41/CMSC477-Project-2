@@ -1,6 +1,17 @@
 """
-Lego pickup module for the P3-Revamp robot control system.
-Handles detection, approach, and pickup of Lego blocks.
+Enhanced Lego pickup module with memory of previously seen blocks.
+
+This module provides an enhanced Lego block detection and pickup system that maintains
+memory of previously seen blocks across frames. It implements:
+
+1. Block memory system to track blocks over time
+2. Target selection based on consistency and confidence
+3. Target locking to maintain focus on a specific block
+4. Scanning behavior to find blocks that aren't currently visible
+5. Obstacle avoidance during pickup
+
+The system prioritizes blocks that have been consistently detected across multiple
+frames, improving robustness against detection noise and temporary occlusions.
 """
 import time
 import cv2
@@ -14,9 +25,11 @@ from P3_Revamp.utilities import (
 )
 
 class LegoPickupController:
+    """Base Lego pickup controller class."""
+    
     def __init__(self, robot_controller, object_detector, apriltag_detector, debug=False):
         """
-        Initialize the Lego pickup controller.
+        Initialize the basic Lego pickup controller.
         
         Args:
             robot_controller: Robot controller instance
@@ -345,5 +358,352 @@ class LegoPickupController:
         # Return success if pickup was successful
         if pickup_success:
             return "success"
+        
+        return None
+
+
+class EnhancedLegoPickupController(LegoPickupController):
+    """Enhanced Lego pickup controller with memory capabilities."""
+    
+    def __init__(self, robot_controller, object_detector, apriltag_detector, debug=False):
+        """
+        Initialize the enhanced Lego pickup controller with memory of previously seen blocks.
+        
+        Args:
+            robot_controller: Robot controller instance
+            object_detector: Object detector instance
+            apriltag_detector: AprilTag detector instance
+            debug: Enable debug mode with additional logging
+        """
+        super().__init__(robot_controller, object_detector, apriltag_detector, debug)
+        
+        # Replace current_target_label with target_label for consistency
+        del self.current_target_label
+        
+        # Memory of seen blocks
+        self.seen_blocks = {}  # label -> {timestamp, position, confidence, consistency}
+        self.target_label = None
+        self.target_lock = False
+        self.memory_timeout = 10.0  # Seconds to remember blocks
+        self.consistency_threshold = 3  # Detections needed to consider a block consistent
+        
+    def detect_lego_blocks(self, frame=None):
+        """
+        Detect Lego blocks in the frame and update memory.
+        
+        Args:
+            frame: Camera frame (if None, will get from robot)
+            
+        Returns:
+            Dictionary with detected blocks by label
+        """
+        # Call the parent method to get base detections
+        detected_blocks = super().detect_lego_blocks(frame)
+        
+        # Add memory-specific processing
+        current_time = time.time()
+        
+        # Filter out old blocks from memory
+        self._clean_memory(current_time)
+        
+        # Update memory with current detections
+        for label, detection in detected_blocks.items():
+            self._update_memory(label, detection, current_time)
+        
+        if self.debug and self.seen_blocks:
+            memory_info = ", ".join([f"{l}({self.seen_blocks[l]['consistency']})" for l in self.seen_blocks])
+            log_debug(f"Block memory: {memory_info}", self.debug)
+        
+        return detected_blocks
+    
+    def _clean_memory(self, current_time):
+        """
+        Remove blocks from memory that haven't been seen recently.
+        
+        Args:
+            current_time: Current timestamp
+        """
+        labels_to_remove = []
+        
+        for label, data in self.seen_blocks.items():
+            if current_time - data['timestamp'] > self.memory_timeout:
+                labels_to_remove.append(label)
+        
+        for label in labels_to_remove:
+            if label != self.target_label:  # Don't remove target
+                del self.seen_blocks[label]
+                if self.debug:
+                    log_debug(f"Forgot block {label} due to timeout", self.debug)
+    
+    def _update_memory(self, label, detection, current_time):
+        """
+        Update memory with a new detection.
+        
+        Args:
+            label: Block label
+            detection: Detection data
+            current_time: Current timestamp
+        """
+        # Get detection center
+        center_x, center_y = get_box_center(detection)
+        robot_pos = self.robot.get_position()
+        
+        # Calculate position relative to robot
+        # This is a simplification - a real implementation would do proper coordinate transforms
+        rel_x = center_x - 320  # Distance from center of image
+        rel_y = detection['box'][3]  # Bottom of bounding box (y2)
+        
+        if label in self.seen_blocks:
+            # Update existing entry
+            old_data = self.seen_blocks[label]
+            
+            # Update position with exponential moving average
+            alpha = 0.3  # Weight for new position
+            old_data['position']['rel_x'] = (1-alpha) * old_data['position']['rel_x'] + alpha * rel_x
+            old_data['position']['rel_y'] = (1-alpha) * old_data['position']['rel_y'] + alpha * rel_y
+            
+            # Update confidence and timestamp
+            old_data['confidence'] = max(old_data['confidence'], detection['confidence'])
+            old_data['timestamp'] = current_time
+            
+            # Increase consistency counter
+            old_data['consistency'] += 1
+            
+            # Cap consistency at a maximum value
+            if old_data['consistency'] > 10:
+                old_data['consistency'] = 10
+        else:
+            # Create new entry
+            self.seen_blocks[label] = {
+                'position': {'rel_x': rel_x, 'rel_y': rel_y},
+                'robot_pos': robot_pos,
+                'confidence': detection['confidence'],
+                'timestamp': current_time,
+                'consistency': 1
+            }
+    
+    def select_target_block(self):
+        """
+        Select the most consistent block as target.
+        
+        Returns:
+            Selected target label or None
+        """
+        # If we already have a locked target, keep using it
+        if self.target_lock and self.target_label in self.seen_blocks:
+            return self.target_label
+        
+        # Find block with highest consistency
+        best_label = None
+        best_consistency = 0
+        best_confidence = 0
+        
+        for label, data in self.seen_blocks.items():
+            # Only consider blocks that have been seen consistently
+            if data['consistency'] < self.consistency_threshold:
+                continue
+                
+            # Prefer more consistent blocks, but use confidence as tiebreaker
+            if (data['consistency'] > best_consistency or 
+                (data['consistency'] == best_consistency and data['confidence'] > best_confidence)):
+                best_label = label
+                best_consistency = data['consistency']
+                best_confidence = data['confidence']
+        
+        # Lock onto this target if found
+        if best_label is not None:
+            self.target_label = best_label
+            self.target_lock = True
+            log_info(f"Locked onto target block: {best_label} (consistency: {best_consistency}, confidence: {best_confidence:.2f})")
+        
+        return best_label
+    
+    def find_best_block_in_frame(self, detected_blocks):
+        """
+        Find the best block in the current frame, with preference to the target.
+        
+        Args:
+            detected_blocks: Dictionary of detected blocks by label
+            
+        Returns:
+            (detection, label) of the best block, or (None, None) if no blocks detected
+        """
+        if not detected_blocks:
+            return None, None
+        
+        # If we have a target and it's detected, use it
+        if self.target_label and self.target_label in detected_blocks:
+            return detected_blocks[self.target_label], self.target_label
+        
+        # If no target is locked or the target isn't in frame, fall back to closest to center
+        return super().find_closest_block_to_center(detected_blocks)
+    
+    def scan_for_target(self, max_rotations=24):
+        """
+        Scan in a circle looking for the target block.
+        
+        Args:
+            max_rotations: Maximum rotation steps
+            
+        Returns:
+            (detection, label) if target found, (None, None) otherwise
+        """
+        # If no target selected, can't scan for it
+        if not self.target_label:
+            return None, None
+            
+        log_info(f"Scanning for target block: {self.target_label}")
+        
+        # Calculate step size based on max rotations
+        step_size = 360 / max_rotations
+        
+        for i in range(max_rotations):
+            # Get frame and detect blocks
+            frame = self.robot.get_frame()
+            if frame is None:
+                continue
+                
+            # Run detection
+            detections, _ = self.object_detector.get_detections(frame)
+            detection = self.object_detector.get_best_detection(self.target_label, detections)
+            
+            if detection:
+                log_info(f"Found target block {self.target_label} during scan")
+                return detection, self.target_label
+            
+            # Rotate by step size
+            self.robot.rotate(step_size)
+            
+            # Log progress
+            if self.debug and i % 4 == 0:
+                log_debug(f"Scan rotation {i+1}/{max_rotations}", self.debug)
+        
+        log_info(f"Could not find target block {self.target_label} during scan")
+        
+        # If we couldn't find the target after a full scan, unlock it
+        self.target_lock = False
+        self.target_label = None
+        
+        return None, None
+    
+    def pickup_block(self):
+        """
+        Execute the sequence to pick up a block.
+        
+        Returns:
+            True if pickup was successful
+        """
+        log_info("Executing pickup sequence")
+        
+        # Stop the robot
+        self.robot.drive_speed(x=0, y=0, z=0)
+        time.sleep(0.5)  # Short pause to ensure the robot is fully stopped
+        
+        # Lower the arm
+        log_info("Lowering arm")
+        self.robot.move_arm(ARM_DOWN_POSITION)
+        
+        # Close the gripper
+        log_info("Closing gripper")
+        self.robot.grab()
+        
+        log_info(f"Pickup sequence complete for block {self.target_label}")
+        return True
+    
+    def lego_pickup_loop(self):
+        """
+        Main lego pickup loop with memory of previously seen blocks.
+        
+        Returns:
+            "success:label" if pickup was successful, None otherwise
+        """
+        # First, check for obstacles
+        obstacle_avoided = self.check_for_obstacles_during_pickup()
+        
+        # If we had to avoid an obstacle, skip the rest of the loop
+        if obstacle_avoided:
+            return None
+        
+        # Get current frame
+        frame = self.robot.get_frame()
+        if frame is None:
+            return None
+        
+        # Detect lego blocks and update memory
+        detected_blocks = self.detect_lego_blocks(frame)
+        
+        # If we don't have a target yet, try to select one
+        if not self.target_label or not self.target_lock:
+            self.select_target_block()
+        
+        # Find the best block in the current frame
+        best_detection, best_label = self.find_best_block_in_frame(detected_blocks)
+        
+        # If no blocks were detected but we have a target, try to scan for it
+        if best_detection is None and self.target_label:
+            best_detection, best_label = self.scan_for_target()
+        
+        # If still no blocks were detected, return None
+        if best_detection is None:
+            return None
+        
+        # If we haven't centered on the block yet, do that first
+        if not self.centered:
+            is_centered = self.center_robot_on_block(best_detection, best_label)
+            
+            # If not centered, we're not ready to approach
+            if not is_centered:
+                return None
+        
+        # Once centered, approach the block if not already at pickup position
+        if not self.approach_complete:
+            # Get the latest frame and detection
+            frame = self.robot.get_frame()
+            if frame is None:
+                return None
+            
+            detected_blocks = self.detect_lego_blocks(frame)
+            
+            # Try to get the target block, or the best available block
+            if self.target_label and self.target_label in detected_blocks:
+                best_detection = detected_blocks[self.target_label]
+                best_label = self.target_label
+            else:
+                best_detection, best_label = self.find_best_block_in_frame(detected_blocks)
+            
+            if best_detection is None:
+                # Lost track of the block, need to reset and find it again
+                self.centered = False
+                return None
+            
+            # Update target if needed
+            if best_label != self.target_label and best_label is not None:
+                self.target_label = best_label
+                self.target_lock = True
+                log_info(f"Updated target to {best_label}")
+            
+            # Approach the block
+            is_at_pickup_position = self.approach_block(best_detection, best_label)
+            
+            # If not at pickup position yet, continue approaching
+            if not is_at_pickup_position:
+                return None
+        
+        # If we're centered and at pickup position, pick up the block
+        pickup_success = self.pickup_block()
+        
+        # Save target_label for return value
+        target_label = self.target_label
+        
+        # Reset state for next pickup
+        self.centered = False
+        self.approach_complete = False
+        self.target_lock = False
+        self.target_label = None
+        self.seen_blocks = {}  # Clear memory after pickup
+        
+        # Return success if pickup was successful
+        if pickup_success:
+            return f"success:{target_label}"
         
         return None

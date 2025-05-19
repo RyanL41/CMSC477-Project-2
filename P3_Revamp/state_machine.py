@@ -19,7 +19,7 @@ from P3_Revamp.vision import ObjectDetector
 from P3_Revamp.apriltag_detector import AprilTagDetector
 from P3_Revamp.localization import Localizer
 from P3_Revamp.path_planning import PathPlanner
-from P3_Revamp.lego_pickup import LegoPickupController
+from P3_Revamp.lego_pickup import EnhancedLegoPickupController
 from P3_Revamp.lego_dropoff import LegoDropoffController
 from P3_Revamp.center_line import CenterLineController
 from P3_Revamp.utilities import (
@@ -52,7 +52,7 @@ class RobotStateMachine:
         # Initialize component controllers
         self.localizer = Localizer(self.robot, self.apriltag_detector, debug=debug)
         self.path_planner = PathPlanner(self.robot, self.object_detector, self.apriltag_detector, debug=debug)
-        self.lego_pickup = LegoPickupController(self.robot, self.object_detector, self.apriltag_detector, debug=debug)
+        self.lego_pickup = EnhancedLegoPickupController(self.robot, self.object_detector, self.apriltag_detector, debug=debug)
         self.lego_dropoff = LegoDropoffController(self.robot, self.object_detector, debug=debug)
         self.center_line = CenterLineController(self.robot, self.object_detector, debug=debug)
         
@@ -431,6 +431,12 @@ class RobotStateMachine:
         
         # Re-enable movement after pickup
         self.robot.set_movement_enabled(True)
+        
+        # Handle the enhanced result format ("success:label")
+        if result and result.startswith("success:"):
+            block_label = result.split(":", 1)[1]
+            log_info(f"Successfully picked up block: {block_label}")
+            return "success"
         
         return result
     
