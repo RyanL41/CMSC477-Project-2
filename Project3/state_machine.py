@@ -10,7 +10,7 @@ from copy import deepcopy
 
 from Project3.config import (
     SCALE_FACTOR, RobotState, STARTING_POSITION_NUMBER, SELF_CLOSET_NUMBER, 
-    TARGET_CLOSET_NUMBER, CAMERA_MATRIX, APRILTAG_SIZE_METERS
+    TARGET_CLOSET_NUMBER,TARGET_SEARCH_NUMBER, CAMERA_MATRIX, APRILTAG_SIZE_METERS
 )
 from Project3.apriltag_detector import AprilTagDetector
 from Project3.vision import ObjectDetector
@@ -27,6 +27,7 @@ from djikstra import get_path
 LEGO_BIG_LABEL = "lego_big"
 LEGO_SMALL_LABEL = "lego_small"
 LEGO_MED_LABEL = "lego_med"
+DEFAULT_TARGET_Y = 256
 
 class RobotStateMachine:
     def __init__(self, robot_sn, map_file):
@@ -63,6 +64,8 @@ class RobotStateMachine:
         self.starting_pos_number = STARTING_POSITION_NUMBER
         self.self_closet_number = SELF_CLOSET_NUMBER
         self.target_closet_number = TARGET_CLOSET_NUMBER
+        self.target_search_number = TARGET_SEARCH_NUMBER
+        self.targety = DEFAULT_TARGET_Y
         
         # Performance tracking data
         self.approach_data = {
@@ -76,6 +79,7 @@ class RobotStateMachine:
             for state in RobotState
         }
         # Thread stop flag for vision
+        
         self.stop_vision_thread = False
 
     def initialize(self):
@@ -90,7 +94,7 @@ class RobotStateMachine:
         else:
             print("Warning: No starting position found in grid, using (0,0)")
         
-        self.current_state = RobotState.LOOKING_FOR_BLOCK_IN_CLOSET
+        self.current_state = RobotState.LOOKING_FOR_OBSTACLES
 
     def get_closet_position(self, closet_number):
         """Find the coordinates of a closet in the grid."""
@@ -100,15 +104,18 @@ class RobotStateMachine:
     def get_path_from_vision(self,target):
         
         while not self.stop_vision_thread:
-            current_x, current_y, current_heading = self.robot.get_position()
+            # current_x, current_y, current_heading = self.robot.get_position()
+            
+            # print("Current Position:", current_x, current_y, current_heading)
+            # current_x_blocks, current_y_blocks = current_x / SCALE_FACTOR, current_y / SCALE_FACTOR
 
-            print("Current Position:", current_x, current_y, current_heading)
-            current_x_blocks, current_y_blocks = current_x / SCALE_FACTOR, current_y / SCALE_FACTOR
-
+            #Try using the current waypoint in the path BAD IDEA
+            current_x_blocks, current_y_blocks = self.path[0]
             print("Current Position Blocks:", current_x_blocks, current_y_blocks)
             # Get camera frame and run detections
             frame = self.robot.get_frame()
             if frame is None:
+                print("NO FRAME FOUND CONTINUE")
                 continue
             
             # Run YOLO detection
@@ -119,22 +126,25 @@ class RobotStateMachine:
             found_med_object = self.object_detector.get_best_detection(self.target_label, detections)
             self.target_label = LEGO_BIG_LABEL
             found_big_object = self.object_detector.get_best_detection(self.target_label, detections)
+            found_robot = self.object_detector.get_best_detection('robot',detections)
 
             # Run AprilTag detection
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             apriltag_detections = self.apriltag_detector.find_tags(gray)
             
-            obstacles = []
+            if found_small_object or found_med_object or found_big_object:
+                self.path = []
+                return
             
             # Process AprilTag detections
             if apriltag_detections:
                 print(f"Found {len(apriltag_detections)} AprilTags")
-                robot_pos = (current_x, current_y)
+                # robot_pos = (current_x, current_y)
                 
                 for detection in apriltag_detections:
                     # Get tag world position
                     tag_relative_pos = self.apriltag_detector.get_tag_world_position(detection)
-
+                    _,_,current_heading = self.robot.get_position()
                     # rotate the relative position by the robot's heading
                     R_z_rot = np.array(
                         [[np.cos(current_heading), -np.sin(current_heading)], [np.sin(current_heading), np.cos(current_heading)]]
@@ -156,13 +166,27 @@ class RobotStateMachine:
                             print("New Tag",tag_world_pos[0])
                             self.obstacles[x] = (((tag_world_pos[0], -tag_world_pos[1]),tag_id))
                             update = True
+                            for obstacle2 in self.obstacles:
+                                if np.sqrt((self.obstacles[x][0][0]-obstacle2[0][0])**2 + (self.obstacles[x][0][1]-obstacle2[0][1])**2) < 2:
+                                    print("TAG WORLD pos x:",tag_world_pos[0])
+                                    print("Obstacle x:",obstacle2[0][0])
+                                    print("DISTANCE FORMULA RESULT:",np.sqrt((self.obstacles[x][0][0]-obstacle2[0][0])**2 + (self.obstacles[x][0][1]-obstacle2[0][1])**2))
+                                    self.obstacles[x] = obstacle2
+
                             break
                     
                     if not update:
+                        for obstacle2 in self.obstacles:
+                                if np.sqrt((tag_world_pos[0]-obstacle2[0][0])**2 + (-tag_world_pos[1]-obstacle2[0][1])**2) < 2:
+                                    print("TAG WORLD pos x:",tag_world_pos[0])
+                                    print("Obstacle x:",obstacle2[0][0])
+                                    print("DISTANCE FORMULA RESULT:",np.sqrt((self.obstacles[x][0][0]-obstacle2[0][0])**2 + (self.obstacles[x][0][1]-obstacle2[0][1])**2))
+                                    self.obstacles[x] = obstacle2
                         self.obstacles.append(((tag_world_pos[0], -tag_world_pos[1]),tag_id))
                         grid_copy = deepcopy(self.grid)
                     # self.path = get_path(grid_copy, self.starting_pos_number, self.self_closet_number, upscaling_factor=1, num_points=25, additional_obstacles=obstacles, starting_pos_blocks=(current_x_blocks, -current_y_blocks))
-                        self.path = get_path(grid_copy, self.starting_pos_number, target, upscaling_factor=1, num_points=25, additional_obstacles=[obs[0] for obs in self.obstacles], starting_pos_blocks=(current_x_blocks, -current_y_blocks))
+                        self.path = get_path(grid_copy, self.starting_pos_number, target, upscaling_factor=1, num_points=10, additional_obstacles=[obs[0] for obs in self.obstacles], starting_pos_blocks=(current_x_blocks, -current_y_blocks))
+                        self.path = self.path[1:]
                     # obstacles.append((tag_world_pos[0], -tag_world_pos[1]))
                     #Add self to call get path in other areas
                     
@@ -173,7 +197,7 @@ class RobotStateMachine:
                     self.path = get_path(grid_copy, self.starting_pos_number, target, upscaling_factor=1, num_points=25, additional_obstacles=[obs[0] for obs in self.obstacles], starting_pos_blocks=(current_x_blocks, -current_y_blocks))
             
             # Add a small sleep to avoid CPU hogging
-            time.sleep(7)
+            time.sleep(10)
             
     
 
@@ -213,8 +237,7 @@ class RobotStateMachine:
 
         self.current_state = RobotState.APPROACH_BLOCK
 
-    def approach_object_simple(self, detection, target_label, start_time):
-        target_y = 257
+    def approach_object_simple(self, detection, target_label, start_time,target_y=256):
         camera_center_x = 320  # Assuming camera width is 640px
         
         if not detection:
@@ -240,7 +263,7 @@ class RobotStateMachine:
         if is_kinda_close:
             return 0.04, 0, z_vel
 
-        return 0.1, 0, z_vel
+        return 0.08, 0, z_vel
         
     def get_center_distance(self, detection):
         """Calculate how far the object's center is from the camera's horizontal center."""
@@ -295,12 +318,15 @@ class RobotStateMachine:
                 
             # Approach the closest object
             start_time = time.time()
-            x_vel, y_vel, z_vel = self.approach_object_simple(closest_object, object_label, start_time)
+            x_vel, y_vel, z_vel = self.approach_object_simple(closest_object, object_label, start_time,self.targety)
             
             if x_vel == 0 and y_vel == 0 and z_vel == 0:
                 self.robot.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
                 self.current_state = RobotState.GRAB_BLOCK
                 break
+            elif x_vel == 0.04:
+                self.targety = self.targety - 2
+                self.robot.ep_robot.chassis.drive_speed(x=x_vel, y=y_vel, z=z_vel)
             else:
                 self.robot.ep_robot.chassis.drive_speed(x=x_vel, y=y_vel, z=z_vel)
         
@@ -324,11 +350,76 @@ class RobotStateMachine:
         self.robot.backup(distance_m)
     def handle_deliver_direction(self,rot):
         curr_pos = self.robot.get_position()
-        # print("Rotating ",(rot-np.rad2deg(curr_pos[2]))%360," degrees")
-        while np.abs(np.rad2deg(curr_pos[2])-rot) < 1:
+        print("Rotating ",(rot-np.rad2deg(curr_pos[2]))%360," degrees")
+        print("DIFFERENCE BETWEEN ACTUAL AND DESIRED:",np.abs(np.rad2deg(curr_pos[2])-rot))
+        while np.abs(np.rad2deg(curr_pos[2])%360-(-rot%360)) > 1:
             curr_pos = self.robot.get_position()
-            z_vel = np.clip(-np.rad2deg(curr_pos[2]) * 0.1, -25, 25)
-            self.robot.ep_robot.chassis.drive_speed(x=0, y=0,z=z_vel, xy_speed=0.1).wait_for_completed()
+            z_vel = np.clip((-rot) * 0.1, -25, 25)
+            # print("Zvel:",z_vel)
+            # print("DIFFERENCE BETWEEN ACTUAL AND DESIRED:",np.abs(np.rad2deg(curr_pos[2])%360)-(-rot%360))
+            self.robot.ep_robot.chassis.drive_speed(x=0, y=0,z=z_vel)
+    def handle_looking_for_obstacles(self):
+        for i in range(10):
+
+            frame = self.robot.get_frame()
+            while frame is None:
+                frame = self.robot.get_frame()
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            apriltag_detections = self.apriltag_detector.find_tags(gray)
+
+            if apriltag_detections:
+                print(f"Found {len(apriltag_detections)} AprilTags")
+                # robot_pos = (current_x, current_y)
+                
+                for detection in apriltag_detections:
+                    # Get tag world position
+                    tag_relative_pos = self.apriltag_detector.get_tag_world_position(detection)
+                    _,_,current_heading = self.robot.get_position()
+                    # rotate the relative position by the robot's heading
+                    R_z_rot = np.array(
+                        [[np.cos(current_heading), -np.sin(current_heading)], [np.sin(current_heading), np.cos(current_heading)]]
+                    )
+                    print("tag_relative_pos",tag_relative_pos)
+                    tag_relative_pos = R_z_rot @ tag_relative_pos
+                    print("tag_relative_pos",tag_relative_pos)
+                    tag_world_pos = (2 + tag_relative_pos[1], -2 - tag_relative_pos[0])
+                    if tag_relative_pos[0] > 10 and tag_relative_pos[0] < 17 and tag_relative_pos[1] > 8 and tag_relative_pos[0] < 10:
+                        continue 
+                    # Get tag ID
+                    tag_id = self.apriltag_detector.get_tag_id(detection)
+                    print(f"AprilTag ID {tag_id} at position: ({tag_world_pos[0]:.3f}, {tag_world_pos[1]:.3f})")
+                    update = False
+                    
+                    for x,obstacle in enumerate(self.obstacles):
+                        if tag_id == obstacle[1]:
+                            print("Obstacle",obstacle[0][0],obstacle[0][1])
+                            print("New Tag",tag_world_pos[0])
+                            self.obstacles[x] = (((tag_world_pos[0], -tag_world_pos[1]),tag_id))
+                            update = True
+                            # for obstacle2 in self.obstacles:
+                            #     if np.sqrt((self.obstacles[x][0][0]-obstacle2[0][0])**2 + (self.obstacles[x][0][1]-obstacle2[0][1])**2) < 5:
+                            #         print("TAG WORLD pos x:",tag_world_pos[0])
+                            #         print("Obstacle x:",obstacle2[0][0])
+                            #         print("DISTANCE FORMULA RESULT:",np.sqrt((self.obstacles[x][0][0]-obstacle2[0][0])**2 + (self.obstacles[x][0][1]-obstacle2[0][1])**2))
+                            #         self.obstacles[x] = obstacle2
+
+                            break
+                    
+                    if not update:
+                        # for obstacle2 in self.obstacles:
+                                # if np.sqrt((tag_world_pos[0]-obstacle2[0][0])**2 + (-tag_world_pos[1]-obstacle2[0][1])**2) < 2:
+                                #     print("TAG WORLD pos x:",tag_world_pos[0])
+                                #     print("Obstacle x:",obstacle2[0][0])
+                                #     print("DISTANCE FORMULA RESULT:",np.sqrt((self.obstacles[x][0][0]-obstacle2[0][0])**2 + (self.obstacles[x][0][1]-obstacle2[0][1])**2))
+                                #     self.obstacles[x] = obstacle2
+                        self.obstacles.append(((tag_world_pos[0], -tag_world_pos[1]),tag_id))
+                        grid_copy = deepcopy(self.grid)
+            self.robot.ep_robot.chassis.move(x=0, y=0,z=10, xy_speed=0.2).wait_for_completed()
+        for i in range(10):
+            self.robot.ep_robot.chassis.move(x=0, y=0,z=-10, xy_speed=0.2).wait_for_completed()
+        self.current_state = RobotState.LOOKING_FOR_BLOCK_IN_CLOSET
+
+          
 
 
     def run(self):
@@ -356,13 +447,17 @@ class RobotStateMachine:
                     # one async loop with get_path_from_vision()
                     # one async loop with follow_path()
                     self.stop_vision_thread = False
-                    self.path = get_path(self.grid, self.starting_pos_number, self.self_closet_number, upscaling_factor=2, num_points=50)
+                    grid_copy = deepcopy(self.grid)
+                    self.path = get_path(grid_copy, self.starting_pos_number, self.self_closet_number, upscaling_factor=2, num_points=20,additional_obstacles=[obs[0] for obs in self.obstacles])
 
                     # Create and start two threads
-                    vision_thread = threading.Thread(target=self.get_path_from_vision, args=(self.self_closet_number,))
+                    # vision_thread = threading.Thread(target=self.get_path_from_vision, args=(self.self_closet_number,))
                     path_thread = threading.Thread(target=self.follow_path)
+
+                    # vision_thread.daemon = True
+                    path_thread.daemon = True
                     
-                    vision_thread.start()
+                    # vision_thread.start()
                     path_thread.start()
                     
                     # Wait for the follow_path thread to complete
@@ -370,14 +465,18 @@ class RobotStateMachine:
                     
                     # Stop the vision thread
                     self.stop_vision_thread = True
-                    vision_thread.join()
+                    # vision_thread.join()
 
                 elif self.current_state == RobotState.APPROACH_BLOCK:
+                    self.targety = DEFAULT_TARGET_Y
                     self.handle_approach_block()
+                elif self.current_state == RobotState.LOOKING_FOR_OBSTACLES:
+                    self.handle_looking_for_obstacles()
                 elif self.current_state == RobotState.GRAB_BLOCK:
                     self.handle_grab_block()
                 elif self.current_state == RobotState.DROP_OFF:
                     self.handle_drop_off()
+                    self.current_state == RobotState.LOOKING_FOR_BLOCK_IN_CLOSET
                 elif self.current_state == RobotState.MOVE_ARM:
                     self.handle_move_arm(-100)  # Default move up
                 elif self.current_state == RobotState.BACKUP:
@@ -386,22 +485,24 @@ class RobotStateMachine:
                 elif self.current_state == RobotState.DELIVER_BLOCK:
 
                     self.handle_deliver_direction(90)
+
                     current_x, current_y, current_heading = self.robot.get_position()
 
                     print("Current Position:", current_x, current_y, current_heading)
                     current_x_blocks, current_y_blocks = current_x / SCALE_FACTOR, current_y / SCALE_FACTOR
 
                     print("Current Position Blocks:", current_x_blocks, current_y_blocks)
-                    self.path = get_path(self.grid, self.starting_pos_number, self.target_closet_number, upscaling_factor=1, num_points=50, additional_obstacles=[obs[0] for obs in self.obstacles],starting_pos_blocks=(current_x_blocks,-current_y_blocks))
+
+                    self.path = get_path(self.grid, self.starting_pos_number, self.target_search_number, upscaling_factor=2, num_points=15, additional_obstacles=[obs[0] for obs in self.obstacles],starting_pos_blocks=(current_x_blocks,-current_y_blocks))
                     
 
                     # Create and start two threads
                     self.stop_vision_thread = False
 
-                    vision_thread = threading.Thread(target=self.get_path_from_vision,args=(self.target_closet_number,))
+                    # vision_thread = threading.Thread(target=self.get_path_from_vision,args=(self.target_closet_number,))
                     path_thread = threading.Thread(target=self.follow_path)
                     
-                    vision_thread.start()
+                    # vision_thread.start()
                     path_thread.start()
                     
                     # Wait for the follow_path thread to complete
@@ -409,8 +510,21 @@ class RobotStateMachine:
                     
                     # Stop the vision thread
                     self.stop_vision_thread = True
-                    vision_thread.join()
-                    self.handle_deliver_direction(90)
+                    self.handle_looking_for_obstacles()
+
+                    current_x, current_y, current_heading = self.robot.get_position()
+                    current_x_blocks, current_y_blocks = current_x / SCALE_FACTOR, current_y / SCALE_FACTOR
+                    self.path = get_path(self.grid, self.starting_pos_number, self.target_closet_number, upscaling_factor=2, num_points=30, additional_obstacles=[obs[0] for obs in self.obstacles],starting_pos_blocks=(current_x_blocks,-current_y_blocks))
+                    
+                    path_thread = threading.Thread(target=self.follow_path)
+                    
+                    # vision_thread.start()
+                    path_thread.start()
+                    
+                    # Wait for the follow_path thread to complete
+                    path_thread.join()
+                    # vision_thread.join()
+                    self.handle_deliver_direction(180)
                     self.current_state = RobotState.DROP_OFF
 
                 # Add other states as needed

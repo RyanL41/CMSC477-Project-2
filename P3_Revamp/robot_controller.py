@@ -60,7 +60,7 @@ class RobotController:
         )
 
         # Initialize arm and gripper
-        self.ep_robot.robotic_arm.move(x=0, y=ARM_DOWN_POSITION).wait_for_completed()
+        # self.ep_robot.robotic_arm.move(x=0, y=ARM_DOWN_POSITION).wait_for_completed()
         self.ep_robot.gripper.open(power=GRIPPER_POWER)
         time.sleep(1)
         self.ep_robot.gripper.pause()
@@ -71,6 +71,18 @@ class RobotController:
         
         # Initialize position with the known starting position
         self.set_position(INITIAL_POSITION[0], INITIAL_POSITION[1], INITIAL_POSITION[2])
+
+    def get_position(self):
+        """Returns the latest position of the robot with grid-based adjustments."""
+        time_since_update = time.time() - self.last_position_update
+        if time_since_update > 1.0:
+            print(f"Warning: Stale position data ({time_since_update:.1f}s old)")
+        
+        # Adjust coordinates based on grid starting position
+        real_x = self.x + (self.start_grid_x * CUBE_SIZE_METERS)
+        real_y = self.y + (self.start_grid_y * CUBE_SIZE_METERS)
+        
+        return (real_x, real_y, self.theta)    
         
     def position_callback(self, position_info):
         """
@@ -141,7 +153,7 @@ class RobotController:
             theta: Heading angle in radians
         """
         # Get the current raw position from the robot
-        raw_x, raw_y, _ = self.ep_robot.chassis.get_position()
+        raw_x, raw_y, _ = self.get_position()
         
         # Calculate the offsets needed to make the position correct
         self.x_offset = raw_x - x
@@ -197,7 +209,7 @@ class RobotController:
         self.apriltag_position_correction = (correction_x, correction_y)
         
         # Reset odometry offsets
-        raw_x, raw_y, _ = self.ep_robot.chassis.get_position()
+        raw_x, raw_y, _ = self.get_position()
         self.x_offset = raw_x - apriltag_x
         self.y_offset = raw_y - apriltag_y
         
@@ -457,8 +469,8 @@ class RobotController:
         Args:
             enabled: Boolean indicating whether movement is enabled
         """
-        self.movement_enabled = enabled
-        if not enabled:
+        self.movement_enabled = True
+        if not self.movement_enabled:
             # Stop the robot when disabling movement
             self.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
             print("Robot movement disabled")

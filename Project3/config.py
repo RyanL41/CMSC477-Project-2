@@ -17,6 +17,7 @@ class RobotState(Enum):
     DELIVER_BLOCK = "deliver_block"
     BULLY_MODE = "bully_mode"
     WALL_MODE = "wall_mode"
+    LOOKING_FOR_OBSTACLES = "looking_for_obstacles"
     ERROR = "error"
 
 # YOLO model path
@@ -37,6 +38,7 @@ BLOCK_LABELS = [LEGO_BIG_LABEL, LEGO_SMALL_LABEL, LEGO_MED_LABEL]
 STARTING_POSITION_NUMBER = 2  # either 2 or 5 (see InitialMap.csv)
 SELF_CLOSET_NUMBER = 4       # either 3 or 4 (see InitialMap.csv)
 TARGET_CLOSET_NUMBER = 3     # either 3 or 4 (see InitialMap.csv)
+TARGET_SEARCH_NUMBER = 5
 
 # Robot physical parameters
 CUBE_SIZE_METERS = 0.26      # 1 cube unit = 0.26 meters

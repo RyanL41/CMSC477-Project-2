@@ -87,6 +87,7 @@ class PathPlanner:
             return False
         
         # Get current position and heading
+        print("Robot.get_postition:",self.robot.get_position())
         current_x, current_y, current_heading = self.robot.get_position()
         
         # Calculate angle to target
@@ -102,6 +103,7 @@ class PathPlanner:
         current_heading_deg = np.rad2deg(current_heading)
         
         # Calculate angle difference
+        print("ANGLE DIFF:",(target_angle_deg - current_heading_deg) % 360)
         angle_diff = (target_angle_deg - current_heading_deg) % 360
         if angle_diff > 180:
             angle_diff -= 360

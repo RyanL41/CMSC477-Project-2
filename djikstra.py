@@ -170,16 +170,21 @@ def interpolate_path(points, num_points=1000, bc_type="natural"):
 def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_obstacles = [], starting_pos_blocks = None):
     starting_grid = grid
     upscale_factor = upscaling_factor * 2 - 1  # ensure odd number
-
+    
     for (obs_x, obs_y) in additional_obstacles:
-        print("Assigning", obs_x, obs_y)
+
+        print("Assigning obsx obsy", obs_x, obs_y)
         if obs_x < 0 or obs_y < 0:
             continue
         if obs_x > len(starting_grid) or obs_y > len(starting_grid[0]):
             continue
             
-        x_index = int(obs_x * upscale_factor + upscale_factor // 2)
-        y_index = int(obs_y * upscale_factor + upscale_factor // 2)
+        # x_index = int(obs_x * upscale_factor + upscale_factor // 2)
+        # y_index = int(obs_y * upscale_factor + upscale_factor // 2)
+
+        x_index = int(obs_x )
+        y_index = int(obs_y)
+
 
         print("Assigning", x_index, y_index)
         starting_grid[x_index, y_index] = 1
@@ -195,7 +200,7 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
         start_y = starting_pos_blocks[1]
         
         # set starting position to 2
-        starting_grid[int(start_x+.5), int(start_y+.5)] = 2
+        starting_grid[int(start_x), int(start_y)] = 2
 
 
     upscaled_grid = np.zeros(
@@ -220,7 +225,7 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
                 print(x,y,cell)
                 upscaled_grid[x * upscale_factor + upscale_factor // 2, y * upscale_factor + upscale_factor // 2] = cell
 
-    padded_grid = get_padded_grid(upscaled_grid, radius=max(upscale_factor - 1, 1))
+    padded_grid = get_padded_grid(upscaled_grid, radius=upscale_factor - 1)
 
     grid_to_print = ""
     for row in padded_grid:

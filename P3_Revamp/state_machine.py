@@ -58,7 +58,6 @@ class RobotStateMachine:
         
         # Thread control
         self.vision_thread_active = False
-        self.movement_lock = create_thread_lock()
         self.movement_enabled = True
         self.target_found = False
         
@@ -102,7 +101,6 @@ class RobotStateMachine:
                 self.localizer.detect_and_track_apriltags(
                     frame=frame, 
                     shared_data=self.detection_data,
-                    lock=self.movement_lock
                 )
                 
                 # Process objects with YOLO
@@ -110,14 +108,13 @@ class RobotStateMachine:
                 
                 # Update shared data with object detections
                 if detections:
-                    with self.movement_lock:
-                        self.detection_data['objects'] = {}
-                        for detection in detections:
-                            label = detection['label']
-                            self.detection_data['objects'][label] = detection
-                        
-                        self.detection_data['last_update'] = time.time()
-                
+                    self.detection_data['objects'] = {}
+                    for detection in detections:
+                        label = detection['label']
+                        self.detection_data['objects'][label] = detection
+                    
+                    self.detection_data['last_update'] = time.time()
+            
                 # If in debug mode and there's a visualized frame, display it
                 if self.debug and vis_frame is not None:
                     cv2.imshow("Vision", vis_frame)
