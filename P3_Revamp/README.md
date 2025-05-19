@@ -22,11 +22,13 @@ This is a revamped implementation of Project 3 for the RoboMaster EP robot. It u
 ## Installation
 
 1. Ensure you have the RoboMaster SDK installed:
+
    ```bash
    pip install robomaster
    ```
 
 2. Install required dependencies:
+
    ```bash
    pip install opencv-python numpy pupil-apriltags ultralytics
    ```
@@ -38,13 +40,8 @@ This is a revamped implementation of Project 3 for the RoboMaster EP robot. It u
 Run the main program:
 
 ```bash
-python -m P3_Revamp.main --robot-sn YOUR_ROBOT_SN
+python3 -m main
 ```
-
-Command line options:
-- `--robot-sn`: Robot serial number (default: "3JKCH8800100YN")
-- `--debug`: Enable debug mode with additional logging
-- `--simulate`: (Not implemented yet) Run in simulation mode
 
 ## Task Sequence
 
@@ -72,6 +69,7 @@ This sequence repeats, allowing the robot to continuously collect and deliver Le
 ## Customization
 
 You can adjust parameters in `config.py`:
+
 - Target positions
 - Detection thresholds
 - Movement speeds
