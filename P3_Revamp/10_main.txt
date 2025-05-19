@@ -1,0 +1,86 @@
+# Main Entry Point Implementation
+
+## Overview
+The main entry point will initialize the robot control system and start the state machine. It serves as the starting point for the P3-Revamp implementation.
+
+## Implementation Details
+
+```python
+"""
+Main entry point for P3-Revamp - RoboMaster EP robot control.
+"""
+import traceback
+import sys
+import os
+import time
+import argparse
+
+# Add the parent directory to sys.path to enable imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from .state_machine import RobotStateMachine
+
+
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description='RoboMaster EP Robot Control System')
+    parser.add_argument('--robot-sn', type=str, default="3JKCH8800100YN",
+                        help='Serial number of the robot')
+    parser.add_argument('--map-file', type=str, default="./InitialMap.csv",
+                        help='Path to the CSV map file')
+    parser.add_argument('--debug', action='store_true',
+                        help='Enable debug mode with additional logging')
+    return parser.parse_args()
+
+
+def main():
+    """Main entry point for the program."""
+    # Parse command line arguments
+    args = parse_arguments()
+    
+    # Print startup information
+    print("=== P3-Revamp: RoboMaster EP Robot Control System ===")
+    print(f"Robot SN: {args.robot_sn}")
+    print(f"Map File: {args.map_file}")
+    print(f"Debug Mode: {'Enabled' if args.debug else 'Disabled'}")
+    print("Starting in 3 seconds...")
+    time.sleep(3)
+    
+    # Create and run the state machine
+    state_machine = RobotStateMachine(args.robot_sn, args.map_file, debug=args.debug)
+    
+    try:
+        state_machine.run()
+    except KeyboardInterrupt:
+        print("\nProgram interrupted by user")
+    except Exception as e:
+        print(f"Error: {e}")
+        print(traceback.format_exc())
+    finally:
+        print("Shutting down robot...")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+## Command Line Arguments
+- `--robot-sn`: Serial number of the robot (default: "3JKCH8800100YN")
+- `--map-file`: Path to the CSV map file (default: "./InitialMap.csv")
+- `--debug`: Enable debug mode with additional logging
+
+## Running the Program
+The program can be run from the command line with:
+```
+python -m P3_Revamp.main
+```
+
+With custom arguments:
+```
+python -m P3_Revamp.main --robot-sn YOUR_SN --map-file path/to/map.csv --debug
+```
+
+## Integration with Other Components
+The main entry point integrates with the state machine component, which in turn integrates with all the other components.
+
+## References from Project3
+- `main.py` from Project3

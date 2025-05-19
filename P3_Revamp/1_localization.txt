@@ -1,0 +1,115 @@
+# Localization Implementation
+
+## Overview
+The localization system will use AprilTags to determine the robot's position. The robot starts at a known position (2, -2) and will use AprilTags for continuous localization.
+
+## Implementation Details
+
+### Initialization
+```python
+def initialize_localization(robot_controller, apriltag_detector):
+    # Set initial known position
+    robot_controller.set_position(2, -2, 0)  # x, y, theta
+    
+    # Create a hash table to store AprilTag positions
+    apriltag_positions = {}
+    
+    return apriltag_positions
+```
+
+### AprilTag Detection and Tracking
+Utilizing the existing `apriltag_detector.py` module from Project3:
+
+```python
+def detect_and_track_apriltags(robot_controller, apriltag_detector, apriltag_positions):
+    # Get the latest frame
+    frame = robot_controller.get_frame()
+    if frame is None:
+        return None
+    
+    # Convert to grayscale for AprilTag detection
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    
+    # Detect AprilTags
+    detections = apriltag_detector.find_tags(gray)
+    
+    if not detections:
+        return None
+    
+    # Get current robot position
+    current_x, current_y, current_heading = robot_controller.get_position()
+    
+    # Process each detected AprilTag
+    for detection in detections:
+        # Get tag ID
+        tag_id = apriltag_detector.get_tag_id(detection)
+        
+        # Get tag position relative to robot
+        tag_relative_pos = apriltag_detector.get_tag_world_position(detection)
+        
+        # Convert to world coordinates
+        R_z_rot = np.array([
+            [np.cos(current_heading), -np.sin(current_heading)],
+            [np.sin(current_heading), np.cos(current_heading)]
+        ])
+        
+        tag_relative_pos = R_z_rot @ tag_relative_pos
+        tag_world_pos = (current_x + tag_relative_pos[1], current_y - tag_relative_pos[0])
+        
+        # Store in hash table
+        apriltag_positions[tag_id] = {
+            'position': tag_world_pos,
+            'last_seen': time.time()
+        }
+        
+        print(f"AprilTag ID {tag_id} at position: ({tag_world_pos[0]:.3f}, {tag_world_pos[1]:.3f})")
+    
+    return detections
+```
+
+### Search for AprilTags When None Detected
+```python
+def search_for_apriltags(robot_controller, apriltag_detector, apriltag_positions):
+    # Rotate in place to find AprilTags if none are visible
+    rotation_speed = 20  # degrees per rotation
+    max_rotations = 360 // rotation_speed
+    
+    for _ in range(max_rotations):
+        # Rotate by a small amount
+        robot_controller.ep_robot.chassis.move(x=0, y=0, z=rotation_speed, xy_speed=0.3).wait_for_completed()
+        
+        # Try to detect AprilTags
+        detections = detect_and_track_apriltags(robot_controller, apriltag_detector, apriltag_positions)
+        
+        # If we found an AprilTag, stop rotating
+        if detections:
+            return True
+    
+    # If we've completed a full 360-degree rotation without finding an AprilTag
+    return False
+```
+
+### Main Localization Loop
+```python
+def localization_loop(robot_controller, apriltag_detector, apriltag_positions):
+    # Try to detect AprilTags
+    detections = detect_and_track_apriltags(robot_controller, apriltag_detector, apriltag_positions)
+    
+    # If no AprilTags were detected, search for them
+    if not detections:
+        found = search_for_apriltags(robot_controller, apriltag_detector, apriltag_positions)
+        if not found:
+            print("Warning: No AprilTags found during 360-degree scan")
+            return False
+    
+    # Successfully localized
+    return True
+```
+
+## Integration with State Machine
+This localization system will be integrated into the state machine as the initial state. Once at least one AprilTag has been detected and the robot's position has been established, the state machine can transition to the path planning state.
+
+## References from Project3
+- `AprilTagDetector` class in `apriltag_detector.py`
+- Position tracking in `RobotController` class in `robot_controller.py`
+- Frame capturing in `RobotController.get_frame()` method

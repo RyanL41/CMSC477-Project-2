@@ -1,0 +1,707 @@
+# State Machine Implementation
+
+## Overview
+The state machine will orchestrate all the robot's behaviors by managing transitions between different states. It will implement the flow described in the ideas.txt file, with each state handling a specific task.
+
+## State Definition
+```python
+from enum import Enum
+
+class RobotState(Enum):
+    LOCALIZATION = "localization"
+    PATH_PLANNING_1_LEGO = "path_planning_1_lego"
+    LEGO_PICKUP = "lego_pickup"
+    PATH_PLANNING_2_CENTER_LINE_PRE = "path_planning_2_center_line_pre"
+    INTERMEDIARY_CENTERING = "intermediary_centering"
+    PATH_PLANNING_3_CENTER_LINE_POST = "path_planning_3_center_line_post"
+    LEGO_DROPOFF = "lego_dropoff"
+    PATH_PLANNING_4_CENTER_LINE_POST_DROPOFF = "path_planning_4_center_line_post_dropoff"
+    PATH_PLANNING_5_CENTER_LINE_RETURN = "path_planning_5_center_line_return"
+    ERROR = "error"
+```
+
+## State Machine Implementation
+```python
+class RobotStateMachine:
+    def __init__(self, robot_sn, map_file, debug=False):
+        """
+        Initialize the state machine.
+        
+        Args:
+            robot_sn: Serial number of the robot
+            map_file: Path to the CSV map file
+            debug: Enable debug mode with additional logging
+        """
+        self.map_file = map_file
+        self.current_state = RobotState.LOCALIZATION
+        self.debug = debug
+        
+        # Initialize robot controller
+        self.robot = RobotController(robot_sn)
+        
+        # Initialize vision systems
+        self.object_detector = ObjectDetector()
+        self.apriltag_detector = AprilTagDetector(
+            np.array(CAMERA_MATRIX), 
+            marker_size_m=APRILTAG_SIZE_METERS
+        )
+        
+        # Control flags for threads
+        self.vision_thread_active = False
+        self.movement_lock = threading.Lock()
+        self.movement_enabled = True
+        self.target_found = False
+        
+        # Shared data updated by vision thread
+        self.detection_data = {
+            'apriltags': {},
+            'objects': {},
+            'last_update': 0
+        }
+        
+        # AprilTag tracking
+        self.apriltag_positions = {}
+        
+        # Target tracking
+        self.target_labels = []
+        self.target_coordinate = None
+        self.saved_target_position_intermediary = None
+        self.saved_target_position_post = None
+        
+        # Performance tracking data
+        self.approach_data = {
+            state.value: {
+                "time_steps": [],
+                "actual_x": [],
+                "target_x": [],
+                "actual_y": [],
+                "target_y": [],
+            }
+            for state in RobotState
+        }
+    
+    def vision_loop(self):
+        """
+        Main vision processing loop - NEVER issues movement commands directly
+        Only updates shared data structures.
+        """
+        while self.vision_thread_active:
+            # Get current frame
+            frame = self.robot.get_frame()
+            if frame is None:
+                time.sleep(0.01)
+                continue
+                
+            # Process the frame for detections
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            
+            # Detect AprilTags
+            apriltag_detections = self.apriltag_detector.find_tags(gray)
+            
+            # Update shared data structure with AprilTag detections
+            if apriltag_detections:
+                current_x, current_y, current_heading = self.robot.get_position()
+                
+                for detection in apriltag_detections:
+                    tag_id = self.apriltag_detector.get_tag_id(detection)
+                    tag_relative_pos = self.apriltag_detector.get_tag_world_position(detection)
+                    
+                    # Convert to world coordinates
+                    R_z_rot = np.array([
+                        [np.cos(current_heading), -np.sin(current_heading)],
+                        [np.sin(current_heading), np.cos(current_heading)]
+                    ])
+                    
+                    tag_relative_pos = R_z_rot @ tag_relative_pos
+                    tag_world_pos = (current_x + tag_relative_pos[1], current_y - tag_relative_pos[0])
+                    
+                    # Update shared data structures - NO movement commands
+                    with self.movement_lock:
+                        self.detection_data['apriltags'][tag_id] = {
+                            'relative_position': tag_relative_pos,
+                            'world_position': tag_world_pos,
+                            'timestamp': time.time()
+                        }
+                        
+                        # Also update the apriltag_positions for localization
+                        self.apriltag_positions[tag_id] = {
+                            'position': tag_world_pos,
+                            'last_seen': time.time()
+                        }
+            
+            # Run YOLO detection
+            object_detections, _ = self.object_detector.get_detections(frame)
+            
+            # Update shared data structure with object detections - NO movement commands
+            if object_detections:
+                with self.movement_lock:
+                    self.detection_data['objects'] = {}
+                    for detection in object_detections:
+                        label = detection['label']
+                        self.detection_data['objects'][label] = detection
+                    
+                    self.detection_data['last_update'] = time.time()
+            
+            # Small sleep to prevent CPU hogging
+            time.sleep(0.01)
+    
+    def run(self):
+        """Main state machine loop."""
+        # Initialize robot
+        self.robot.initialize()
+        
+        # Start vision thread
+        self.vision_thread_active = True
+        vision_thread = threading.Thread(target=self.vision_loop)
+        vision_thread.daemon = True
+        vision_thread.start()
+        
+        # Main control loop
+        while self.current_state != RobotState.ERROR:
+            try:
+                # Print current state
+                current_time = time.strftime("%Y-%m-%d %H:%M:%S")
+                print(f"\n--- {current_time} | State: {self.current_state.value} ---")
+                
+                # Handle states and transitions
+                if self.current_state == RobotState.LOCALIZATION:
+                    # Execute localization behavior
+                    localization_success = self.handle_localization()
+                    
+                    # STATE TRANSITION: Localization → Path Planning 1 (Lego)
+                    if localization_success:
+                        print("Localization successful! Transitioning to Path Planning 1 (Lego)")
+                        self.current_state = RobotState.PATH_PLANNING_1_LEGO
+                        
+                        # Set up parameters for the next state
+                        self.target_labels = ["lego_big", "lego_med", "lego_small"]
+                        self.target_coordinate = (10, -4)
+                        self.target_found = False
+                
+                elif self.current_state == RobotState.PATH_PLANNING_1_LEGO:
+                    # Execute path planning behavior
+                    path_planning_result = self.handle_path_planning_1_lego()
+                    
+                    # STATE TRANSITION: Path Planning 1 → Lego Pickup
+                    if path_planning_result == "target_found":
+                        print(f"Found target object! Transitioning to Lego Pickup")
+                        self.current_state = RobotState.LEGO_PICKUP
+                        
+                        # Prepare for pickup state
+                        self.robot.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
+                
+                elif self.current_state == RobotState.LEGO_PICKUP:
+                    # Execute lego pickup behavior
+                    pickup_result = self.handle_lego_pickup()
+                    
+                    # STATE TRANSITION: Lego Pickup → Path Planning 2 (Center Line Pre)
+                    if pickup_result == "pickup_success":
+                        print("Lego pickup successful! Transitioning to Path Planning 2 (Center Line Pre)")
+                        self.current_state = RobotState.PATH_PLANNING_2_CENTER_LINE_PRE
+                        
+                        # Set up parameters for the next state
+                        self.target_labels = ["center_line"]
+                        self.target_coordinate = (6, -3)
+                        self.target_found = False
+                
+                elif self.current_state == RobotState.PATH_PLANNING_2_CENTER_LINE_PRE:
+                    # Execute path planning behavior for finding center line
+                    path_planning_result = self.handle_path_planning_2_center_line_pre()
+                    
+                    # STATE TRANSITION: Path Planning 2 → Intermediary Centering
+                    if path_planning_result == "target_found" or path_planning_result == "position_reached":
+                        print("Found center line or reached target position! Transitioning to Intermediary Centering")
+                        self.current_state = RobotState.INTERMEDIARY_CENTERING
+                        
+                        # Prepare for centering state
+                        self.robot.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
+                
+                elif self.current_state == RobotState.INTERMEDIARY_CENTERING:
+                    # Execute centering behavior
+                    centering_result, saved_position = self.handle_intermediary_centering()
+                    
+                    # STATE TRANSITION: Intermediary Centering → Path Planning 3 (Center Line Post)
+                    if centering_result == "centering_success":
+                        print("Centering successful! Transitioning to Path Planning 3 (Center Line Post)")
+                        self.current_state = RobotState.PATH_PLANNING_3_CENTER_LINE_POST
+                        
+                        # Save the current position for later
+                        self.saved_target_position_intermediary = saved_position
+                        
+                        # Set up parameters for the next state
+                        self.target_labels = ["closet"]
+                        current_x, current_y, _ = self.robot.get_position()
+                        self.target_coordinate = (current_x, current_y + 15)
+                        self.saved_target_position_post = (current_x, current_y + 15)
+                        self.target_found = False
+                
+                elif self.current_state == RobotState.PATH_PLANNING_3_CENTER_LINE_POST:
+                    # Execute path planning behavior for finding closet
+                    path_planning_result = self.handle_path_planning_3_center_line_post()
+                    
+                    # STATE TRANSITION: Path Planning 3 → Lego Dropoff
+                    if path_planning_result == "target_found":
+                        print("Found closet! Transitioning to Lego Dropoff")
+                        self.current_state = RobotState.LEGO_DROPOFF
+                        
+                        # Prepare for dropoff state
+                        self.robot.ep_robot.chassis.drive_speed(x=0, y=0, z=0)
+                
+                elif self.current_state == RobotState.LEGO_DROPOFF:
+                    # Execute lego dropoff behavior
+                    dropoff_result = self.handle_lego_dropoff()
+                    
+                    # STATE TRANSITION: Lego Dropoff → Path Planning 4 (Center Line Post Dropoff)
+                    if dropoff_result == "dropoff_success":
+                        print("Lego dropoff successful! Transitioning to Path Planning 4 (Center Line Post Dropoff)")
+                        self.current_state = RobotState.PATH_PLANNING_4_CENTER_LINE_POST_DROPOFF
+                        
+                        # Set up parameters for the next state
+                        self.target_labels = ["center_line"]
+                        self.target_coordinate = self.saved_target_position_post
+                        self.target_found = False
+                
+                elif self.current_state == RobotState.PATH_PLANNING_4_CENTER_LINE_POST_DROPOFF:
+                    # Execute path planning behavior for finding center line post-dropoff
+                    path_planning_result = self.handle_path_planning_4_center_line_post_dropoff()
+                    
+                    # STATE TRANSITION: Path Planning 4 → Path Planning 5 (Center Line Return)
+                    if path_planning_result == "target_found" or path_planning_result == "position_reached":
+                        print("Found center line or reached target position! Transitioning to Path Planning 5 (Center Line Return)")
+                        self.current_state = RobotState.PATH_PLANNING_5_CENTER_LINE_RETURN
+                        
+                        # Set up parameters for the next state
+                        self.target_labels = ["center_line"]
+                        self.target_coordinate = self.saved_target_position_intermediary
+                        self.target_found = False
+                
+                elif self.current_state == RobotState.PATH_PLANNING_5_CENTER_LINE_RETURN:
+                    # Execute path planning behavior for returning to starting position
+                    path_planning_result = self.handle_path_planning_5_center_line_return()
+                    
+                    # STATE TRANSITION: Path Planning 5 → Path Planning 1 (Lego) (cycle back)
+                    if path_planning_result == "target_found" or path_planning_result == "position_reached":
+                        print("Reached starting position! Transitioning back to Path Planning 1 (Lego)")
+                        self.current_state = RobotState.PATH_PLANNING_1_LEGO
+                        
+                        # Set up parameters for the first state again
+                        self.target_labels = ["lego_big", "lego_med", "lego_small"]
+                        self.target_coordinate = (10, -4)
+                        self.target_found = False
+                
+                # Add a small sleep to avoid CPU hogging
+                time.sleep(0.1)
+                
+            except Exception as e:
+                print(f"Error: {e}")
+                traceback.print_exc()
+                self.current_state = RobotState.ERROR
+                break
+        
+        # Stop vision thread
+        self.vision_thread_active = False
+        vision_thread.join(timeout=1.0)
+        
+        print(f"\n=== State Machine Finished with State: {self.current_state.value} ===")
+        self.robot.cleanup()
+    
+    def handle_localization(self):
+        """
+        Handle the localization state.
+        The robot will find an april tag, store its position, and calculate
+        its own position relative to the april tag.
+        
+        Returns:
+            String indicating result: "success" or None
+        """
+        print("State: Localization - Finding April Tags for initial position")
+        
+        # Run the localization loop
+        success = localization_loop(self.robot, self.apriltag_detector, self.apriltag_positions)
+        
+        # If localization was successful, return success
+        if success:
+            return "success"
+        
+        return None
+    
+    def handle_path_planning(self, target_labels, target_coordinate):
+        """
+        Generic path planning handler used by all path planning states.
+        
+        Args:
+            target_labels: List of labels to look for
+            target_coordinate: (x, y) target position
+            
+        Returns:
+            String indicating result: "target_found", "position_reached", or None
+        """
+        # Enable movement for this state
+        self.movement_enabled = True
+        
+        # Create a target info dictionary
+        target_info = {
+            'labels': target_labels,
+            'coordinate': target_coordinate,
+            'distance_threshold': 0.5
+        }
+        
+        # Run the path planning loop
+        found_object, detection = path_planning_loop(
+            self.robot, 
+            self.object_detector, 
+            self.apriltag_detector, 
+            self.apriltag_positions, 
+            target_info
+        )
+        
+        # Check if target was found
+        if found_object and detection is not None:
+            self.movement_enabled = False
+            return "target_found"
+        
+        # Check if we've reached the target position
+        current_x, current_y, _ = self.robot.get_position()
+        distance_to_target = np.sqrt(
+            (current_x - target_coordinate[0])**2 + 
+            (current_y - target_coordinate[1])**2
+        )
+        
+        if distance_to_target < DISTANCE_THRESHOLD:
+            self.movement_enabled = False
+            return "position_reached"
+        
+        # Target not found and position not reached
+        return None
+    
+    def handle_path_planning_1_lego(self):
+        """
+        Handle the path planning 1 state for finding lego blocks.
+        The robot will move toward the target coordinate while looking for lego blocks.
+        
+        Returns:
+            String indicating result: "target_found", "position_reached", or None
+        """
+        print(f"State: Path Planning 1 (Lego) - Moving to {self.target_coordinate} while looking for {self.target_labels}")
+        
+        return self.handle_path_planning(self.target_labels, self.target_coordinate)
+    
+    def handle_lego_pickup(self):
+        """
+        Handle the lego pickup state.
+        The robot will center, approach, and pick up a lego block.
+        
+        Returns:
+            String indicating result: "pickup_success" or None
+        """
+        print("State: Lego Pickup - Centering and picking up lego block")
+        
+        # Disable movement during pickup operations
+        self.movement_enabled = False
+        
+        # Run the lego pickup loop
+        success = lego_pickup_loop(self.robot, self.object_detector, self.apriltag_detector)
+        
+        # If pickup was successful, return success
+        if success:
+            return "pickup_success"
+        
+        return None
+    
+    def handle_path_planning_2_center_line_pre(self):
+        """
+        Handle the path planning 2 state for finding the center line.
+        The robot will move toward the target coordinate while looking for the center line.
+        
+        Returns:
+            String indicating result: "target_found", "position_reached", or None
+        """
+        print(f"State: Path Planning 2 (Center Line Pre) - Moving to {self.target_coordinate} while looking for {self.target_labels}")
+        
+        return self.handle_path_planning(self.target_labels, self.target_coordinate)
+    
+    def handle_intermediary_centering(self):
+        """
+        Handle the intermediary centering state.
+        The robot will rotate to 270 degrees and center on the center line.
+        
+        Returns:
+            Tuple of (result, target_position): result is "centering_success" or None,
+            target_position is the saved position or None
+        """
+        print("State: Intermediary Centering - Centering on the center line")
+        
+        # Disable movement during centering operations
+        self.movement_enabled = False
+        
+        # Run the center line pre-waypoint loop
+        success, target_position = center_line_pre_waypoint_loop(self.robot, self.object_detector)
+        
+        # If centering was successful, return success and the target position
+        if success and target_position is not None:
+            return "centering_success", target_position
+        
+        return None, None
+    
+    def handle_path_planning_3_center_line_post(self):
+        """
+        Handle the path planning 3 state for finding the closet.
+        The robot will move toward the target coordinate while looking for the closet.
+        
+        Returns:
+            String indicating result: "target_found", "position_reached", or None
+        """
+        print(f"State: Path Planning 3 (Center Line Post) - Moving to {self.target_coordinate} while looking for {self.target_labels}")
+        
+        return self.handle_path_planning(self.target_labels, self.target_coordinate)
+    
+    def handle_lego_dropoff(self):
+        """
+        Handle the lego dropoff state.
+        The robot will center, approach, and drop off the lego block at the closet.
+        
+        Returns:
+            String indicating result: "dropoff_success" or None
+        """
+        print("State: Lego Dropoff - Centering and dropping off lego block")
+        
+        # Disable movement during dropoff operations
+        self.movement_enabled = False
+        
+        # Run the lego dropoff loop
+        success = lego_dropoff_loop(self.robot, self.object_detector)
+        
+        # If dropoff was successful, return success
+        if success:
+            return "dropoff_success"
+        
+        return None
+    
+    def handle_path_planning_4_center_line_post_dropoff(self):
+        """
+        Handle the path planning 4 state for finding the center line post-dropoff.
+        The robot will move toward the target coordinate while looking for the center line.
+        
+        Returns:
+            String indicating result: "target_found", "position_reached", or None
+        """
+        print(f"State: Path Planning 4 (Center Line Post Dropoff) - Moving to {self.target_coordinate} while looking for {self.target_labels}")
+        
+        return self.handle_path_planning(self.target_labels, self.target_coordinate)
+    
+    def handle_path_planning_5_center_line_return(self):
+        """
+        Handle the path planning 5 state for returning to the starting position.
+        The robot will move toward the target coordinate while looking for the center line.
+        
+        Returns:
+            String indicating result: "target_found", "position_reached", or None
+        """
+        print(f"State: Path Planning 5 (Center Line Return) - Moving to {self.target_coordinate} while looking for {self.target_labels}")
+        
+        return self.handle_path_planning(self.target_labels, self.target_coordinate)
+    
+    def check_for_obstacles(self):
+        """
+        Check for obstacles using the shared detection data.
+        
+        Returns:
+            True if obstacle avoidance was performed, False otherwise
+        """
+        # Acquire lock to safely access shared data
+        with self.movement_lock:
+            # Check for obstacles in shared detection data (AprilTags, other robots)
+            
+            # Check recent AprilTag detections
+            for tag_id, tag_data in self.detection_data['apriltags'].items():
+                # Skip old detections
+                if time.time() - tag_data['timestamp'] > 0.5:
+                    continue
+                    
+                # Check if tag is too close
+                tag_rel_pos = tag_data['relative_position']
+                if np.linalg.norm(tag_rel_pos) < APRILTAG_PROXIMITY_THRESHOLD:
+                    return True
+                    
+            # Check for robot detections
+            if 'robot' in self.detection_data['objects']:
+                robot_detection = self.detection_data['objects']['robot']
+                # Check if detection is recent
+                if time.time() - self.detection_data['last_update'] < 0.5:
+                    return True
+        
+        return False
+    
+    def avoid_obstacle(self):
+        """
+        Issue movement commands for obstacle avoidance.
+        This is the ONLY place movement commands should be issued in this method.
+        
+        Returns:
+            True if avoidance was successful, False otherwise
+        """
+        # Only avoid obstacles if movement is enabled
+        if not self.movement_enabled:
+            return False
+        
+        # Acquire lock to safely access shared data
+        with self.movement_lock:
+            # Check for robot detection first
+            if 'robot' in self.detection_data['objects']:
+                robot_detection = self.detection_data['objects']['robot']
+                if time.time() - self.detection_data['last_update'] < 0.5:
+                    x1, _, x2, _ = robot_detection["box"]
+                    box_center_x = (x1 + x2) / 2
+                    camera_center_x = 320  # Assuming camera width is 640px
+                    
+                    if box_center_x < camera_center_x:
+                        # Robot is on the left, move right
+                        self.robot.ep_robot.chassis.move(
+                            x=0, y=-0.3, z=0, xy_speed=0.3
+                        ).wait_for_completed()
+                    else:
+                        # Robot is on the right, move left
+                        self.robot.ep_robot.chassis.move(
+                            x=0, y=0.3, z=0, xy_speed=0.3
+                        ).wait_for_completed()
+                    
+                    return True
+            
+            # Check for AprilTag obstacles
+            for tag_id, tag_data in self.detection_data['apriltags'].items():
+                # Skip old detections
+                if time.time() - tag_data['timestamp'] > 0.5:
+                    continue
+                
+                tag_rel_pos = tag_data['relative_position']
+                if np.linalg.norm(tag_rel_pos) < APRILTAG_PROXIMITY_THRESHOLD:
+                    if tag_rel_pos[0] < 0:
+                        # Tag is on the left, move right
+                        self.robot.ep_robot.chassis.move(
+                            x=0, y=-0.3, z=0, xy_speed=0.3
+                        ).wait_for_completed()
+                    else:
+                        # Tag is on the right, move left
+                        self.robot.ep_robot.chassis.move(
+                            x=0, y=0.3, z=0, xy_speed=0.3
+                        ).wait_for_completed()
+                    
+                    return True
+        
+        return False
+```
+
+## Main Entry Point
+```python
+def main():
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='RoboMaster EP Robot Control System')
+    parser.add_argument('--robot-sn', type=str, default="3JKCH8800100YN",
+                        help='Serial number of the robot')
+    parser.add_argument('--map-file', type=str, default="./InitialMap.csv",
+                        help='Path to the CSV map file')
+    parser.add_argument('--debug', action='store_true',
+                        help='Enable debug mode with additional logging')
+    args = parser.parse_args()
+    
+    # Print startup information
+    print("=== P3-Revamp: RoboMaster EP Robot Control System ===")
+    print(f"Robot SN: {args.robot_sn}")
+    print(f"Map File: {args.map_file}")
+    print(f"Debug Mode: {'Enabled' if args.debug else 'Disabled'}")
+    print("Starting in 3 seconds...")
+    time.sleep(3)
+    
+    # Create and run the state machine
+    state_machine = RobotStateMachine(args.robot_sn, args.map_file, debug=args.debug)
+    
+    try:
+        state_machine.run()
+    except KeyboardInterrupt:
+        print("\nProgram interrupted by user")
+    except Exception as e:
+        print(f"Error: {e}")
+        print(traceback.format_exc())
+    finally:
+        print("Shutting down robot...")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+## Integration with Other Components
+The state machine integrates all the other components:
+1. Localization
+2. Path Planning
+3. Lego Pickup
+4. Lego Dropoff
+5. Center Line Handling
+
+Each state in the machine calls specific functions from these components to execute the behaviors needed for that state.
+
+## Thread Separation Design
+The implementation uses a clear separation between vision processing and movement:
+
+1. **Vision Thread**: 
+   - Runs continuously throughout the robot's operation
+   - ONLY updates shared data structures, never issues movement commands
+   - Detects AprilTags, objects, and updates position information
+   - Uses a thread lock to safely update shared data
+
+2. **Movement Commands**:
+   - Only issued by state handlers, not by the vision thread
+   - Protected by a movement_enabled flag to prevent movement during state transitions
+   - Movement decisions are based on data gathered by the vision thread
+   - Uses thread lock to safely access shared data
+
+## State Transition Logic
+The state machine implements clear transitions between states:
+
+1. LOCALIZATION → PATH_PLANNING_1_LEGO:
+   - Triggered when at least one AprilTag is found and robot is localized
+   - Sets up target parameters for lego block search
+
+2. PATH_PLANNING_1_LEGO → LEGO_PICKUP:
+   - Triggered when a lego block is detected
+   - Stops robot movement before transition
+
+3. LEGO_PICKUP → PATH_PLANNING_2_CENTER_LINE_PRE:
+   - Triggered when lego pickup is successful
+   - Sets up target parameters for center line search
+
+4. PATH_PLANNING_2_CENTER_LINE_PRE → INTERMEDIARY_CENTERING:
+   - Triggered when center line is found or target position is reached
+   - Stops robot movement before transition
+
+5. INTERMEDIARY_CENTERING → PATH_PLANNING_3_CENTER_LINE_POST:
+   - Triggered when centering on center line is successful
+   - Saves position for later return
+   - Sets up target parameters for closet search
+
+6. PATH_PLANNING_3_CENTER_LINE_POST → LEGO_DROPOFF:
+   - Triggered when closet is detected
+   - Stops robot movement before transition
+
+7. LEGO_DROPOFF → PATH_PLANNING_4_CENTER_LINE_POST_DROPOFF:
+   - Triggered when lego dropoff is successful
+   - Sets up target parameters for return to saved position
+
+8. PATH_PLANNING_4_CENTER_LINE_POST_DROPOFF → PATH_PLANNING_5_CENTER_LINE_RETURN:
+   - Triggered when center line is found or target position is reached
+   - Sets up target parameters for return to original waypoint
+
+9. PATH_PLANNING_5_CENTER_LINE_RETURN → PATH_PLANNING_1_LEGO:
+   - Triggered when starting position is reached
+   - Completes the cycle by returning to lego block search
+
+Each transition includes:
+- Clear triggers for state changes
+- Preparation of parameters for the next state
+- Proper control of movement enabling/disabling
+- Saving important positions when needed for later states
+
+## References from Project3
+- `RobotStateMachine` class in `state_machine.py`
+- State transitions in `run` method in `state_machine.py`
+- Entry point in `main.py`

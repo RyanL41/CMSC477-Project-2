@@ -1,0 +1,257 @@
+# Path Planning Implementation
+
+## Overview
+The path planning system will use a different approach from the original Project3 implementation. Instead of Dijkstra's algorithm, we'll implement a target-oriented approach where the robot constantly rotates to face the target position and moves forward until it sees the target object.
+
+## Implementation Details
+
+### Target Setting
+```python
+def set_target(target_labels, target_coordinate):
+    """
+    Set the target labels and coordinate for path planning.
+    
+    Args:
+        target_labels: List of YOLO labels to look for
+        target_coordinate: (x, y) coordinate to move towards
+    
+    Returns:
+        Dictionary with target information
+    """
+    return {
+        'labels': target_labels,
+        'coordinate': target_coordinate,
+        'last_seen': None,
+        'distance_threshold': 0.5  # How close we need to get to target coordinate
+    }
+```
+
+### Rotate to Face Target
+```python
+def rotate_to_face_target(robot_controller, target_coordinate):
+    """
+    Rotate the robot to face the target coordinate.
+    
+    Args:
+        robot_controller: Robot controller instance
+        target_coordinate: (x, y) coordinate to face
+        
+    Returns:
+        True if the rotation is complete
+    """
+    # Get current position and heading
+    current_x, current_y, current_heading = robot_controller.get_position()
+    
+    # Calculate angle to target
+    target_x, target_y = target_coordinate
+    dx = target_x - current_x
+    dy = target_y - current_y
+    
+    # Calculate angle in radians
+    target_angle = np.arctan2(dy, dx)
+    
+    # Convert to degrees
+    target_angle_deg = np.rad2deg(target_angle)
+    current_heading_deg = np.rad2deg(current_heading)
+    
+    # Calculate angle difference
+    angle_diff = (target_angle_deg - current_heading_deg) % 360
+    if angle_diff > 180:
+        angle_diff -= 360
+    
+    # If the difference is small enough, we're already facing the target
+    if abs(angle_diff) < 5:
+        return True
+    
+    # Rotate to face the target
+    robot_controller.ep_robot.chassis.move(
+        x=0, y=0, z=angle_diff, xy_speed=0.3
+    ).wait_for_completed()
+    
+    return True
+```
+
+### Move Toward Target
+```python
+def move_toward_target(robot_controller, target_info, object_detector):
+    """
+    Move the robot toward the target coordinate while looking for target objects.
+    
+    Args:
+        robot_controller: Robot controller instance
+        target_info: Target information dictionary
+        object_detector: YOLO object detector instance
+        
+    Returns:
+        (found_object, detection) if target object is detected, (False, None) otherwise
+    """
+    # Get current position
+    current_x, current_y, _ = robot_controller.get_position()
+    
+    # Get target coordinate
+    target_x, target_y = target_info['coordinate']
+    
+    # Calculate distance to target
+    distance = np.sqrt((target_x - current_x)**2 + (target_y - current_y)**2)
+    
+    # If we're close enough to the target, we're done
+    if distance < target_info['distance_threshold']:
+        return False, None
+    
+    # Calculate movement vector (move in small increments)
+    move_distance = min(distance, 0.5)  # Move at most 0.5 meters at a time
+    
+    # First, rotate to face the target
+    rotate_to_face_target(robot_controller, target_info['coordinate'])
+    
+    # Get the frame before moving
+    frame = robot_controller.get_frame()
+    if frame is not None:
+        # Run object detection
+        detections, _ = object_detector.get_detections(frame)
+        
+        # Check if we see any of the target labels
+        for target_label in target_info['labels']:
+            detection = object_detector.get_best_detection(target_label, detections)
+            if detection:
+                print(f"Found target object: {target_label}")
+                target_info['last_seen'] = time.time()
+                return True, detection
+    
+    # Move forward
+    robot_controller.ep_robot.chassis.move(
+        x=move_distance, y=0, z=0, xy_speed=0.3
+    ).wait_for_completed()
+    
+    return False, None
+```
+
+### Handle Obstacle Avoidance (AprilTags and Other Robots)
+```python
+def handle_obstacles(robot_controller, object_detector, apriltag_detector, apriltag_positions):
+    """
+    Handle obstacle avoidance for AprilTags and other robots.
+    
+    Args:
+        robot_controller: Robot controller instance
+        object_detector: YOLO object detector instance
+        apriltag_detector: AprilTag detector instance
+        apriltag_positions: Hash table of AprilTag positions
+        
+    Returns:
+        True if obstacle avoidance was performed, False otherwise
+    """
+    # Get current frame
+    frame = robot_controller.get_frame()
+    if frame is None:
+        return False
+    
+    # Run YOLO detection to find other robots
+    detections, _ = object_detector.get_detections(frame)
+    robot_detection = object_detector.get_best_detection("robot", detections)
+    
+    # Convert frame to grayscale for AprilTag detection
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    
+    # Detect AprilTags
+    apriltag_detections = apriltag_detector.find_tags(gray)
+    
+    # Update AprilTag positions
+    if apriltag_detections:
+        detect_and_track_apriltags(robot_controller, apriltag_detector, apriltag_positions)
+    
+    # Check if we need to avoid any obstacles
+    if robot_detection or apriltag_detections:
+        # Handle robot obstacle
+        if robot_detection:
+            x1, _, x2, _ = robot_detection["box"]
+            box_center_x = (x1 + x2) / 2
+            camera_center_x = 320  # Assuming camera width is 640px
+            
+            if box_center_x < camera_center_x:
+                # Robot is on the left, move right
+                robot_controller.ep_robot.chassis.move(
+                    x=0, y=-0.3, z=0, xy_speed=0.3
+                ).wait_for_completed()
+            else:
+                # Robot is on the right, move left
+                robot_controller.ep_robot.chassis.move(
+                    x=0, y=0.3, z=0, xy_speed=0.3
+                ).wait_for_completed()
+            
+            return True
+        
+        # Handle AprilTag obstacle (if no robot was detected)
+        if apriltag_detections:
+            # For simplicity, just handle the first AprilTag
+            detection = apriltag_detections[0]
+            
+            # Get tag position relative to camera
+            tag_relative_pos = apriltag_detector.get_tag_world_position(detection)
+            
+            # If the tag is close enough (< 1 box unit or ~0.26m)
+            if np.linalg.norm(tag_relative_pos) < 1.0:
+                # Determine if the tag is on the left or right
+                if tag_relative_pos[0] < 0:
+                    # Tag is on the left, move right
+                    robot_controller.ep_robot.chassis.move(
+                        x=0, y=-0.3, z=0, xy_speed=0.3
+                    ).wait_for_completed()
+                else:
+                    # Tag is on the right, move left
+                    robot_controller.ep_robot.chassis.move(
+                        x=0, y=0.3, z=0, xy_speed=0.3
+                    ).wait_for_completed()
+                
+                return True
+    
+    # No obstacle avoidance was performed
+    return False
+```
+
+### Path Planning Loop
+```python
+def path_planning_loop(robot_controller, object_detector, apriltag_detector, apriltag_positions, target_info):
+    """
+    Main path planning loop.
+    
+    Args:
+        robot_controller: Robot controller instance
+        object_detector: YOLO object detector instance
+        apriltag_detector: AprilTag detector instance
+        apriltag_positions: Hash table of AprilTag positions
+        target_info: Target information dictionary
+        
+    Returns:
+        (True, detection) if target object is found, (False, None) otherwise
+    """
+    # Handle obstacle avoidance
+    obstacle_avoided = handle_obstacles(robot_controller, object_detector, apriltag_detector, apriltag_positions)
+    
+    # If we had to avoid an obstacle, skip the rest of the loop
+    if obstacle_avoided:
+        return False, None
+    
+    # Rotate to face the target
+    rotate_to_face_target(robot_controller, target_info['coordinate'])
+    
+    # Move toward the target and check if we can see the target object
+    found_object, detection = move_toward_target(robot_controller, target_info, object_detector)
+    
+    return found_object, detection
+```
+
+## Integration with State Machine
+The path planning system will be integrated into multiple states in the state machine:
+1. Path Planning (1: lego block)
+2. Path Planning (2: center line pre-waypoint)
+3. Path Planning (3: center line post-waypoint)
+4. Path Planning (4: center line post-dropoff)
+5. Path Planning (5: center line post-intermediary centering)
+
+Each state will use the same path planning logic but with different target labels and coordinates.
+
+## References from Project3
+- `RobotController` methods in `robot_controller.py`
+- `ObjectDetector` methods in `vision.py`
+- `AprilTagDetector` methods in `apriltag_detector.py`
