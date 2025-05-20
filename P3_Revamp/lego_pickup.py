@@ -715,7 +715,7 @@ class EnhancedLegoPickupController(LegoPickupController):
         # As requested, immediately reset the lock and last detection when no blocks detected
         if best_detection is None:
             # First, attempt one final drive command using the last known position
-            if self.last_known_detection is not None and time.time() - self.last_known_timestamp < 1.0:
+            if self.last_known_detection is not None:
                 log_info(f"No blocks detected. Making final movement toward last position of {self.last_known_label} before reset")
                 
                 # Get the position from the last known detection
@@ -736,11 +736,11 @@ class EnhancedLegoPickupController(LegoPickupController):
                 
             # Reset all tracking variables as requested
             log_info("Resetting block tracking - no blocks detected in current frame")
-            self.last_known_detection = None
-            self.last_known_label = None
-            self.last_known_timestamp = 0
-            self.target_lock = False
-            self.target_label = None
+            # self.last_known_detection = None
+            # self.last_known_label = None
+            # self.last_known_timestamp = 0
+            # self.target_lock = False
+            # self.target_label = None
             
             return None
         
