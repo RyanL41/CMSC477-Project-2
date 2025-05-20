@@ -247,7 +247,7 @@ class LegoPickupController:
             frame = self.robot.get_frame()
             
         if frame is None:
-            return True
+            return False
         
         # Run YOLO detection to find other robots
         detections, _ = self.object_detector.get_detections(frame)
@@ -293,9 +293,9 @@ class LegoPickupController:
                     log_info("Avoiding AprilTag obstacle by moving left")
                     self.robot.move(x=0, y=0.3, z=0)
                 
-                return True
+                return False
         
-        return True
+        return False
         
     def lego_pickup_loop(self):
         """
@@ -635,8 +635,8 @@ class EnhancedLegoPickupController(LegoPickupController):
         print("Step 1")
         
         # If we had to avoid an obstacle, skip the rest of the loop
-        # if obstacle_avoided:
-        #     return None
+        if obstacle_avoided:
+            return None
         
         # Get current frame
         frame = self.robot.get_frame()
