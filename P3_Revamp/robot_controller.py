@@ -104,8 +104,8 @@ class RobotController:
 
         self.last_position_update = time.time()
         
-        if self.debug:
-            print(f"Position: x={self.x:.2f}, y={self.y:.2f}, theta={np.rad2deg(self.theta):.2f}°")
+        # if self.debug:
+        #     print(f"Position: x={self.x:.2f}, y={self.y:.2f}, theta={np.rad2deg(self.theta):.2f}°")
     
     def attitude_callback(self, attitude_info):
         """
@@ -130,8 +130,8 @@ class RobotController:
         # Normalize to [-π, π]
         self.theta = np.arctan2(np.sin(pitch_rad), np.cos(pitch_rad))
         
-        if self.debug:
-            print(f"Attitude: pitch={self.pitch:.2f}°, theta={np.rad2deg(self.theta):.2f}°")
+        # if self.debug:
+        #     print(f"Attitude: pitch={self.pitch:.2f}°, theta={np.rad2deg(self.theta):.2f}°")
     
     def set_grid_reference(self, grid_x, grid_y):
         """
