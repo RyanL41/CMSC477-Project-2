@@ -309,11 +309,11 @@ class PathPlanner:
             if box_center_x < camera_center_x:
                 # Robot is on the left, move right
                 log_info("Avoiding robot obstacle by moving right")
-                self.robot.move(x=0, y=-OBSTACLE_AVOIDANCE_DISTANCE, z=0)
+                self.robot.move(x=0, y=OBSTACLE_AVOIDANCE_DISTANCE, z=0)
             else:
                 # Robot is on the right, move left
                 log_info("Avoiding robot obstacle by moving left")
-                self.robot.move(x=0, y=OBSTACLE_AVOIDANCE_DISTANCE, z=0)
+                self.robot.move(x=0, y=-OBSTACLE_AVOIDANCE_DISTANCE, z=0)
             
             return True
             
