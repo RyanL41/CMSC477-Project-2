@@ -73,7 +73,7 @@ class RobotController:
         # Initialize position with the known starting position
         self.set_position(INITIAL_POSITION[0], INITIAL_POSITION[1], INITIAL_POSITION[2])
 
-    def get_position(self):
+    def get_robot_position(self):
         """Returns the latest position of the robot with grid-based adjustments."""
         time_since_update = time.time() - self.last_position_update
         if time_since_update > 1.0:
@@ -154,7 +154,7 @@ class RobotController:
             theta: Heading angle in radians
         """
         # Get the current raw position from the robot
-        raw_x, raw_y, _ = self.get_position()
+        raw_x, raw_y, _ = self.get_robot_position()
         
         # Calculate the offsets needed to make the position correct
         self.x_offset = raw_x - x
@@ -202,7 +202,7 @@ class RobotController:
         apriltag_y = tag_world_pos[1] + robot_to_tag_world[1]
         
         # Calculate position correction
-        current_x, current_y, _ = self.get_position()
+        current_x, current_y, _ = self.get_robot_position()
         correction_x = apriltag_x - current_x
         correction_y = apriltag_y - current_y
         
@@ -210,7 +210,7 @@ class RobotController:
         self.apriltag_position_correction = (correction_x, correction_y)
         
         # Reset odometry offsets
-        raw_x, raw_y, _ = self.get_position()
+        raw_x, raw_y, _ = self.get_robot_position()
         self.x_offset = raw_x - apriltag_x
         self.y_offset = raw_y - apriltag_y
         
@@ -219,34 +219,34 @@ class RobotController:
         
         return apriltag_x, apriltag_y, current_heading
     
-    def get_position(self):
-        """
-        Get the current position of the robot.
+    # def get_robot_position(self):
+    #     """
+    #     Get the current position of the robot.
         
-        Returns:
-            tuple: (x, y, theta) representing position and heading in world coordinates
-        """
-        # Check if we have recent position data
-        time_since_update = time.time() - self.last_position_update
-        if time_since_update > 1.0:
-            print(f"Warning: Position data is {time_since_update:.1f}s old")
+    #     Returns:
+    #         tuple: (x, y, theta) representing position and heading in world coordinates
+    #     """
+    #     # Check if we have recent position data
+    #     time_since_update = time.time() - self.last_position_update
+    #     if time_since_update > 1.0:
+    #         print(f"Warning: Position data is {time_since_update:.1f}s old")
         
-        # Check if we have recent AprilTag detections for localization
-        use_apriltag = False
-        if hasattr(self, 'last_apriltag_update') and time.time() - self.last_apriltag_update < 1.0:
-            use_apriltag = True
+    #     # Check if we have recent AprilTag detections for localization
+    #     use_apriltag = False
+    #     if hasattr(self, 'last_apriltag_update') and time.time() - self.last_apriltag_update < 1.0:
+    #         use_apriltag = True
         
-        # Get position with grid-based adjustments
-        real_x = self.x + (self.start_grid_x * CUBE_SIZE_METERS)
-        real_y = self.y + (self.start_grid_y * CUBE_SIZE_METERS)
+    #     # Get position with grid-based adjustments
+    #     real_x = self.x + (self.start_grid_x * CUBE_SIZE_METERS)
+    #     real_y = self.y + (self.start_grid_y * CUBE_SIZE_METERS)
         
-        # Apply AprilTag correction if available and recent
-        if use_apriltag:
-            correction_x, correction_y = self.apriltag_position_correction
-            real_x += correction_x
-            real_y += correction_y
+    #     # Apply AprilTag correction if available and recent
+    #     if use_apriltag:
+    #         correction_x, correction_y = self.apriltag_position_correction
+    #         real_x += correction_x
+    #         real_y += correction_y
         
-        return (real_x, real_y, self.theta)
+    #     return (real_x, real_y, self.theta)
     
     def get_frame(self):
         """
@@ -357,7 +357,7 @@ class RobotController:
             return False
             
         try:
-            current_x, current_y, _ = self.get_position()
+            current_x, current_y, _ = self.get_robot_position()
             dx = target_x - current_x
             dy = target_y - current_y
             

@@ -255,7 +255,7 @@ class RobotStateMachine:
                         
                         # Set up parameters for the next state
                         self.target_labels = [CLOSET_LABEL]
-                        current_x, current_y, _ = self.robot.get_position()
+                        current_x, current_y, _ = self.robot.get_robot_position()
                         self.target_coordinate = (current_x, current_y + 15)
                         self.saved_target_position_post = (current_x, current_y + 15)
                         self.target_found = False
@@ -454,7 +454,7 @@ class RobotStateMachine:
             return "target_found"
         
         # Check if we've reached the target position
-        current_x, current_y, _ = self.robot.get_position()
+        current_x, current_y, _ = self.robot.get_robot_position()
         distance_to_target = np.sqrt(
             (current_x - self.target_coordinate[0])**2 + 
             (current_y - self.target_coordinate[1])**2
@@ -551,7 +551,7 @@ class RobotStateMachine:
             return "target_found"
         
         # Check if we've reached the target position
-        current_x, current_y, _ = self.robot.get_position()
+        current_x, current_y, _ = self.robot.get_robot_position()
         distance_to_target = np.sqrt(
             (current_x - self.target_coordinate[0])**2 + 
             (current_y - self.target_coordinate[1])**2
@@ -582,7 +582,7 @@ class RobotStateMachine:
             return "target_found"
         
         # Check if we've reached the target position
-        current_x, current_y, _ = self.robot.get_position()
+        current_x, current_y, _ = self.robot.get_robot_position()
         distance_to_target = np.sqrt(
             (current_x - self.target_coordinate[0])**2 + 
             (current_y - self.target_coordinate[1])**2

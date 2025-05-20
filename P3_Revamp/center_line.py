@@ -104,7 +104,7 @@ class CenterLineController:
             True if the robot is centered on the line, False otherwise
         """
         # First, rotate to 270 degrees (facing down)
-        current_x, current_y, current_heading = self.robot.get_position()
+        current_x, current_y, current_heading = self.robot.get_robot_position()
         target_heading = 270  # degrees
         
         # Convert current heading to degrees
@@ -169,7 +169,7 @@ class CenterLineController:
         Returns:
             (x, y) coordinate position
         """
-        current_x, current_y, _ = self.robot.get_position()
+        current_x, current_y, _ = self.robot.get_robot_position()
         self.saved_position = (current_x, current_y)
         log_info(f"Saved target coordinate: {self.saved_position}")
         return self.saved_position
@@ -220,7 +220,7 @@ class CenterLineController:
             "success" if successful, None otherwise
         """
         # Calculate distance to target position
-        current_x, current_y, _ = self.robot.get_position()
+        current_x, current_y, _ = self.robot.get_robot_position()
         target_x, target_y = target_position
         
         distance = np.sqrt((target_x - current_x)**2 + (target_y - current_y)**2)

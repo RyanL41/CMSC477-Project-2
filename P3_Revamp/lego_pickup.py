@@ -458,7 +458,7 @@ class EnhancedLegoPickupController(LegoPickupController):
         """
         # Get detection center
         center_x, center_y = get_box_center(detection)
-        robot_pos = self.robot.get_position()
+        robot_pos = self.robot.get_robot_position()
         
         # Calculate position relative to robot
         # This is a simplification - a real implementation would do proper coordinate transforms

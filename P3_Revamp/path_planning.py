@@ -87,8 +87,8 @@ class PathPlanner:
             return False
         
         # Get current position and heading
-        print("Robot.get_postition:",self.robot.get_position())
-        current_x, current_y, current_heading = self.robot.get_position()
+        print("Robot.get_postition:",self.robot.get_robot_position())
+        current_x, current_y, current_heading = self.robot.get_robot_position()
         
         # Calculate angle to target
         target_x, target_y = target_coordinate
@@ -140,7 +140,7 @@ class PathPlanner:
             return False
         
         # Get current position
-        current_x, current_y, _ = self.robot.get_position()
+        current_x, current_y, _ = self.robot.get_robot_position()
         current_pos = (current_x, current_y)
         
         # Get target coordinate
@@ -351,7 +351,7 @@ class PathPlanner:
             return False, None
         
         # Check if target is already reached
-        current_pos = self.robot.get_position()
+        current_pos = self.robot.get_robot_position()
         if is_target_reached(current_pos, self.target_coordinate):
             log_info(f"Reached target coordinate: {self.target_coordinate}")
             

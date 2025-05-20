@@ -79,7 +79,7 @@ class Localizer:
             return None
         
         # Get current robot position
-        current_x, current_y, current_heading = self.robot.get_position()
+        current_x, current_y, current_heading = self.robot.get_robot_position()
         
         # Process each detected AprilTag
         for detection in detections:
