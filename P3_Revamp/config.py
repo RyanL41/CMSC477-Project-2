@@ -48,7 +48,7 @@ CLOSET_LABEL = "closet"
 ROBOT_LABEL = "robot"
 
 # AprilTag parameters
-APRILTAG_SIZE_METERS = 0.173  # Size of the AprilTag in meters
+APRILTAG_SIZE_METERS = 0.163  # Size of the AprilTag in meters
 APRILTAG_FAMILY = "tag36h11"
 APRILTAG_THREADS = 2
 APRILTAG_PROXIMITY_THRESHOLD = 1.0  # Box units for obstacle avoidance
@@ -86,4 +86,4 @@ DETECTION_FRESHNESS_THRESHOLD = 0.5  # seconds
 
 # Search parameters
 ROTATION_SEARCH_INTERVAL = 10.0  # seconds between rotation searches
-SEARCH_ROTATION_STEP = 17  # degrees per step in rotation search
+SEARCH_ROTATION_STEP = 16  # degrees per step in rotation search

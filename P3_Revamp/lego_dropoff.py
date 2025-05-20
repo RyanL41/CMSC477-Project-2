@@ -86,7 +86,7 @@ class LegoDropoffController:
         
         # Calculate rotation speed based on error
         # Larger error = faster rotation, but limit maximum speed
-        z_vel = np.clip(-error_x * 0.05, -17, 17)
+        z_vel = np.clip(-error_x * 0.05, -16, 16)
         
         # Rotate to center the closet
         if self.debug:
@@ -264,7 +264,7 @@ class LegoDropoffController:
                 return closet_detection
             
             # Rotate by a small amount
-            self.robot.rotate(17)
+            self.robot.rotate(16)
             
             # Log progress
             if self.debug and i % 4 == 0:

@@ -128,7 +128,7 @@ class LegoPickupController:
             if self.debug:
                 log_debug("No detection available, rotating to search", self.debug)
             # Rotate at a moderate speed
-            self.robot.drive_speed(x=0, y=0, z=-17)  # Positive z value means counterclockwise rotation
+            self.robot.drive_speed(x=0, y=0, z=-16)  # Positive z value means counterclockwise rotation
             return False
         
         print("Step 2")
@@ -151,7 +151,7 @@ class LegoPickupController:
         print("Step 5")
         # Calculate rotation speed based on error
         # Larger error = faster rotation, but limit maximum speed
-        z_vel = np.clip(-error_x * 0.05, -17, 17)
+        z_vel = np.clip(-error_x * 0.05, -16, 16)
         
         print("Step 6")
         # Rotate to center the block
@@ -733,13 +733,13 @@ class EnhancedLegoPickupController(LegoPickupController):
                 # Estimate y (left-right) from horizontal position in image
                 error_x = camera_center_x - box_center_x
                 y_vel = np.clip(error_x * 0.005, -0.1, 0.1)
-                z_vel = np.clip(-error_x * 0.05, -17, 17)
+                z_vel = np.clip(-error_x * 0.05, -16, 16)
                 
                 # Move forward with small adjustments
                 self.robot.drive_speed(x=0.1, y=y_vel, z=z_vel)
             else:
                 # Just rotate to search
-                self.robot.drive_speed(x=0, y=0, z=-17)
+                self.robot.drive_speed(x=0, y=0, z=-16)
                 
             # Reset all tracking variables as requested
             log_info("Resetting block tracking - no blocks detected in current frame")

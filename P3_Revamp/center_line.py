@@ -86,7 +86,7 @@ class CenterLineController:
             return True
         
         # Calculate rotation speed based on error
-        z_vel = np.clip(-error_x * 0.05, -17, 17)
+        z_vel = np.clip(-error_x * 0.05, -16, 16)
         
         # Rotate to face the center line
         if self.debug:
@@ -193,7 +193,7 @@ class CenterLineController:
         if center_line_detection is None:
             # Rotate in place to search for the center line
             log_info("Center line not visible, rotating to search")
-            self.robot.rotate(17)
+            self.robot.rotate(16)
             return None, None
         
         # Try to face the center line
