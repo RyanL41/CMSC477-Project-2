@@ -537,7 +537,7 @@ class EnhancedLegoPickupController(LegoPickupController):
     
     def find_best_block_in_frame(self, detected_blocks):
         """
-        Find the best block in the current frame, with preference to the target.
+        Find the best block in the current frame, with preference to the closest block to the previously detected one.
         Also updates the last known detection information.
         
         Args:
@@ -547,47 +547,61 @@ class EnhancedLegoPickupController(LegoPickupController):
             (detection, label) of the best block, or (None, None) if no blocks detected
         """
         if not detected_blocks:
+            # When no blocks detected, don't reset last_known_detection/label here
+            # This is handled separately to allow movement toward last position
             return None, None
+            
+        # If we have a previous detection, find the closest block to that one
+        if self.last_known_detection is not None:
+            # Get position of last known detection
+            last_x1, last_y1, last_x2, last_y2 = self.last_known_detection["box"]
+            last_center_x = (last_x1 + last_x2) / 2
+            last_center_y = (last_y1 + last_y2) / 2
+            
+            # Find the block closest to the last known position
+            closest_label = None
+            closest_detection = None
+            min_distance = float('inf')
+            
+            for label, detection in detected_blocks.items():
+                x1, y1, x2, y2 = detection["box"]
+                center_x = (x1 + x2) / 2
+                center_y = (y1 + y2) / 2
+                
+                # Calculate distance between centers
+                distance = np.sqrt((center_x - last_center_x)**2 + (center_y - last_center_y)**2)
+                
+                if distance < min_distance:
+                    min_distance = distance
+                    closest_label = label
+                    closest_detection = detection
+            
+            if closest_label is not None:
+                log_debug(f"Locked onto block {closest_label} (closest to last detected block)", self.debug)
+                
+                # Update last known detection
+                self.last_known_detection = closest_detection
+                self.last_known_label = closest_label
+                self.last_known_timestamp = time.time()
+                self.target_lock = True  # Lock onto this block
+                self.target_label = closest_label
+                
+                return closest_detection, closest_label
         
-        # If we already have a locked target, prioritize it
-        if self.target_lock and self.target_label in detected_blocks:
-            detection = detected_blocks[self.target_label]
-            log_debug(f"Using locked target: {self.target_label}", self.debug)
-            
-            # Save as last known detection
-            self.last_known_detection = detection
-            self.last_known_label = self.target_label
-            self.last_known_timestamp = time.time()
-            
-            return detection, self.target_label
-            
-        # Otherwise find most consistent block in memory
-        best_label = self.select_target_block()
-        
-        if best_label and best_label in detected_blocks:
-            # Use block with highest consistency score
-            detection = detected_blocks[best_label]
-            log_debug(f"Using target from memory: {best_label}", self.debug)
-            
-            # Save as last known detection
-            self.last_known_detection = detection
-            self.last_known_label = best_label
-            self.last_known_timestamp = time.time()
-            
-            return detection, best_label
-            
-        # If no good target in memory, just use closest to center
+        # If we don't have a previous detection or couldn't find a match,
+        # fall back to closest to center
         detection, label = self.find_closest_block_to_center(detected_blocks)
         
         if detection and label:
+            log_debug(f"Using closest block to center: {label}", self.debug)
+            
             # Save as last known detection
             self.last_known_detection = detection
-            self.last_known_label = label
+            self.last_known_label = label 
             self.last_known_timestamp = time.time()
-            
-            if self.debug:
-                log_debug(f"Using closest block: {label}", self.debug)
-            
+            self.target_lock = True  # Lock onto this block
+            self.target_label = label
+        
         return detection, label
     
     def scan_for_target(self, max_rotations=24):
@@ -705,11 +719,11 @@ class EnhancedLegoPickupController(LegoPickupController):
 
         print("Step 5")
         
-        # If still no blocks were detected but we have a last known position, move toward it
+        # As requested, immediately reset the lock and last detection when no blocks detected
         if best_detection is None:
-            # Only use last known position if it's recent (within 3 seconds)
-            if self.last_known_detection is not None and time.time() - self.last_known_timestamp < 3.0:
-                log_info(f"No blocks currently detected. Moving toward last known position of {self.last_known_label}")
+            # First, attempt one final drive command using the last known position
+            if self.last_known_detection is not None and time.time() - self.last_known_timestamp < 1.0:
+                log_info(f"No blocks detected. Making final movement toward last position of {self.last_known_label} before reset")
                 
                 # Get the position from the last known detection
                 x1, y1, x2, y2 = self.last_known_detection["box"]
@@ -717,22 +731,25 @@ class EnhancedLegoPickupController(LegoPickupController):
                 camera_center_x = 320  # Assuming camera width is 640px
                 
                 # Estimate y (left-right) from horizontal position in image
-                # Positive error = object on left side of screen, move left
-                # Negative error = object on right side of screen, move right
                 error_x = camera_center_x - box_center_x
-                y_vel = np.clip(error_x * 0.005, -0.1, 0.1)  # Scale for gentler movement
+                y_vel = np.clip(error_x * 0.005, -0.1, 0.1)
+                z_vel = np.clip(-error_x * 0.05, -15, 15)
                 
-                # Set z (rotation) based on horizontal position
-                z_vel = np.clip(-error_x * 0.05, -15, 15)  # Same as in center_robot_on_block
-                
-                # Move forward with small adjustments left/right and rotation
+                # Move forward with small adjustments
                 self.robot.drive_speed(x=0.1, y=y_vel, z=z_vel)
-                log_debug(f"Moving toward last known position: x=0.1, y={y_vel:.2f}, z={z_vel:.2f}", self.debug)
-                return None
             else:
-                # If no recent last known position, just rotate to search
+                # Just rotate to search
                 self.robot.drive_speed(x=0, y=0, z=-15)
-                return None
+                
+            # Reset all tracking variables as requested
+            log_info("Resetting block tracking - no blocks detected in current frame")
+            self.last_known_detection = None
+            self.last_known_label = None
+            self.last_known_timestamp = 0
+            self.target_lock = False
+            self.target_label = None
+            
+            return None
         
         # # If we haven't centered on the block yet, do that first
         if not self.centered:
