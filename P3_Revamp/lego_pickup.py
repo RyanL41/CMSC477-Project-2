@@ -113,6 +113,7 @@ class LegoPickupController:
     def center_robot_on_block(self, detection, label=None):
         """
         Rotate the robot to center the detected block in the frame.
+        If no detection is available, rotate to search for blocks.
         
         Args:
             detection: Block detection data
@@ -122,6 +123,11 @@ class LegoPickupController:
             True if the block is centered, False otherwise
         """
         if detection is None:
+            # If no detection, rotate to search for blocks
+            if self.debug:
+                log_debug("No detection available, rotating to search", self.debug)
+            # Rotate at a moderate speed
+            self.robot.drive_speed(x=0, y=0, z=15)  # Positive z value means counterclockwise rotation
             return False
         
         x1, _, x2, _ = detection["box"]
