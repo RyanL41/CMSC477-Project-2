@@ -287,18 +287,14 @@ class PathPlanner:
             # For simplicity, just handle the first AprilTag
             detection = apriltag_detections[0]
             
-            # Calculate distance directly from the detection data
-            # The tag pose contains translation vector [x,y,z] where z is the distance
-            tag_pose = self.apriltag_detector.get_pose(detection)
-            if tag_pose is not None:
-                # Extract the z-component which is the distance
-                tag_distance = tag_pose[0][2]  # z-component of translation vector
-                
-                # If the tag is close enough (<threshold box units)
-                if tag_distance < APRILTAG_PROXIMITY_THRESHOLD:
-                    tag_id = self.apriltag_detector.get_tag_id(detection)
-                    log_debug(f"AprilTag #{tag_id} obstacle detected at distance {tag_distance:.2f}m", self.debug)
-                    return True, "apriltag", detection
+            # Calculate distance directly from the detection data using the dedicated method
+            tag_distance = self.apriltag_detector.get_tag_distance(detection)
+            
+            # If the tag is close enough (<threshold box units)
+            if tag_distance < APRILTAG_PROXIMITY_THRESHOLD:
+                tag_id = self.apriltag_detector.get_tag_id(detection)
+                log_debug(f"AprilTag #{tag_id} obstacle detected at distance {tag_distance:.2f}m", self.debug)
+                return True, "apriltag", detection
         
         return False, None, None
         
