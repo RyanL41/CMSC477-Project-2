@@ -158,7 +158,7 @@ class PathPlanner:
         move_distance = min(distance, MAX_SINGLE_MOVE_DISTANCE)
         
         # First, rotate to face the target
-        self.rotate_to_face_target(target_coordinate)
+        # self.rotate_to_face_target(target_coordinate)
         
         # Move forward
         log_debug(f"Moving toward target: distance={move_distance:.2f}m", self.debug)
