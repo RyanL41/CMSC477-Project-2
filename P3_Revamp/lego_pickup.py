@@ -261,11 +261,11 @@ class LegoPickupController:
             if box_center_x < camera_center_x:
                 # Robot is on the left, move right
                 log_info("Avoiding robot obstacle by moving right")
-                self.robot.move(x=0, y=-0.3, z=0)
+                self.robot.move(x=0, y=0.3, z=0)
             else:
                 # Robot is on the right, move left
                 log_info("Avoiding robot obstacle by moving left")
-                self.robot.move(x=0, y=0.3, z=0)
+                self.robot.move(x=0, y=-0.3, z=0)
             
             return True
         
@@ -635,8 +635,8 @@ class EnhancedLegoPickupController(LegoPickupController):
         print("Step 1")
         
         # If we had to avoid an obstacle, skip the rest of the loop
-        if obstacle_avoided:
-            return None
+        # if obstacle_avoided:
+        #     return None
         
         # Get current frame
         frame = self.robot.get_frame()
@@ -724,7 +724,7 @@ class EnhancedLegoPickupController(LegoPickupController):
         pickup_success = self.pickup_block()
         
         print("Step 10")
-            
+
         # Save target_label for return value
         target_label = self.target_label
         
