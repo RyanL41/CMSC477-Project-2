@@ -47,14 +47,15 @@ CENTER_LINE_LABEL = "center_line"
 CLOSET_LABEL = "closet"
 ROBOT_LABEL = "robot"
 
+CUBE_SIZE_METERS = 0.26      # 1 cube unit = 0.26 meters
+
 # AprilTag parameters
 APRILTAG_SIZE_METERS = 0.163  # Size of the AprilTag in meters
 APRILTAG_FAMILY = "tag36h11"
 APRILTAG_THREADS = 2
-APRILTAG_PROXIMITY_THRESHOLD = 1.0  # Box units for obstacle avoidance
+APRILTAG_PROXIMITY_THRESHOLD = 1.5 * CUBE_SIZE_METERS # Box units for obstacle avoidance
 
 # Robot physical parameters
-CUBE_SIZE_METERS = 0.26      # 1 cube unit = 0.26 meters
 SCALE_FACTOR = 0.266        # scaling factor from image units to meters
 
 # Movement parameters
