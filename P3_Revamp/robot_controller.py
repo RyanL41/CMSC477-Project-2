@@ -56,7 +56,8 @@ class RobotController:
 
         # Start video stream
         self.ep_robot.camera.start_video_stream(
-            display=False, resolution=camera.STREAM_360P
+            # display=False, resolution=camera.STREAM_360P
+            display=True, resolution=camera.STREAM_720P
         )
 
         # Initialize arm and gripper
