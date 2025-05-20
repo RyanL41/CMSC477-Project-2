@@ -127,7 +127,7 @@ class LegoPickupController:
             if self.debug:
                 log_debug("No detection available, rotating to search", self.debug)
             # Rotate at a moderate speed
-            self.robot.drive_speed(x=0, y=0, z=15)  # Positive z value means counterclockwise rotation
+            self.robot.drive_speed(x=0, y=0, z=-15)  # Positive z value means counterclockwise rotation
             return False
         
         x1, _, x2, _ = detection["box"]
@@ -653,14 +653,14 @@ class EnhancedLegoPickupController(LegoPickupController):
         if best_detection is None:
             return None
         
-        # If we haven't centered on the block yet, do that first
-        if not self.centered:
-            print(self.centered)
-            is_centered = self.center_robot_on_block(best_detection, best_label)
+        # # If we haven't centered on the block yet, do that first
+        # if not self.centered:
+        #     print(self.centered)
+        #     is_centered = self.center_robot_on_block(best_detection, best_label)
             
-            # If not centered, we're not ready to approach
-            if not is_centered:
-                return None
+        #     # If not centered, we're not ready to approach
+        #     if not is_centered:
+        #         return None
         
         # Once centered, approach the block if not already at pickup position
         if not self.approach_complete:
