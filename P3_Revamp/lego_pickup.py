@@ -241,7 +241,7 @@ class LegoPickupController:
             frame = self.robot.get_frame()
             
         if frame is None:
-            return False
+            return True
         
         # Run YOLO detection to find other robots
         detections, _ = self.object_detector.get_detections(frame)
@@ -289,7 +289,7 @@ class LegoPickupController:
                 
                 return True
         
-        return False
+        return True
         
     def lego_pickup_loop(self):
         """
