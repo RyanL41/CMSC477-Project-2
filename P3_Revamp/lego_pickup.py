@@ -18,7 +18,7 @@ import cv2
 import numpy as np
 from P3_Revamp.config import (
     BLOCK_LABELS, LEGO_PICKUP_Y_THRESHOLD, SLOW_SPEED,
-    ARM_DOWN_POSITION, ARM_UP_POSITION
+    ARM_DOWN_POSITION, ARM_UP_POSITION, GRIPPER_POWER, GRIPPER_DELAY
 )
 from P3_Revamp.utilities import (
     is_centered, get_box_center, log_debug, log_info
@@ -678,6 +678,15 @@ class EnhancedLegoPickupController(LegoPickupController):
             # If not centered, we're not ready to approach
             if not is_centered:
                 return None
+            
+            # Robot is now centered on the block
+            # Lower the arm to prepare for pickup
+            log_info("Lowering arm to prepare for pickup")
+            self.robot.ep_robot.robotic_arm.move(x=0, y=ARM_DOWN_POSITION).wait_for_completed()
+            # Make sure gripper is open
+            self.robot.ep_robot.gripper.open(power=GRIPPER_POWER)
+            time.sleep(0.5)
+            self.robot.ep_robot.gripper.pause()
         
         # Once centered, approach the block if not already at pickup position
         if not self.approach_complete:
