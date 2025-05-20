@@ -266,7 +266,7 @@ class RobotController:
             time.sleep(0.5)
             return None
     
-    def move(self, x=0, y=0, z=0, speed=DEFAULT_SPEED, timeout=15):
+    def move(self, x=0, y=0, z=0, speed=DEFAULT_SPEED, timeout=17):
         """
         Move the robot in the specified direction.
         
