@@ -6,7 +6,7 @@ import time
 import cv2
 import numpy as np
 from P3_Revamp.config import (
-    ROTATION_SPEED, DEFAULT_SPEED, SLOW_SPEED, MAX_SINGLE_MOVE_DISTANCE,
+    CLOSET_LABEL, ROTATION_SPEED, DEFAULT_SPEED, SLOW_SPEED, MAX_SINGLE_MOVE_DISTANCE,
     DISTANCE_THRESHOLD, ROTATION_SEARCH_INTERVAL, SEARCH_ROTATION_STEP,
     OBSTACLE_AVOIDANCE_DISTANCE, APRILTAG_PROXIMITY_THRESHOLD
 )
@@ -383,6 +383,10 @@ class PathPlanner:
                 return True, detection
         
         # If target not found and not at target position, move toward target
+        if self.target_labels == [CLOSET_LABEL]:
+            # rotate -120
+            self.robot.rotate(-120)
+        
         self.move_toward_target()
         
         return False, None
