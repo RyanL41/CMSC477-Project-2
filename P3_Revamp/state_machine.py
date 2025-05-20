@@ -421,13 +421,11 @@ class RobotStateMachine:
         log_info("Executing lego pickup")
         
         # Disable movement during pickup operations
-        self.robot.set_movement_enabled(False)
         
         # Run the lego pickup loop
         result = self.lego_pickup.lego_pickup_loop()
         
         # Re-enable movement after pickup
-        self.robot.set_movement_enabled(True)
         
         # Handle the enhanced result format ("success:label")
         if result and result.startswith("success:"):
