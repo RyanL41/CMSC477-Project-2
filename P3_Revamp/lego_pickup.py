@@ -631,6 +631,8 @@ class EnhancedLegoPickupController(LegoPickupController):
         """
         # First, check for obstacles
         obstacle_avoided = self.check_for_obstacles_during_pickup()
+
+        print("Step 1")
         
         # If we had to avoid an obstacle, skip the rest of the loop
         if obstacle_avoided:
@@ -640,9 +642,13 @@ class EnhancedLegoPickupController(LegoPickupController):
         frame = self.robot.get_frame()
         if frame is None:
             return None
+
+        print("Step 2")
         
         # Detect lego blocks and update memory
         detected_blocks = self.detect_lego_blocks(frame)
+
+        print("Step 3")
         
         # If we don't have a target yet, try to select one
         if not self.target_label or not self.target_lock:
@@ -650,10 +656,14 @@ class EnhancedLegoPickupController(LegoPickupController):
         
         # Find the best block in the current frame
         best_detection, best_label = self.find_best_block_in_frame(detected_blocks)
-        
+
+        print("Step 4")
+
         # If no blocks were detected but we have a target, try to scan for it
         if best_detection is None and self.target_label:
             best_detection, best_label = self.scan_for_target()
+
+        print("Step 5")
         
         # If still no blocks were detected, return None
         if best_detection is None:
@@ -674,6 +684,8 @@ class EnhancedLegoPickupController(LegoPickupController):
             frame = self.robot.get_frame()
             if frame is None:
                 return None
+
+            print("Step 6")
             
             detected_blocks = self.detect_lego_blocks(frame)
             
@@ -689,14 +701,20 @@ class EnhancedLegoPickupController(LegoPickupController):
                 self.centered = False
                 return None
             
+            print("Step 7")
+            
             # Update target if needed
             if best_label != self.target_label and best_label is not None:
                 self.target_label = best_label
                 self.target_lock = True
                 log_info(f"Updated target to {best_label}")
             
+            print("Step 8")
+            
             # Approach the block
             is_at_pickup_position = self.approach_block(best_detection, best_label)
+            
+            print("Step 9")
             
             # If not at pickup position yet, continue approaching
             if not is_at_pickup_position:
@@ -705,6 +723,8 @@ class EnhancedLegoPickupController(LegoPickupController):
         # If we're centered and at pickup position, pick up the block
         pickup_success = self.pickup_block()
         
+        print("Step 10")
+            
         # Save target_label for return value
         target_label = self.target_label
         
