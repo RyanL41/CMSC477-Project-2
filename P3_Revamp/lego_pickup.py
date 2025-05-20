@@ -667,6 +667,7 @@ class EnhancedLegoPickupController(LegoPickupController):
         
         # If still no blocks were detected, return None
         if best_detection is None:
+            self.robot.drive_speed(x=0, y=0, z=-15)
             return None
         
         # # If we haven't centered on the block yet, do that first
