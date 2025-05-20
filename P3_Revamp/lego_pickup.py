@@ -654,13 +654,13 @@ class EnhancedLegoPickupController(LegoPickupController):
             return None
         
         # # If we haven't centered on the block yet, do that first
-        # if not self.centered:
-        #     print(self.centered)
-        #     is_centered = self.center_robot_on_block(best_detection, best_label)
+        if not self.centered:
+            print(self.centered)
+            is_centered = self.center_robot_on_block(best_detection, best_label)
             
-        #     # If not centered, we're not ready to approach
-        #     if not is_centered:
-        #         return None
+            # If not centered, we're not ready to approach
+            if not is_centered:
+                return None
         
         # Once centered, approach the block if not already at pickup position
         if not self.approach_complete:
