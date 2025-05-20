@@ -171,7 +171,7 @@ class PathPlanner:
         
         # No obstacles, move forward
         log_debug(f"Moving toward target: distance={move_distance:.2f}m", self.debug)
-        self.robot.move(x=move_distance * 3, speed=speed)
+        self.robot.move(x=move_distance * 2, speed=speed)
         
         return True
         
