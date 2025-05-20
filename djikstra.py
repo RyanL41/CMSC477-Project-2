@@ -231,7 +231,7 @@ def get_path(grid,start1,end1, upscaling_factor=4, num_points=250, additional_ob
     for row in padded_grid:
         grid_to_print += ",".join(map(str, row)) + "\n"
 
-    print(grid_to_print)
+    # print(grid_to_print)
     
     path = djikstra(padded_grid,start1,end1)
 

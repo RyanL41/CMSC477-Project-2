@@ -186,7 +186,7 @@ class RobotStateMachine:
                         grid_copy = deepcopy(self.grid)
                     # self.path = get_path(grid_copy, self.starting_pos_number, self.self_closet_number, upscaling_factor=1, num_points=25, additional_obstacles=obstacles, starting_pos_blocks=(current_x_blocks, -current_y_blocks))
                         self.path = get_path(grid_copy, self.starting_pos_number, target, upscaling_factor=1, num_points=10, additional_obstacles=[obs[0] for obs in self.obstacles], starting_pos_blocks=(current_x_blocks, -current_y_blocks))
-                        self.path = self.path[1:]
+                        
                     # obstacles.append((tag_world_pos[0], -tag_world_pos[1]))
                     #Add self to call get path in other areas
                     
@@ -201,28 +201,35 @@ class RobotStateMachine:
             
     
 
-    def follow_path(self):
+    def follow_path(self,start):
         """Find blocks in the closet and approach them."""
-    
+        print(self.path)
+        # current_pos = self.robot.get_position()
+        # np.array(current_pos)
+        vel = np.array([0,0])
+        current_pos_blocks = start
         while self.path is not None and len(self.path) > 0:
             waypoint = self.path[0]
             self.path = self.path[1:]
-            
             current_pos = self.robot.get_position()
+
+            
+            
             
             R_z_rot = np.array(
                 [[np.cos(-current_pos[2]), -np.sin(-current_pos[2])], [np.sin(-current_pos[2]), np.cos(-current_pos[2])]]
             )
 
-            current_pos_blocks = [
-                current_pos[0] / 0.26,
-                current_pos[1] / 0.26
-            ]
-
+            # current_pos_blocks = [
+            #     (current_pos[0] / 0.26),
+            #     (current_pos[1] / 0.26)
+            # ]
+            
             target_pos_blocks = [
                 waypoint[0],
                 -waypoint[1]
             ]
+
             move_x = target_pos_blocks[0] - current_pos_blocks[0]
             move_y = target_pos_blocks[1] - current_pos_blocks[1]
             
@@ -231,9 +238,20 @@ class RobotStateMachine:
             vel = R_z_rot @ vel
             
             vel *= 0.26
-
+            print("Current position:",current_pos_blocks)
+            print("Target positions:",target_pos_blocks)
+            print("move_x:",move_x ,"move_y:",move_y)
             print(f"Moving to waypoint: dx={vel[0]:.3f}, dy={vel[1]:.3f} theta={current_pos[2]:.3f}")
-            self.robot.ep_robot.chassis.move(x=vel[0], y=vel[1],z=0, xy_speed=0.1).wait_for_completed()
+
+            # if np.abs(vel[0]) < 0.1:
+            #     vel[0] = 0 
+            # if np.abs(vel[1]) < 0.1:
+            #     vel[1] = 0 
+
+            self.robot.ep_robot.chassis.move(x=vel[0], y=vel[1],z=0, xy_speed=0.26).wait_for_completed()
+            current_pos_blocks[0] = current_pos_blocks[0] + vel[0]/.26 -.02
+            current_pos_blocks[1] = current_pos_blocks[1] + vel[1]/.26 -.02
+
 
         self.current_state = RobotState.APPROACH_BLOCK
 
@@ -281,10 +299,9 @@ class RobotStateMachine:
         x = 0
         while x < 90: 
             frame = self.robot.get_frame()
-            if frame is None:
-                x = x + 10
-                self.robot.ep_robot.chassis.move(x=0, y=0,z=+10, xy_speed=0.1).wait_for_completed()
-                continue
+            while frame is None:
+                frame = self.robot.get_frame()
+                
             
             # Run YOLO detection
             detections, _ = self.object_detector.get_detections(frame)
@@ -309,7 +326,7 @@ class RobotStateMachine:
             
             if not valid_objects:
                 x = x + 10
-                self.robot.ep_robot.chassis.move(x=0, y=0,z=+10, xy_speed=0.1).wait_for_completed()
+                # self.robot.ep_robot.chassis.move(x=0, y=0,z=+10, xy_speed=0.1).wait_for_completed()
                 continue
                 
             # Find object with minimum distance to center
@@ -452,7 +469,7 @@ class RobotStateMachine:
 
                     # Create and start two threads
                     # vision_thread = threading.Thread(target=self.get_path_from_vision, args=(self.self_closet_number,))
-                    path_thread = threading.Thread(target=self.follow_path)
+                    path_thread = threading.Thread(target=self.follow_path,args=([2,-2],))
 
                     # vision_thread.daemon = True
                     path_thread.daemon = True
@@ -487,9 +504,10 @@ class RobotStateMachine:
                     self.handle_deliver_direction(90)
 
                     current_x, current_y, current_heading = self.robot.get_position()
-
+                    current_x_blocks = 11
+                    current_y_blocks = 3
                     print("Current Position:", current_x, current_y, current_heading)
-                    current_x_blocks, current_y_blocks = current_x / SCALE_FACTOR, current_y / SCALE_FACTOR
+                    # current_x_blocks, current_y_blocks = current_x / SCALE_FACTOR, current_y / SCALE_FACTOR
 
                     print("Current Position Blocks:", current_x_blocks, current_y_blocks)
 
@@ -500,7 +518,7 @@ class RobotStateMachine:
                     self.stop_vision_thread = False
 
                     # vision_thread = threading.Thread(target=self.get_path_from_vision,args=(self.target_closet_number,))
-                    path_thread = threading.Thread(target=self.follow_path)
+                    path_thread = threading.Thread(target=self.follow_path,args=([11,-3],))
                     
                     # vision_thread.start()
                     path_thread.start()
@@ -513,10 +531,13 @@ class RobotStateMachine:
                     self.handle_looking_for_obstacles()
 
                     current_x, current_y, current_heading = self.robot.get_position()
-                    current_x_blocks, current_y_blocks = current_x / SCALE_FACTOR, current_y / SCALE_FACTOR
+
+                    # current_x_blocks, current_y_blocks = current_x / SCALE_FACTOR, current_y / SCALE_FACTOR
+                    current_x_blocks = 7
+                    current_y_blocks = -16
                     self.path = get_path(self.grid, self.starting_pos_number, self.target_closet_number, upscaling_factor=2, num_points=30, additional_obstacles=[obs[0] for obs in self.obstacles],starting_pos_blocks=(current_x_blocks,-current_y_blocks))
                     
-                    path_thread = threading.Thread(target=self.follow_path)
+                    path_thread = threading.Thread(target=self.follow_path,args=([7,-16],))
                     
                     # vision_thread.start()
                     path_thread.start()
