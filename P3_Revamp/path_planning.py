@@ -160,7 +160,16 @@ class PathPlanner:
         # First, rotate to face the target
         # self.rotate_to_face_target(target_coordinate)
         
-        # Move forward
+        # Check for obstacles before moving
+        frame = self.robot.get_frame()
+        has_obstacle, obstacle_type, obstacle_detection = self.check_for_obstacles(frame)
+        
+        if has_obstacle:
+            log_info(f"Obstacle of type {obstacle_type} detected, avoiding")
+            self.avoid_obstacle(obstacle_type, obstacle_detection)
+            return True  # Return true to indicate progress was made (avoiding obstacle)
+        
+        # No obstacles, move forward
         log_debug(f"Moving toward target: distance={move_distance:.2f}m", self.debug)
         self.robot.move(x=move_distance * 3, speed=speed)
         
