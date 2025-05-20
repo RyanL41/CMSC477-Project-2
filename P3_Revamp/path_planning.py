@@ -107,6 +107,8 @@ class PathPlanner:
         angle_diff = (target_angle_deg - current_heading_deg) % 360
         if angle_diff > 180:
             angle_diff -= 360
+
+        angle_diff = -angle_diff
         
         log_debug(f"Angle to target: {target_angle_deg:.2f}°, current heading: {current_heading_deg:.2f}°, difference: {angle_diff:.2f}°", self.debug)
         
