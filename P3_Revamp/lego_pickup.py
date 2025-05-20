@@ -399,6 +399,11 @@ class EnhancedLegoPickupController(LegoPickupController):
         self.memory_timeout = 10.0  # Seconds to remember blocks
         self.consistency_threshold = 3  # Detections needed to consider a block consistent
         
+        # Last known position tracking
+        self.last_known_detection = None
+        self.last_known_label = None
+        self.last_known_timestamp = 0
+        
     def detect_lego_blocks(self, frame=None):
         """
         Detect Lego blocks in the frame and update memory.
@@ -533,6 +538,7 @@ class EnhancedLegoPickupController(LegoPickupController):
     def find_best_block_in_frame(self, detected_blocks):
         """
         Find the best block in the current frame, with preference to the target.
+        Also updates the last known detection information.
         
         Args:
             detected_blocks: Dictionary of detected blocks by label
@@ -543,12 +549,46 @@ class EnhancedLegoPickupController(LegoPickupController):
         if not detected_blocks:
             return None, None
         
-        # If we have a target and it's detected, use it
-        if self.target_label and self.target_label in detected_blocks:
-            return detected_blocks[self.target_label], self.target_label
+        # If we already have a locked target, prioritize it
+        if self.target_lock and self.target_label in detected_blocks:
+            detection = detected_blocks[self.target_label]
+            log_debug(f"Using locked target: {self.target_label}", self.debug)
+            
+            # Save as last known detection
+            self.last_known_detection = detection
+            self.last_known_label = self.target_label
+            self.last_known_timestamp = time.time()
+            
+            return detection, self.target_label
+            
+        # Otherwise find most consistent block in memory
+        best_label = self.select_target_block()
         
-        # If no target is locked or the target isn't in frame, fall back to closest to center
-        return super().find_closest_block_to_center(detected_blocks)
+        if best_label and best_label in detected_blocks:
+            # Use block with highest consistency score
+            detection = detected_blocks[best_label]
+            log_debug(f"Using target from memory: {best_label}", self.debug)
+            
+            # Save as last known detection
+            self.last_known_detection = detection
+            self.last_known_label = best_label
+            self.last_known_timestamp = time.time()
+            
+            return detection, best_label
+            
+        # If no good target in memory, just use closest to center
+        detection, label = self.find_closest_block_to_center(detected_blocks)
+        
+        if detection and label:
+            # Save as last known detection
+            self.last_known_detection = detection
+            self.last_known_label = label
+            self.last_known_timestamp = time.time()
+            
+            if self.debug:
+                log_debug(f"Using closest block: {label}", self.debug)
+            
+        return detection, label
     
     def scan_for_target(self, max_rotations=24):
         """
@@ -665,10 +705,34 @@ class EnhancedLegoPickupController(LegoPickupController):
 
         print("Step 5")
         
-        # If still no blocks were detected, return None
+        # If still no blocks were detected but we have a last known position, move toward it
         if best_detection is None:
-            self.robot.drive_speed(x=0, y=0, z=-15)
-            return None
+            # Only use last known position if it's recent (within 3 seconds)
+            if self.last_known_detection is not None and time.time() - self.last_known_timestamp < 3.0:
+                log_info(f"No blocks currently detected. Moving toward last known position of {self.last_known_label}")
+                
+                # Get the position from the last known detection
+                x1, y1, x2, y2 = self.last_known_detection["box"]
+                box_center_x = (x1 + x2) / 2
+                camera_center_x = 320  # Assuming camera width is 640px
+                
+                # Estimate y (left-right) from horizontal position in image
+                # Positive error = object on left side of screen, move left
+                # Negative error = object on right side of screen, move right
+                error_x = camera_center_x - box_center_x
+                y_vel = np.clip(error_x * 0.005, -0.1, 0.1)  # Scale for gentler movement
+                
+                # Set z (rotation) based on horizontal position
+                z_vel = np.clip(-error_x * 0.05, -15, 15)  # Same as in center_robot_on_block
+                
+                # Move forward with small adjustments left/right and rotation
+                self.robot.drive_speed(x=0.1, y=y_vel, z=z_vel)
+                log_debug(f"Moving toward last known position: x=0.1, y={y_vel:.2f}, z={z_vel:.2f}", self.debug)
+                return None
+            else:
+                # If no recent last known position, just rotate to search
+                self.robot.drive_speed(x=0, y=0, z=-15)
+                return None
         
         # # If we haven't centered on the block yet, do that first
         if not self.centered:
