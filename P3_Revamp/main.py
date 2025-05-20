@@ -18,7 +18,7 @@ def main():
     robot_sn = "3JKCH8800100YN"
     
     # Debug mode flag
-    debug = False  # Set to True for debug output
+    debug = True  # Set to True for debug output
     
     # Print startup information
     log_info("=== P3-Revamp: RoboMaster EP Robot Control System ===")
