@@ -122,6 +122,7 @@ class LegoPickupController:
         Returns:
             True if the block is centered, False otherwise
         """
+        print("Step 1")
         if detection is None:
             # If no detection, rotate to search for blocks
             if self.debug:
@@ -130,13 +131,16 @@ class LegoPickupController:
             self.robot.drive_speed(x=0, y=0, z=-15)  # Positive z value means counterclockwise rotation
             return False
         
+        print("Step 2")
         x1, _, x2, _ = detection["box"]
         box_center_x = (x1 + x2) / 2
         camera_center_x = 320  # Assuming camera width is 640px
         
-        # Calculate how far off-center the block is
+        print("Step 3")
+            # Calculate how far off-center the block is
         error_x = camera_center_x - box_center_x
         
+        print("Step 4")
         # If the error is small, the block is centered
         if abs(error_x) < 20:
             if label:
@@ -144,14 +148,16 @@ class LegoPickupController:
             self.centered = True
             return True
         
+        print("Step 5")
         # Calculate rotation speed based on error
         # Larger error = faster rotation, but limit maximum speed
         z_vel = np.clip(-error_x * 0.05, -15, 15)
         
+        print("Step 6")
         # Rotate to center the block
         if self.debug:
             log_debug(f"Rotating to center block, error={error_x:.2f}, z_vel={z_vel:.2f}", self.debug)
-        self.robot.rotate(z_vel)
+        self.robot.drive_speed(x=0, y=0, z=z_vel)
         
         self.centered = False
         return False
