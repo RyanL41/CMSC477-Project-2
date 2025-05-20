@@ -164,7 +164,7 @@ class LegoPickupController:
         
     def approach_block(self, detection, label=None):
         """
-        Move the robot forward until the block is at the optimal pickup position.
+        Move the robot forward and adjust rotation until the block is at the optimal pickup position.
         
         Args:
             detection: Block detection data
@@ -176,34 +176,27 @@ class LegoPickupController:
         if detection is None:
             return False
         
-        # Get the y-coordinate of the bottom of the bounding box
-        _, y1, _, y2 = detection["box"]
+        x1, y1, x2, y2 = detection["box"]
+        box_center_x = (x1 + x2) / 2
+        camera_center_x = 320  # Assuming camera width is 640px
         
-        # If the block is already at the optimal position
-        if y1 > LEGO_PICKUP_Y_THRESHOLD:
+        error_x = camera_center_x - box_center_x
+        z_vel = np.clip(-error_x * 0.05, -16, 16)
+        
+        if y1 > LEGO_PICKUP_Y_THRESHOLD and abs(error_x) < 20:
             if label:
-                log_info(f"Block {label} is at optimal pickup position (y1={y1})")
-            
-            # Stop the robot
+                log_info(f"Block {label} is at optimal pickup position (y1={y1}, error_x={error_x:.2f})")
             self.robot.drive_speed(x=0, y=0, z=0)
             self.approach_complete = True
             return True
         
-        # Calculate forward speed based on distance from target position
-        # Slow down as we get closer to the target
         distance_to_target = LEGO_PICKUP_Y_THRESHOLD - y1
-        
-        # Use slower speed when close to target
-        if distance_to_target < 50:
-            x_vel = SLOW_SPEED / 2
-        else:
-            x_vel = SLOW_SPEED
-            
+        x_vel = SLOW_SPEED / 2 if distance_to_target < 50 else SLOW_SPEED
+                
         if self.debug:
-            log_debug(f"Approaching block, y1={y1}, distance_to_target={distance_to_target:.2f}, x_vel={x_vel:.2f}", self.debug)
+            log_debug(f"Approaching block, y1={y1}, distance={distance_to_target:.2f}, x_vel={x_vel:.2f}, z_vel={z_vel:.2f}, error_x={error_x:.2f}", self.debug)
         
-        # Move forward
-        self.robot.drive_speed(x=x_vel, y=0, z=0)
+        self.robot.drive_speed(x=x_vel, y=0, z=z_vel)
         
         self.approach_complete = False
         return False
