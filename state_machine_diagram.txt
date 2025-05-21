@@ -1,0 +1,174 @@
+# Robot State Machine Diagram
+
+## States
+1. LOCALIZATION
+   - Purpose: Find AprilTag and calculate robot's position relative to it
+   - Handler: handle_localization()
+
+2. PATH_PLANNING_1_LEGO
+   - Purpose: Move toward target coordinate while looking for Lego blocks
+   - Handler: handle_path_planning_1_lego()
+   - Target labels: LEGO_BIG_LABEL, LEGO_SMALL_LABEL, LEGO_MED_LABEL
+   - Target coordinate: LEGO_SEARCH_POSITION
+
+3. LEGO_PICKUP
+   - Purpose: Center, approach, and pick up a Lego block
+   - Handler: handle_lego_pickup()
+
+4. PATH_PLANNING_2_CENTER_LINE_PRE
+   - Purpose: Move toward target coordinate while looking for center line
+   - Handler: handle_path_planning_2_center_line_pre()
+   - Target labels: CENTER_LINE_LABEL
+   - Target coordinate: CENTER_LINE_WAYPOINT
+
+5. INTERMEDIARY_CENTERING
+   - Purpose: Rotate to 270 degrees and center on the center line
+   - Handler: handle_intermediary_centering()
+
+6. PATH_PLANNING_3_CENTER_LINE_POST
+   - Purpose: Move forward from center line to find closet
+   - Handler: handle_path_planning_3_center_line_post()
+   - Target labels: CLOSET_LABEL
+   - Target coordinate: (current_x, current_y + 15)
+
+7. LEGO_DROPOFF
+   - Purpose: Center, approach, and drop off the Lego block at closet
+   - Handler: handle_lego_dropoff()
+
+8. PATH_PLANNING_4_CENTER_LINE_POST_DROPOFF
+   - Purpose: Return to center line after dropping off Lego block
+   - Handler: handle_path_planning_4_center_line_post_dropoff()
+   - Target labels: CENTER_LINE_LABEL
+   - Target coordinate: saved_target_position_post
+
+9. PATH_PLANNING_5_CENTER_LINE_RETURN
+   - Purpose: Return to starting position via center line
+   - Handler: handle_path_planning_5_center_line_return()
+   - Target labels: CENTER_LINE_LABEL
+   - Target coordinate: saved_target_position_intermediary
+
+10. ERROR
+    - Purpose: Terminal state when unrecoverable error occurs
+    - No specific handler
+
+## State Transitions
+
+1. LOCALIZATION → PATH_PLANNING_1_LEGO
+   - Condition: Localization returns "success"
+   - Actions:
+     - Set target_labels = BLOCK_LABELS
+     - Set target_coordinate = LEGO_SEARCH_POSITION
+     - Set target_found = False
+     - Call path_planner.set_target()
+
+2. PATH_PLANNING_1_LEGO → LEGO_PICKUP
+   - Condition: path_planning_1_lego returns "target_found"
+   - Actions:
+     - Stop robot movement (drive_speed(0,0,0))
+
+3. LEGO_PICKUP → PATH_PLANNING_2_CENTER_LINE_PRE
+   - Condition: lego_pickup returns "success"
+   - Actions:
+     - Set target_labels = [CENTER_LINE_LABEL]
+     - Set target_coordinate = CENTER_LINE_WAYPOINT
+     - Set target_found = False
+     - Call path_planner.set_target()
+
+4. PATH_PLANNING_2_CENTER_LINE_PRE → INTERMEDIARY_CENTERING
+   - Condition: handle_path_planning_2_center_line_pre returns "target_found" OR "position_reached"
+   - Actions:
+     - Stop robot movement (drive_speed(0,0,0))
+
+5. INTERMEDIARY_CENTERING → PATH_PLANNING_3_CENTER_LINE_POST
+   - Condition: handle_intermediary_centering returns "success"
+   - Actions:
+     - Save current position as saved_target_position_intermediary
+     - Set target_labels = [CLOSET_LABEL]
+     - Set target_coordinate = (current_x, current_y + 15)
+     - Save this new coordinate as saved_target_position_post
+     - Set target_found = False
+     - Call path_planner.set_target()
+
+6. PATH_PLANNING_3_CENTER_LINE_POST → LEGO_DROPOFF
+   - Condition: handle_path_planning_3_center_line_post returns "target_found"
+   - Actions:
+     - Stop robot movement (drive_speed(0,0,0))
+
+7. LEGO_DROPOFF → PATH_PLANNING_4_CENTER_LINE_POST_DROPOFF
+   - Condition: handle_lego_dropoff returns "success"
+   - Actions:
+     - Set target_labels = [CENTER_LINE_LABEL]
+     - Set target_coordinate = saved_target_position_post
+     - Set target_found = False
+     - Call path_planner.set_target()
+
+8. PATH_PLANNING_4_CENTER_LINE_POST_DROPOFF → PATH_PLANNING_5_CENTER_LINE_RETURN
+   - Condition: handle_path_planning_4_center_line_post_dropoff returns "target_found" OR "position_reached"
+   - Actions:
+     - Set target_labels = [CENTER_LINE_LABEL]
+     - Set target_coordinate = saved_target_position_intermediary
+     - Set target_found = False
+     - Call path_planner.set_target()
+
+9. PATH_PLANNING_5_CENTER_LINE_RETURN → PATH_PLANNING_1_LEGO (CYCLE BACK)
+   - Condition: handle_path_planning_5_center_line_return returns "target_found" OR "position_reached"
+   - Actions:
+     - Set target_labels = BLOCK_LABELS
+     - Set target_coordinate = LEGO_SEARCH_POSITION
+     - Set target_found = False
+     - Call path_planner.set_target()
+
+10. ANY STATE → ERROR
+    - Condition: Unhandled exception occurs
+    - Actions: 
+      - Terminate state machine
+      - Clean up resources
+
+## State Handler Return Values
+
+1. handle_localization():
+   - "success": Localization successful
+   - None: Localization not yet successful
+
+2. handle_path_planning_1_lego():
+   - "target_found": Lego block found
+   - None: No target found yet
+
+3. handle_lego_pickup():
+   - "success": Pickup successful
+   - None: Pickup not yet successful
+
+4. handle_path_planning_2_center_line_pre():
+   - "target_found": Center line found
+   - "position_reached": Reached target position
+   - None: No target found or position not reached
+
+5. handle_intermediary_centering():
+   - "success": Centering successful
+   - None: Centering not yet successful
+
+6. handle_path_planning_3_center_line_post():
+   - "target_found": Closet found
+   - None: No target found yet
+
+7. handle_lego_dropoff():
+   - "success": Dropoff successful
+   - None: Dropoff not yet successful
+
+8. handle_path_planning_4_center_line_post_dropoff():
+   - "target_found": Center line found
+   - "position_reached": Reached target position
+   - None: No target found or position not reached
+
+9. handle_path_planning_5_center_line_return():
+   - "target_found": Center line found
+   - "position_reached": Reached target position
+   - None: No target found or position not reached
+
+## Additional Notes
+
+- The state machine has a vision thread that runs concurrently with the main control loop
+- Vision thread updates a shared data structure with object detections
+- Handlers use component controllers (localizer, path_planner, lego_pickup, etc.)
+- The system tracks performance data for each state (start time, end time, success)
+- The robot always completes a full cycle: Localization → Find Lego → Pickup → Navigate to Center Line → Center on Line → Navigate to Closet → Dropoff → Return to Center Line → Return to Start → Repeat

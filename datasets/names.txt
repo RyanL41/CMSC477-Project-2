@@ -1,7 +1,0 @@
-robot
-cone
-lego_big
-lego_med
-lego_small
-center_line
-closet
