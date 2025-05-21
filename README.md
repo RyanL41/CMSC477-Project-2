@@ -1,6 +1,6 @@
-# P3-Revamp: RoboMaster EP Control System
+# Project 3: Capture the Flag
 
-This is a revamped implementation of Project 3 for the RoboMaster EP robot. It uses a new approach to navigation and task execution, focusing on target-oriented movement, vision-based object detection, and AprilTag-based localization.
+This is Group 3's implementation of Project 3 for the RoboMaster EP robot. It ues navigation and task execution, focusing on target-oriented movement, vision-based object detection, and AprilTag-based localization.
 
 ## Features
 
@@ -74,18 +74,3 @@ You can adjust parameters in `config.py`:
 - Detection thresholds
 - Movement speeds
 - Robot starting position
-
-## Troubleshooting
-
-- Make sure the robot is connected to the same network as your computer
-- Check that the robot serial number is correct
-- Ensure the camera is working properly
-- Verify that YOLO model weights are correctly placed
-
-## Credits
-
-This project is a revamped implementation based on ideas from the original Project 3, with a new approach to navigation and control.
-
-## License
-
-[Add appropriate license information here]
